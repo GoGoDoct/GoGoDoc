@@ -7,15 +7,16 @@ import streamlit as st
 
 from gogodoc.composition import build_pipeline, build_renderer
 from gogodoc.infrastructure.config import load_settings
+from gogodoc.application.errors import ParseError
 from gogodoc.domain.models import UserProfile, Sex, Flag, FinalReport
 
-# 플래그별 표시 라벨·아이콘
-_FLAG_BADGE = {
-    Flag.NORMAL: ("정상", "🟢"),
-    Flag.CAUTION: ("주의", "🟡"),
-    Flag.ABNORMAL: ("이상", "🔴"),
-    Flag.EMERGENCY: ("응급", "🚨"),
-    Flag.UNKNOWN: ("판정불가", "⚪"),
+# 플래그별 표시 라벨
+_FLAG_LABEL = {
+    Flag.NORMAL: "정상",
+    Flag.CAUTION: "주의",
+    Flag.ABNORMAL: "이상",
+    Flag.EMERGENCY: "응급",
+    Flag.UNKNOWN: "판정불가",
 }
 
 
@@ -33,12 +34,16 @@ def _render_result(report: FinalReport) -> None:
     """해석 결과 렌더링"""
     # 응급 이상치 최우선 표시
     for alert in report.emergency_alerts:
-        st.error(f"🚨 {alert}")
+        st.error(alert)
+
+    # 부분 실패 등 비치명적 이슈 안내
+    for note in report.notes:
+        st.warning(note)
 
     for item in report.items:
-        label, icon = _FLAG_BADGE.get(item.flag, ("", ""))
+        label = _FLAG_LABEL.get(item.flag, "")
         with st.container(border=True):
-            st.markdown(f"**{icon} {item.canonical_name}** · {label}")
+            st.markdown(f"**{item.canonical_name}** · {label}")
             value_str = f"{item.value} {item.unit or ''}".strip()
             st.caption(f"측정값 {value_str}")
             st.write(item.explanation)
@@ -88,8 +93,15 @@ def main() -> None:
             if not settings.anthropic_api_key:
                 st.error("ANTHROPIC_API_KEY 미설정 - .env 확인 필요")
                 return
-            with st.spinner("해석 중..."):
-                report = build_pipeline(settings).run(pdf_path, profile)
+            try:
+                with st.spinner("해석 중..."):
+                    report = build_pipeline(settings).run(pdf_path, profile)
+            except ParseError as exc:
+                st.error(f"결과지 인식 실패 - {exc}. 디지털 PDF 인지 확인해 주세요")
+                return
+            except Exception as exc:
+                st.error(f"처리 중 오류가 발생했습니다 ({exc})")
+                return
             _render_result(report)
     finally:
         # 처리 후 임시 파일 즉시 삭제
