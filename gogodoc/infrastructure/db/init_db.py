@@ -29,6 +29,22 @@ BEGIN
 END$$;
 """
 
+_CREATE_ANALYSIS_RESULTS_TABLE = """
+CREATE TABLE IF NOT EXISTS analysis_results (
+    id             SERIAL PRIMARY KEY,
+    user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    analyzed_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    filename       VARCHAR(255),
+    normal_count   INTEGER NOT NULL DEFAULT 0,
+    caution_count  INTEGER NOT NULL DEFAULT 0,
+    abnormal_count INTEGER NOT NULL DEFAULT 0,
+    emergency_alerts TEXT[]  NOT NULL DEFAULT '{}',
+    tracking_items   TEXT[]  NOT NULL DEFAULT '{}',
+    conditions       TEXT[]  NOT NULL DEFAULT '{}',
+    items_json       JSONB   NOT NULL DEFAULT '[]'
+);
+"""
+
 
 def init_db(settings: Settings) -> psycopg2.pool.SimpleConnectionPool:
     """커넥션 풀 생성 후 DDL 실행, 풀 반환"""
@@ -38,6 +54,7 @@ def init_db(settings: Settings) -> psycopg2.pool.SimpleConnectionPool:
         with conn.cursor() as cur:
             cur.execute(_CREATE_USERS_TABLE)
             cur.execute(_ADD_LOCATION_COLUMN)
+            cur.execute(_CREATE_ANALYSIS_RESULTS_TABLE)
         conn.commit()
     finally:
         put_conn(pool, conn)

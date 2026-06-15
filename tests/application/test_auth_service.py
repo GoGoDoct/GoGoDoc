@@ -56,6 +56,7 @@ def test_login_success(mock_find, mock_get_conn, mock_put_conn, mock_ctx):
     pool = MagicMock()
     mock_get_conn.return_value = MagicMock()
     mock_find.return_value = {
+        "id": 1,
         "name": "홍길동",
         "password_hash": "hashed_pass",
         "sex": "male",
@@ -66,7 +67,7 @@ def test_login_success(mock_find, mock_get_conn, mock_put_conn, mock_ctx):
 
     result = login(pool, "홍길동", "pass123")
 
-    assert result == {"name": "홍길동", "sex": "male", "age": 40, "location": "서울"}
+    assert result == {"id": 1, "name": "홍길동", "sex": "male", "age": 40, "location": "서울"}
     mock_find.assert_called_once_with(mock_get_conn.return_value, "홍길동")
 
 
