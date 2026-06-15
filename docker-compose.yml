@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    image: gogodoc
+    ports:
+      - "8501:8501"
+    # API 키 등 환경 변수 주입 - 사전에 cp .env.example .env 필요
+    env_file:
+      - .env
+    restart: unless-stopped
+    # 개발 시 코드 변경 즉시 반영 - 필요 시 주석 해제
+    # volumes:
+    #   - .:/app

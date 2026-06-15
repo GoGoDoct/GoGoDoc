@@ -1,0 +1,26 @@
+# 버전 관리·IDE
+.git
+.github
+.gitignore
+.idea
+.vscode
+
+# 가상환경
+.venv
+venv
+env
+
+# 파이썬 캐시
+__pycache__
+*.py[cod]
+.pytest_cache
+
+# 환경 변수 - 런타임 주입
+.env
+
+# 테스트·문서 - 이미지 불필요
+tests
+*.md
+
+# OS
+.DS_Store
