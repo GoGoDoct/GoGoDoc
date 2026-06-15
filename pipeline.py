@@ -2,7 +2,7 @@
 """검진 결과 해석 파이프라인 (기획서 4.1 의 5단계 함수 체이닝).
 
 기본은 샘플 데이터를 반환해 API 키 없이도 데모가 돌아간다.
-실제 서비스로 붙일 때는 각 단계의 TODO 부분에 pdfplumber / Claude 호출을 채운다.
+실제 서비스로 붙일 때는 각 단계의 TODO 부분에 pdfplumber / OpenAI 호출을 채운다.
 
     단계 ①  파싱·추출      parse_pdf(file)              -> raw rows
     단계 ②  정상범위 매칭   match_reference(rows, ...)   -> 항목 + 상태 플래그
@@ -30,18 +30,18 @@ SYSTEM_PROMPT = (
 
 # ── 단계 ① 파싱·추출 ────────────────────────────────────
 def parse_pdf(uploaded_file) -> list[dict]:
-    """pdfplumber 로 표를 추출하고 Claude Haiku 로 {항목,값,단위,참조범위} JSON 구조화.
+    """pdfplumber 로 표를 추출하고 OpenAI gpt-4o-mini 로 {항목,값,단위,참조범위} JSON 구조화.
 
     데모에서는 샘플 항목을 그대로 반환한다.
     """
     if uploaded_file is None:
         return [dict(it) for it in SAMPLE_ITEMS]
 
-    # TODO(실서비스): pdfplumber + Claude Haiku 구조화
+    # TODO(실서비스): pdfplumber + OpenAI gpt-4o-mini 구조화
     # import pdfplumber
     # with pdfplumber.open(uploaded_file) as pdf:
     #     tables = [t for page in pdf.pages for t in (page.extract_tables() or [])]
-    # rows = _structure_with_claude_haiku(tables)   # Pydantic v2 model_validate_json
+    # rows = _structure_with_openai(tables)   # Pydantic v2 model_validate_json
     # return rows
     return [dict(it) for it in SAMPLE_ITEMS]
 
@@ -74,27 +74,28 @@ def _flag(item: dict) -> str:
 
 # ── 단계 ③ 해석·설명 ────────────────────────────────────
 def interpret(items: list[dict]) -> list[dict]:
-    """Claude Sonnet 으로 항목 해설 dict 근거를 인용하며 쉬운 설명 생성.
+    """OpenAI gpt-4o-mini 로 항목 해설 dict 근거를 인용하며 쉬운 설명 생성.
 
     데모 데이터는 explain 이 이미 들어 있다.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     for it in items:
         if it.get("explain"):
             continue
         if api_key:
-            it["explain"] = _interpret_with_claude(it, api_key)  # TODO
+            it["explain"] = _interpret_with_openai(it, api_key)  # TODO
         else:
-            it["explain"] = "해석을 생성하려면 ANTHROPIC_API_KEY 가 필요합니다."
+            it["explain"] = "해석을 생성하려면 OPENAI_API_KEY 가 필요합니다."
     return items
 
 
-def _interpret_with_claude(item: dict, api_key: str) -> str:
-    # TODO(실서비스): anthropic 클라이언트로 claude-sonnet 호출 (temperature=0.3)
-    # from anthropic import Anthropic
-    # client = Anthropic(api_key=api_key)
-    # msg = client.messages.create(model="claude-sonnet-4-6", system=SYSTEM_PROMPT, ...)
-    # return msg.content[0].text
+def _interpret_with_openai(item: dict, api_key: str) -> str:
+    # TODO(실서비스): openai 클라이언트로 gpt-4o-mini 호출 (temperature=0.3)
+    # from openai import OpenAI
+    # client = OpenAI(api_key=api_key)
+    # resp = client.chat.completions.create(model="gpt-4o-mini",
+    #     messages=[{"role": "system", "content": SYSTEM_PROMPT}, ...])
+    # return resp.choices[0].message.content
     return ""
 
 
