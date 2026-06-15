@@ -44,7 +44,7 @@ def result_card_html(it) -> str:
         f'<span style="font-size:13px;color:#9099A8;font-weight:500">{it["unit"]}</span>'
         f'<span style="font-size:12px;color:#A4ACBA;margin-left:auto">참조 {range_text(it)}</span>'
         f'</div>'
-        f'{bar_html(it)}'
+        f'{bar_html(it) if it.get("low") is not None or it.get("high") is not None else ""}'
         f'</div>'
         # 쉬운 설명 (네이티브 <details>)
         f'<details class="gg-details"><summary>쉬운 설명 보기</summary>'

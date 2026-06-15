@@ -27,3 +27,4 @@ tmp/
 
 # 스트림릿 로컬 설정
 .streamlit/secrets.toml
+session_state.result 

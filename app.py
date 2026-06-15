@@ -9,19 +9,101 @@
 - analysis     : PDF 업로드 → 4단계 파이프라인 → 원본/AI 해석 split 뷰
 """
 import time
+import tempfile
+from pathlib import Path
+
 import streamlit as st
 
 from styles import inject_css
 from sample_data import STATUS, RECORDS, TRACKED, FBS_TREND
-from pipeline import run_pipeline
 import ui
+
+from gogodoc.infrastructure.config import load_settings
+from gogodoc.infrastructure.db.init_db import init_db
+from gogodoc.application.auth_service import login, register, AuthError, DuplicateNameError
+from gogodoc.composition import build_pipeline, build_renderer
+from gogodoc.infrastructure.pdf import (
+    PdfValidationError,
+    validate_uploaded_pdf_metadata,
+    validate_digital_pdf,
+)
+from gogodoc.domain.models import UserProfile, Sex, Flag
+
+# ── 카테고리 매핑 ─────────────────────────────────────────
+_CAT_MAP = {
+    "AST": "간기능", "ALT": "간기능", "γ-GTP": "간기능", "GTP": "간기능",
+    "공복혈당": "당대사", "당화혈색소": "당대사",
+    "총콜레스테롤": "지질", "LDL": "지질", "HDL": "지질", "중성지방": "지질",
+    "크레아티닌": "신장", "사구체여과율": "신장",
+    "혈색소": "혈액", "헤마토크릿": "혈액",
+}
+
+
+def _get_cat(name: str) -> str:
+    for key, cat in _CAT_MAP.items():
+        if key in name:
+            return cat
+    return "기타"
+
+
+# ── 어댑터 ───────────────────────────────────────────────
+_FLAG_STATUS = {
+    Flag.NORMAL: "정상",
+    Flag.CAUTION: "주의",
+    Flag.ABNORMAL: "이상",
+    Flag.EMERGENCY: "응급",
+    Flag.CHECK_NEEDED: "주의",
+    Flag.UNKNOWN: "주의",
+}
+
+
+def _report_to_result(report) -> dict:
+    """FinalReport → session_state.result 형식 변환"""
+    items = []
+    for item in report.items:
+        status = _FLAG_STATUS.get(item.flag, "주의")
+        val = item.value
+        items.append({
+            "id": item.canonical_name,
+            "cat": _get_cat(item.canonical_name),
+            "name": item.canonical_name,
+            "value": val if val is not None else 0,
+            "value_text": str(val) if val is not None else "-",
+            "unit": item.unit or "",
+            "low": None,
+            "high": None,
+            "status": status,
+            "explain": item.explanation or "",
+            "source": item.source or "",
+        })
+    counts = {
+        "정상": sum(1 for it in items if it["status"] == "정상"),
+        "주의": sum(1 for it in items if it["status"] == "주의"),
+        "이상": sum(1 for it in items if it["status"] in ("이상", "응급")),
+    }
+    emergency = report.emergency_alerts[0] if report.emergency_alerts else None
+    return {
+        "items": items,
+        "counts": counts,
+        "emergency": emergency,
+        "tracked": report.tracking_items,
+    }
+
 
 st.set_page_config(page_title="GoGoDoc — 검진 결과 AI 해석", page_icon="🫆", layout="wide")
 inject_css(st)
 
+settings = load_settings()
+try:
+    pool = init_db(settings)
+except Exception:
+    st.error("데이터베이스 연결에 실패했습니다. .env 설정을 확인하세요.")
+    st.stop()
+
 # ── 세션 기본값 ──────────────────────────────────────────
 _defaults = dict(page="login", gender="male", age=40, analyzed=False,
-                 emergency=False, item_filter="전체 항목", file=None)
+                 emergency=False, item_filter="전체 항목", file=None, result=None,
+                 user_name="", location="")
 for k, v in _defaults.items():
     st.session_state.setdefault(k, v)
 
@@ -43,7 +125,7 @@ def _auth_layout_css():
     )
 
 
-def render_login():
+def render_login(pool):
     _auth_layout_css()
     st.markdown(ui.brand_panel_html(), unsafe_allow_html=True)
     _l, mid, _r = st.columns([1.2, 1, 1.2])
@@ -52,18 +134,31 @@ def render_login():
         st.markdown('<h2 style="font-size:27px;font-weight:800;margin:0">로그인</h2>'
                     '<p style="font-size:14px;color:#7B8597;margin:9px 0 18px">'
                     '검진 기록과 해석 결과를 한곳에서 관리하세요.</p>', unsafe_allow_html=True)
-        st.text_input("이메일", placeholder="name@example.com", key="login_email")
+        st.text_input("이름", placeholder="홍길동", key="login_email")
         st.text_input("비밀번호", type="password", placeholder="••••••••", key="login_pw")
         st.checkbox("로그인 상태 유지", value=True)
         if st.button("로그인", type="primary", use_container_width=True):
-            go("dashboard")
+            name = st.session_state.get("login_email", "")
+            pw = st.session_state.get("login_pw", "")
+            if not name or not pw:
+                st.warning("이름과 비밀번호를 입력하세요")
+            else:
+                try:
+                    user = login(pool, name, pw)
+                    st.session_state.user_name = user["name"]
+                    st.session_state.gender = user["sex"]
+                    st.session_state.age = user["age"]
+                    st.session_state.location = user.get("location", "")
+                    go("dashboard")
+                except AuthError:
+                    st.error("이름 또는 비밀번호가 올바르지 않습니다")
         st.markdown('<div style="text-align:center;font-size:13.5px;color:#7B8597;margin-top:16px">'
                     '계정이 없으신가요?</div>', unsafe_allow_html=True)
         if st.button("회원가입", use_container_width=True):
             go("signup")
 
 
-def render_signup():
+def render_signup(pool):
     _auth_layout_css()
     st.markdown(ui.brand_panel_html(), unsafe_allow_html=True)
     _l, mid, _r = st.columns([0.7, 1, 0.7])
@@ -72,10 +167,10 @@ def render_signup():
         st.markdown('<h2 style="font-size:27px;font-weight:800;margin:0">회원가입</h2>'
                     '<p style="font-size:14px;color:#7B8597;margin:9px 0 14px">'
                     '성별·나이는 정상 범위 판정 기준으로 사용됩니다.</p>', unsafe_allow_html=True)
-        st.text_input("이름", placeholder="홍길동")
+        st.text_input("이름", placeholder="홍길동", key="signup_name")
         st.text_input("이메일", placeholder="name@example.com")
         c1, c2 = st.columns(2)
-        c1.text_input("비밀번호", type="password", placeholder="8자 이상")
+        c1.text_input("비밀번호", type="password", placeholder="8자 이상", key="signup_pw")
         c2.text_input("비밀번호 확인", type="password", placeholder="다시 입력")
         c3, c4 = st.columns([1.4, 1])
         with c3:
@@ -84,9 +179,27 @@ def render_signup():
             st.session_state.gender = "male" if g == "남성" else "female"
         with c4:
             st.session_state.age = st.number_input("나이", 1, 120, st.session_state.age)
+        st.text_input("거주지", placeholder="예) 서울특별시 강남구", key="signup_location")
         st.checkbox("서비스 이용약관 및 개인정보 처리방침에 동의합니다.", value=True)
         if st.button("가입하고 시작하기", type="primary", use_container_width=True):
-            go("dashboard")
+            name = st.session_state.get("signup_name", "")
+            pw = st.session_state.get("signup_pw", "")
+            if not name or not pw:
+                st.warning("이름과 비밀번호를 입력하세요")
+            else:
+                sex = st.session_state.gender
+                age = int(st.session_state.age)
+                location = st.session_state.get("signup_location", "")
+                try:
+                    register(pool, name, pw, sex, age, location)
+                    user = login(pool, name, pw)
+                    st.session_state.user_name = user["name"]
+                    st.session_state.gender = user["sex"]
+                    st.session_state.age = user["age"]
+                    st.session_state.location = user.get("location", "")
+                    go("dashboard")
+                except DuplicateNameError:
+                    st.error("이미 사용 중인 이름입니다")
         st.markdown('<div style="text-align:center;font-size:13.5px;color:#7B8597;margin-top:14px">'
                     '이미 계정이 있으신가요?</div>', unsafe_allow_html=True)
         if st.button("로그인", use_container_width=True, key="to_login"):
@@ -96,7 +209,7 @@ def render_signup():
 # ══════════════════════════════════════════════════════════
 # 대시보드
 # ══════════════════════════════════════════════════════════
-def render_dashboard():
+def render_dashboard(pool):
     # 사이드바 페이지 본문 전체 폭·좌측 정렬 (사이드바와 본문 사이 빈 공간 제거)
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
     with st.sidebar:
@@ -106,11 +219,13 @@ def render_dashboard():
         st.markdown('<div style="height:40vh"></div>', unsafe_allow_html=True)
         st.markdown(ui.sidebar_profile_html(), unsafe_allow_html=True)
         if st.button("로그아웃", use_container_width=True):
+            st.session_state.clear()
             go("login")
 
     head, btn = st.columns([3, 1])
     with head:
-        st.markdown('<h1 style="font-size:25px;font-weight:800;margin:0">안녕하세요, 홍길동님 👋</h1>'
+        user_name = st.session_state.get("user_name", "사용자")
+        st.markdown(f'<h1 style="font-size:25px;font-weight:800;margin:0">안녕하세요, {user_name}님 👋</h1>'
                     '<p style="font-size:14px;color:#7B8597;margin:8px 0 0">'
                     '최근 검진일 2026-06-10 기준, 건강 요약을 정리했어요.</p>', unsafe_allow_html=True)
     with btn:
@@ -144,7 +259,7 @@ def render_dashboard():
 # ══════════════════════════════════════════════════════════
 # 검진 결과 AI 해석 (업로드 → 파이프라인 → split 뷰)
 # ══════════════════════════════════════════════════════════
-def render_analysis():
+def render_analysis(settings, pool):
     # 사이드바 페이지 본문 전체 폭·좌측 정렬 (사이드바와 본문 사이 빈 공간 제거)
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
     with st.sidebar:
@@ -164,12 +279,12 @@ def render_analysis():
                     '서버에 저장되지 않고 즉시 삭제됩니다.</div>', unsafe_allow_html=True)
 
     if not st.session_state.analyzed:
-        _render_upload()
+        _render_upload(settings, pool)
     else:
         _render_result()
 
 
-def _render_upload():
+def _render_upload(settings, pool):
     body = st.columns([2.4, 1])[0]
     with body:
         st.markdown('<div style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;'
@@ -187,32 +302,88 @@ def _render_upload():
                         '검진 결과지 PDF 업로드</div>', unsafe_allow_html=True)
             uploaded = st.file_uploader("PDF 업로드", type=["pdf"], label_visibility="collapsed")
             if uploaded is not None:
-                _run_and_store(uploaded)
+                _run_and_store(uploaded, settings, pool)
             st.markdown('<div style="text-align:center;color:#A4ACBA;font-size:12px;margin:8px 0 6px">또는</div>',
                         unsafe_allow_html=True)
             if st.button("📄  샘플 결과지로 체험해보기", use_container_width=True):
-                _run_and_store(None)
+                _run_and_store(None, settings, pool)
 
         st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
         st.markdown(ui.feature_cards_html(), unsafe_allow_html=True)
 
 
-def _run_and_store(file):
-    steps = ["검진 결과지 파싱 · 항목 추출", "정상 범위 매칭 (성별·나이 기준)",
-             "AI 근거 기반 해석 생성", "안전 검토 · 요약 정리"]
-    with st.status("결과지를 분석하고 있어요", expanded=True) as status:
-        for s in steps:
-            st.write(f"✓ {s}")
-            time.sleep(0.6)
-        status.update(label="해석 완료", state="complete")
-    st.session_state.file = file
-    st.session_state.analyzed = True
-    st.rerun()
+def _run_and_store(file, settings, pool):
+    if file is None:
+        # 샘플 체험 모드 — 기존 더미 파이프라인 유지
+        from pipeline import run_pipeline
+        steps = ["검진 결과지 파싱 · 항목 추출", "정상 범위 매칭 (성별·나이 기준)",
+                 "AI 근거 기반 해석 생성", "안전 검토 · 요약 정리"]
+        with st.status("샘플 결과지를 분석하고 있어요", expanded=True) as status:
+            for s in steps:
+                st.write(f"✓ {s}")
+                time.sleep(0.6)
+            status.update(label="해석 완료", state="complete")
+        res = run_pipeline(None, st.session_state.gender, st.session_state.age,
+                           st.session_state.emergency)
+        st.session_state.result = res
+        st.session_state.analyzed = True
+        st.rerun()
+        return
+
+    # 실제 PDF 파이프라인
+    try:
+        validate_uploaded_pdf_metadata(
+            filename=file.name,
+            content_type=file.type,
+            size_bytes=file.size,
+        )
+    except PdfValidationError as exc:
+        st.error(exc.message)
+        return
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file.getvalue())
+        pdf_path = tmp.name
+
+    try:
+        try:
+            validate_digital_pdf(pdf_path=pdf_path, filename=file.name, size_bytes=file.size)
+        except PdfValidationError as exc:
+            st.error(exc.message)
+            return
+
+        steps = ["검진 결과지 파싱 · 항목 추출", "정상 범위 매칭 (성별·나이 기준)",
+                 "AI 근거 기반 해석 생성", "안전 검토 · 요약 정리"]
+        with st.status("결과지를 분석하고 있어요", expanded=True) as status:
+            for s in steps:
+                st.write(f"✓ {s}")
+            try:
+                sex = Sex.MALE if st.session_state.gender == "male" else Sex.FEMALE
+                profile = UserProfile(sex=sex, age=int(st.session_state.age))
+                report = build_pipeline(settings).run(pdf_path, profile)
+            except PdfValidationError as exc:
+                st.error(exc.message)
+                return
+            except Exception as exc:
+                st.error(f"분석 중 오류가 발생했습니다: {exc}")
+                return
+            status.update(label="해석 완료", state="complete")
+
+        st.session_state.result = _report_to_result(report)
+        st.session_state.analyzed = True
+        st.rerun()
+    finally:
+        Path(pdf_path).unlink(missing_ok=True)
 
 
 def _render_result():
-    res = run_pipeline(st.session_state.file, st.session_state.gender,
-                       st.session_state.age, st.session_state.emergency)
+    res = st.session_state.result
+    if res is None:
+        st.warning("분석 결과가 없습니다. 다시 업로드해 주세요.")
+        st.session_state.update(analyzed=False)
+        st.rerun()
+        return
+
     counts = res["counts"]
 
     head, pills = st.columns([2, 1])
@@ -292,6 +463,8 @@ def _sidebar_brand():
 
 
 # ── 라우터 ───────────────────────────────────────────────
-PAGES = {"login": render_login, "signup": render_signup,
-         "dashboard": render_dashboard, "analysis": render_analysis}
-PAGES.get(st.session_state.page, render_login)()
+PAGES = {"login": lambda: render_login(pool),
+         "signup": lambda: render_signup(pool),
+         "dashboard": lambda: render_dashboard(pool),
+         "analysis": lambda: render_analysis(settings, pool)}
+PAGES.get(st.session_state.page, lambda: render_login(pool))()
