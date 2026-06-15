@@ -106,6 +106,17 @@ class Pipeline:
         results: list[InterpretedItem] = []
         failed = 0
         for item in matched:
+            # 수치 인식 불가 항목 - 해석 불가, 확인 안내
+            if item.value is None:
+                results.append(
+                    InterpretedItem(
+                        **item.model_dump(),
+                        explanation="수치를 인식하지 못한 항목 - 확인 필요",
+                        source=None,
+                    )
+                )
+                continue
+
             grounding = reference_dict.lookup(item.canonical_name)
             rng = (
                 reference_dict.select_range(grounding, profile.sex.value, profile.age)

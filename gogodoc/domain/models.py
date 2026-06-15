@@ -19,7 +19,8 @@ class Flag(str, Enum):
     CAUTION = "caution"  # 주의
     ABNORMAL = "abnormal"  # 이상
     EMERGENCY = "emergency"  # 응급 이상치 (패닉 밸류)
-    UNKNOWN = "unknown"  # 미매칭 또는 판정 불가
+    CHECK_NEEDED = "check_needed"  # 확인필요 (수치 인식 불가)
+    UNKNOWN = "unknown"  # 알수없음 (해설 기준 없음)
 
 
 class UserProfile(BaseModel):

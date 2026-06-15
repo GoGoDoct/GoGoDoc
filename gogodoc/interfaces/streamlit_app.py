@@ -16,7 +16,8 @@ _FLAG_LABEL = {
     Flag.CAUTION: "주의",
     Flag.ABNORMAL: "이상",
     Flag.EMERGENCY: "응급",
-    Flag.UNKNOWN: "판정불가",
+    Flag.CHECK_NEEDED: "확인필요",
+    Flag.UNKNOWN: "알수없음",
 }
 
 

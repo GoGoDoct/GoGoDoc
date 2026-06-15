@@ -20,9 +20,14 @@ def test_emergency_priority():
     assert classification.classify("공복혈당", 600, "male", 40) == Flag.EMERGENCY
 
 
-def test_unknown_value():
-    # 값 없음 - 판정 불가
-    assert classification.classify("ALT", None, "male", 40) == Flag.UNKNOWN
+def test_check_needed_value():
+    # 수치 인식 불가 - 확인필요
+    assert classification.classify("ALT", None, "male", 40) == Flag.CHECK_NEEDED
+
+
+def test_unknown_no_dict():
+    # 해설 기준 없는 항목 - 알수없음
+    assert classification.classify("없는항목xyz", 10, "male", 40) == Flag.UNKNOWN
 
 
 def test_pediatric_out_of_scope():
