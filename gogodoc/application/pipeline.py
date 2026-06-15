@@ -7,8 +7,11 @@
 
 import json
 
+from pydantic import ValidationError
+
 from gogodoc.application.ports import LLMPort, PdfParserPort, LLMTask
 from gogodoc.application import prompts
+from gogodoc.application.errors import ParseError
 from gogodoc.domain.models import (
     UserProfile,
     ParsedReport,
@@ -29,25 +32,45 @@ class Pipeline:
         self._llm = llm
 
     def run(self, pdf_path: str, profile: UserProfile) -> FinalReport:
-        """전체 파이프라인 실행"""
+        """전체 파이프라인 실행 - 단계 1 실패는 ParseError 로 전파"""
         parsed = self._parse_extract(pdf_path)
         matched = self._match_range(parsed, profile)
-        interpreted = self._interpret(matched, profile)
-        return safety.summarize(interpreted)
+        interpreted, notes = self._interpret(matched, profile)
+        report = safety.summarize(interpreted)
+        report.notes = notes
+        return report
 
     def _parse_extract(self, pdf_path: str) -> ParsedReport:
-        """단계 1 - 파싱·추출 (PDF 포트 + LLM 포트)"""
+        """단계 1 - 파싱·추출 (PDF 포트 + LLM 포트)
+
+        텍스트 추출 실패·JSON 파싱 실패는 ParseError, 개별 행 오류는 건너뜀
+        """
         raw_text = self._parser.extract_text(pdf_path)
+        if not raw_text.strip():
+            raise ParseError("PDF에서 텍스트를 추출하지 못했습니다")
+
         out = self._llm.complete(
             system=prompts.STRUCTURING_SYSTEM,
             user=raw_text,
             task=LLMTask.PARSE,
         )
-        # 견고성 위해 JSON 대괄호 구간 추출
+        # JSON 대괄호 구간 추출
         start, end = out.find("["), out.rfind("]")
-        payload = out[start : end + 1] if start != -1 and end != -1 else "[]"
-        rows = json.loads(payload)
-        return ParsedReport(items=[LabItem.model_validate(r) for r in rows])
+        if start == -1 or end == -1:
+            raise ParseError("검사 항목 구조화에 실패했습니다")
+        try:
+            rows = json.loads(out[start : end + 1])
+        except json.JSONDecodeError as exc:
+            raise ParseError("검사 항목 구조화에 실패했습니다") from exc
+
+        # 개별 행 검증 실패는 건너뛰고 정상 행만 수집
+        items: list[LabItem] = []
+        for row in rows:
+            try:
+                items.append(LabItem.model_validate(row))
+            except ValidationError:
+                continue
+        return ParsedReport(items=items)
 
     def _match_range(
         self, parsed: ParsedReport, profile: UserProfile
@@ -74,9 +97,14 @@ class Pipeline:
 
     def _interpret(
         self, matched: list[MatchedItem], profile: UserProfile
-    ) -> list[InterpretedItem]:
-        """단계 3 - 해석·설명 (LLM 포트, 근거 고정)"""
+    ) -> tuple[list[InterpretedItem], list[str]]:
+        """단계 3 - 해석·설명 (LLM 포트, 근거 고정)
+
+        개별 항목 LLM 실패는 전체 중단 없이 폴백 처리, 부분 실패는 notes 로 보고
+        반환: (해석 항목 리스트, 비치명적 이슈 노트)
+        """
         results: list[InterpretedItem] = []
+        failed = 0
         for item in matched:
             grounding = reference_dict.lookup(item.canonical_name)
             rng = (
@@ -101,16 +129,24 @@ class Pipeline:
                 )
                 continue
 
-            explanation = self._llm.complete(
-                system=prompts.INTERPRET_SYSTEM,
-                user=prompts.build_interpret_user(item, profile, grounding, rng),
-                task=LLMTask.INTERPRET,
-            )
+            # 개별 LLM 호출 실패는 폴백 - 전체 파이프라인 보호
+            try:
+                explanation = self._llm.complete(
+                    system=prompts.INTERPRET_SYSTEM,
+                    user=prompts.build_interpret_user(item, profile, grounding, rng),
+                    task=LLMTask.INTERPRET,
+                ).strip()
+            except Exception:
+                explanation = "해석 생성에 실패한 항목 - 의료진 상담 권장"
+                failed += 1
+
             results.append(
                 InterpretedItem(
                     **item.model_dump(),
-                    explanation=explanation.strip(),
+                    explanation=explanation,
                     source=grounding.get("source"),
                 )
             )
-        return results
+
+        notes = [f"{failed}개 항목 해석 생성 실패"] if failed else []
+        return results, notes
