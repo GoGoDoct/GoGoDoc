@@ -96,6 +96,19 @@ cp .env.example .env
 streamlit run app.py
 ```
 
+### Docker 실행
+
+poppler 등 시스템 의존성이 이미지에 포함되어 별도 설치가 필요 없습니다.
+
+```bash
+cp .env.example .env
+# .env 에 ANTHROPIC_API_KEY 입력
+
+docker compose up --build
+```
+
+실행 후 http://localhost:8501 접속
+
 ### 테스트
 
 ```bash
