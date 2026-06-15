@@ -10,8 +10,8 @@ from typing import Protocol, runtime_checkable
 class LLMTask(str, Enum):
     """LLM 호출 용도 - 어댑터가 용도별 모델·temperature 선택"""
 
-    PARSE = "parse"  # 파싱 텍스트 JSON 구조화 (Haiku, temp 0)
-    INTERPRET = "interpret"  # 항목 해석 생성 (Sonnet, temp 0.3)
+    PARSE = "parse"  # 파싱 텍스트 JSON 구조화
+    INTERPRET = "interpret"  # 항목 해석 생성
 
 
 @runtime_checkable

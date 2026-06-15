@@ -7,6 +7,11 @@ import streamlit as st
 
 from gogodoc.composition import build_pipeline, build_renderer
 from gogodoc.infrastructure.config import load_settings
+from gogodoc.infrastructure.pdf import (
+    PdfValidationError,
+    validate_digital_pdf,
+    validate_uploaded_pdf_metadata,
+)
 from gogodoc.domain.models import UserProfile, Sex, Flag, FinalReport
 
 # 플래그별 표시 라벨·아이콘
@@ -65,12 +70,34 @@ def main() -> None:
         st.info("PDF 를 업로드하면 해석을 시작합니다")
         return
 
-    # 업로드 파일 임시 저장 - 세션 내 처리용
+    try:
+        validate_uploaded_pdf_metadata(
+            filename=uploaded.name,
+            content_type=uploaded.type,
+            size_bytes=uploaded.size,
+        )
+    except PdfValidationError as exc:
+        st.error(exc.message)
+        return
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(uploaded.getvalue())
         pdf_path = tmp.name
 
     try:
+        try:
+            pdf_info = validate_digital_pdf(
+                pdf_path=pdf_path,
+                filename=uploaded.name,
+                size_bytes=uploaded.size,
+            )
+        except PdfValidationError as exc:
+            st.error(exc.message)
+            return
+
+        st.sidebar.caption(f"파일명 {pdf_info.filename}")
+        st.sidebar.caption(f"페이지 수 {pdf_info.page_count}")
+
         left, right = st.columns(2)
 
         # 좌측 - 원본 PDF 렌더링
@@ -85,11 +112,15 @@ def main() -> None:
         # 우측 - 해석 결과
         with right:
             st.subheader("AI 해석")
-            if not settings.anthropic_api_key:
-                st.error("ANTHROPIC_API_KEY 미설정 - .env 확인 필요")
+            if not settings.openai_api_key:
+                st.error("OPENAI_API_KEY 미설정 - .env 확인 필요")
                 return
             with st.spinner("해석 중..."):
-                report = build_pipeline(settings).run(pdf_path, profile)
+                try:
+                    report = build_pipeline(settings).run(pdf_path, profile)
+                except PdfValidationError as exc:
+                    st.error(exc.message)
+                    return
             _render_result(report)
     finally:
         # 처리 후 임시 파일 즉시 삭제
