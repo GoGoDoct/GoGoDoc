@@ -8,6 +8,7 @@ from gogodoc.infrastructure.config import Settings, load_settings
 from gogodoc.infrastructure.llm.openai_client import OpenAILLM
 from gogodoc.infrastructure.pdf.pdfplumber_parser import PdfPlumberParser
 from gogodoc.infrastructure.pdf.pdf2image_renderer import Pdf2ImageRenderer
+from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
 
 
 def build_pipeline(settings: Settings | None = None) -> Pipeline:
@@ -16,6 +17,7 @@ def build_pipeline(settings: Settings | None = None) -> Pipeline:
     return Pipeline(
         parser=PdfPlumberParser(),
         llm=OpenAILLM(settings),
+        retriever=DictRetriever(),
     )
 
 

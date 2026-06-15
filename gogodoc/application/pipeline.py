@@ -9,7 +9,12 @@ import json
 
 from pydantic import ValidationError
 
-from gogodoc.application.ports import LLMPort, PdfParserPort, LLMTask
+from gogodoc.application.ports import (
+    LLMPort,
+    PdfParserPort,
+    ReferenceRetrieverPort,
+    LLMTask,
+)
 from gogodoc.application import prompts
 from gogodoc.application.errors import ParseError
 from gogodoc.domain.models import (
@@ -27,9 +32,15 @@ from gogodoc.domain.reference import reference_dict
 class Pipeline:
     """검진 결과 해석 파이프라인 - 어댑터 주입 후 실행"""
 
-    def __init__(self, parser: PdfParserPort, llm: LLMPort) -> None:
+    def __init__(
+        self,
+        parser: PdfParserPort,
+        llm: LLMPort,
+        retriever: ReferenceRetrieverPort,
+    ) -> None:
         self._parser = parser
         self._llm = llm
+        self._retriever = retriever
 
     def run(self, pdf_path: str, profile: UserProfile) -> FinalReport:
         """전체 파이프라인 실행 - 단계 1 실패는 ParseError 로 전파"""
@@ -117,7 +128,8 @@ class Pipeline:
                 )
                 continue
 
-            grounding = reference_dict.lookup(item.canonical_name)
+            # 근거 검색은 포트 경유 (dict 조회 또는 벡터 검색) - 범위판정은 도메인 dict 유지
+            grounding = self._retriever.retrieve(item.canonical_name)
             rng = (
                 reference_dict.select_range(grounding, profile.sex.value, profile.age)
                 if grounding
