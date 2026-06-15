@@ -77,6 +77,7 @@ def login(pool: Any, name: str, password: str) -> dict[str, Any]:
 
         # 사용자 정보 반환
         return {
+            "id": user["id"],
             "name": user["name"],
             "sex": user["sex"],
             "age": user["age"],

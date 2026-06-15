@@ -15,11 +15,17 @@ from pathlib import Path
 import streamlit as st
 
 from styles import inject_css
-from sample_data import STATUS, RECORDS, TRACKED, FBS_TREND
+from sample_data import STATUS
 import ui
 
 from gogodoc.infrastructure.config import load_settings
 from gogodoc.infrastructure.db.init_db import init_db
+from gogodoc.infrastructure.db.connection import get_conn, put_conn
+from gogodoc.infrastructure.db.analysis_repository import (
+    save as save_analysis,
+    find_latest,
+    find_by_user,
+)
 from gogodoc.application.auth_service import login, register, AuthError, DuplicateNameError
 from gogodoc.composition import build_pipeline, build_renderer
 from gogodoc.infrastructure.pdf import (
@@ -103,7 +109,7 @@ except Exception:
 # ── 세션 기본값 ──────────────────────────────────────────
 _defaults = dict(page="login", gender="male", age=40, analyzed=False,
                  emergency=False, item_filter="전체 항목", file=None, result=None,
-                 user_name="", location="")
+                 user_name="", location="", user_id=0)
 for k, v in _defaults.items():
     st.session_state.setdefault(k, v)
 
@@ -145,6 +151,7 @@ def render_login(pool):
             else:
                 try:
                     user = login(pool, name, pw)
+                    st.session_state.user_id = user["id"]
                     st.session_state.user_name = user["name"]
                     st.session_state.gender = user["sex"]
                     st.session_state.age = user["age"]
@@ -193,6 +200,7 @@ def render_signup(pool):
                 try:
                     register(pool, name, pw, sex, age, location)
                     user = login(pool, name, pw)
+                    st.session_state.user_id = user["id"]
                     st.session_state.user_name = user["name"]
                     st.session_state.gender = user["sex"]
                     st.session_state.age = user["age"]
@@ -207,10 +215,74 @@ def render_signup(pool):
 
 
 # ══════════════════════════════════════════════════════════
+# 대시보드 헬퍼
+# ══════════════════════════════════════════════════════════
+def _extract_fbs_trend(history: list[dict]) -> dict:
+    """이력에서 공복혈당 추이 추출 → fbs_chart_svg_html 포맷"""
+    years, values = [], []
+    for rec in reversed(history):
+        for item in (rec.get("items_json") or []):
+            if "공복혈당" in item.get("name", ""):
+                val = item.get("value")
+                if val and val != 0:
+                    years.append(rec["analyzed_at"].strftime("%Y-%m"))
+                    values.append(val)
+                break
+    return {"years": years, "values": values, "normal_max": 99}
+
+
+def _history_to_records(history: list[dict]) -> list[dict]:
+    """분석 이력 → records_html 포맷"""
+    return [
+        {
+            "title": rec.get("filename") or "종합검진",
+            "date": rec["analyzed_at"].strftime("%Y-%m-%d"),
+            "center": "-",
+            "normal": rec["normal_count"],
+            "caution": rec["caution_count"],
+            "abnormal": rec["abnormal_count"],
+        }
+        for rec in history
+    ]
+
+
+def _latest_to_tracked(latest: dict, prev: dict | None) -> list[dict]:
+    """최신 결과의 추적 항목 → tracked_html 포맷"""
+    tracking_names = latest.get("tracking_items") or []
+    items_map = {it["name"]: it for it in (latest.get("items_json") or [])}
+    prev_map = {it["name"]: it for it in (prev.get("items_json") or [])} if prev else {}
+
+    tracked = []
+    for name in tracking_names:
+        it = items_map.get(name)
+        if not it:
+            continue
+        val = it.get("value_text") or str(it.get("value", "-"))
+        prev_it = prev_map.get(name)
+        if prev_it and prev_it.get("value") is not None and it.get("value") is not None:
+            diff = it["value"] - prev_it["value"]
+            delta = f"+{diff:.1f}" if diff >= 0 else f"{diff:.1f}"
+        else:
+            delta = "-"
+        low, high = it.get("low"), it.get("high")
+        range_str = (f"{low}~{high}" if low and high else
+                     f"{high} 이하" if high else
+                     f"{low} 이상" if low else "-")
+        tracked.append({
+            "name": name,
+            "value": val,
+            "unit": it.get("unit", ""),
+            "range": range_str,
+            "status": it.get("status", "주의"),
+            "delta": delta,
+        })
+    return tracked
+
+
+# ══════════════════════════════════════════════════════════
 # 대시보드
 # ══════════════════════════════════════════════════════════
 def render_dashboard(pool):
-    # 사이드바 페이지 본문 전체 폭·좌측 정렬 (사이드바와 본문 사이 빈 공간 제거)
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
     with st.sidebar:
         _sidebar_brand()
@@ -222,36 +294,63 @@ def render_dashboard(pool):
             st.session_state.clear()
             go("login")
 
+    # DB에서 실제 데이터 로드
+    user_id = st.session_state.get("user_id", 0)
+    conn = get_conn(pool)
+    try:
+        latest = find_latest(conn, user_id)
+        history = find_by_user(conn, user_id)
+    finally:
+        put_conn(pool, conn)
+
+    user_name = st.session_state.get("user_name", "사용자")
     head, btn = st.columns([3, 1])
     with head:
-        user_name = st.session_state.get("user_name", "사용자")
+        if latest:
+            date_str = latest["analyzed_at"].strftime("%Y-%m-%d")
+            sub = f"최근 검진일 {date_str} 기준, 건강 요약을 정리했어요."
+        else:
+            sub = "아직 검진 결과가 없어요. 검진 결과지를 업로드해 보세요."
         st.markdown(f'<h1 style="font-size:25px;font-weight:800;margin:0">안녕하세요, {user_name}님 👋</h1>'
-                    '<p style="font-size:14px;color:#7B8597;margin:8px 0 0">'
-                    '최근 검진일 2026-06-10 기준, 건강 요약을 정리했어요.</p>', unsafe_allow_html=True)
+                    f'<p style="font-size:14px;color:#7B8597;margin:8px 0 0">{sub}</p>',
+                    unsafe_allow_html=True)
     with btn:
         st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
         if st.button("＋ 새 검진 해석하기", type="primary", use_container_width=True):
             st.session_state.analyzed = False
             go("analysis")
 
-    st.markdown(ui.kpi_cards_html(8, 4, 7, 1), unsafe_allow_html=True)
+    if not latest:
+        st.info("검진 결과지 PDF를 업로드하면 AI 해석 결과가 여기에 표시됩니다.")
+        return
+
+    normal = latest["normal_count"]
+    caution = latest["caution_count"]
+    abnormal = latest["abnormal_count"]
+    emergency = len(latest.get("emergency_alerts") or [])
+
+    st.markdown(ui.kpi_cards_html(normal, caution, abnormal, emergency), unsafe_allow_html=True)
     st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
+
+    fbs_trend = _extract_fbs_trend(history)
+    records = _history_to_records(history)
+    prev = history[1] if len(history) >= 2 else None
+    tracked = _latest_to_tracked(latest, prev)
 
     left, right = st.columns([1.4, 1], gap="medium")
     with left:
-        st.markdown('<div class="gg-card" style="padding:22px 24px 8px">'
-                    '<div style="font-size:15px;font-weight:800">공복혈당 추이</div>'
-                    '<div style="font-size:12.5px;color:#8590A1;margin-top:4px">'
-                    '최근 4회 검진 · 단위 mg/dL · <span style="color:#B26A00;font-weight:700">상승 추세</span></div>',
-                    unsafe_allow_html=True)
-        st.markdown(ui.fbs_chart_svg_html(FBS_TREND), unsafe_allow_html=True)
-        st.markdown('<div style="font-size:12.5px;color:#7B8597;line-height:1.6;background:#F8FAFC;'
-                    'border-radius:10px;padding:11px 13px;margin-bottom:16px">3년간 꾸준히 상승해 올해 정상 상한(99)을 '
-                    '넘었어요. 식이·운동 관리로 되돌릴 수 있는 <b style="color:#B26A00">공복혈당장애 경계</b> 단계입니다.</div></div>',
-                    unsafe_allow_html=True)
-        st.markdown(ui.records_html(RECORDS), unsafe_allow_html=True)
+        if len(fbs_trend["values"]) >= 2:
+            st.markdown('<div class="gg-card" style="padding:22px 24px 8px">'
+                        '<div style="font-size:15px;font-weight:800">공복혈당 추이</div>'
+                        '<div style="font-size:12.5px;color:#8590A1;margin-top:4px">'
+                        f'최근 {len(fbs_trend["values"])}회 검진 · 단위 mg/dL</div>',
+                        unsafe_allow_html=True)
+            st.markdown(ui.fbs_chart_svg_html(fbs_trend), unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(ui.records_html(records), unsafe_allow_html=True)
     with right:
-        st.markdown(ui.tracked_html(TRACKED), unsafe_allow_html=True)
+        if tracked:
+            st.markdown(ui.tracked_html(tracked), unsafe_allow_html=True)
         st.markdown(ui.next_checkup_html(), unsafe_allow_html=True)
         st.markdown(ui.disclaimer_html(), unsafe_allow_html=True)
 
@@ -369,7 +468,19 @@ def _run_and_store(file, settings, pool):
                 return
             status.update(label="해석 완료", state="complete")
 
-        st.session_state.result = _report_to_result(report)
+        result = _report_to_result(report)
+        st.session_state.result = result
+
+        # 분석 결과 DB 저장
+        user_id = st.session_state.get("user_id", 0)
+        if user_id:
+            db_conn = get_conn(pool)
+            try:
+                save_analysis(db_conn, user_id, file.name, result)
+                db_conn.commit()
+            finally:
+                put_conn(pool, db_conn)
+
         st.session_state.analyzed = True
         st.rerun()
     finally:
