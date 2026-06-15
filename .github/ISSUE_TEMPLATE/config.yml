@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 기획서 v1.2
+    url: https://github.com/GoGoDoct/GoGoDoc
+    about: 프로젝트 범위·일정·역할은 기획서를 참고합니다

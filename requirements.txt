@@ -1,0 +1,18 @@
+# UI
+streamlit==1.40.0
+
+# PDF 파싱 및 렌더링
+pdfplumber==0.11.4
+pdf2image==1.17.0
+
+# 수치 구조화 및 검증
+pydantic==2.9.2
+
+# 항목명 퍼지 매칭 fallback
+rapidfuzz==3.10.1
+
+# LLM
+anthropic==0.40.0
+
+# 환경 변수 관리
+python-dotenv==1.0.1

@@ -1,0 +1,29 @@
+# 환경 변수
+.env
+
+# 파이썬 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# 가상환경
+.venv/
+venv/
+env/
+
+# 업로드/임시 파일 - 세션 처리 후 서버 미저장 원칙
+uploads/
+tmp/
+*.tmp
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# 스트림릿 로컬 설정
+.streamlit/secrets.toml
