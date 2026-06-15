@@ -17,6 +17,9 @@ class Settings:
     parse_model: str  # 파싱용 OpenAI 모델
     interpret_model: str  # 해석용 OpenAI 모델
     render_dpi: int
+    retriever: str  # 근거 검색 방식 - "dict" | "pgvector"
+    database_url: str  # pgvector Postgres 연결 (retriever=pgvector 시)
+    embed_model: str  # 임베딩 모델
 
 
 def load_settings() -> Settings:
@@ -26,4 +29,7 @@ def load_settings() -> Settings:
         parse_model=os.getenv("PARSE_MODEL", "gpt-4o-mini"),
         interpret_model=os.getenv("INTERPRET_MODEL", "gpt-4o-mini"),
         render_dpi=int(os.getenv("RENDER_DPI", "150")),
+        retriever=os.getenv("RETRIEVER", "dict"),
+        database_url=os.getenv("DATABASE_URL", ""),
+        embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
     )

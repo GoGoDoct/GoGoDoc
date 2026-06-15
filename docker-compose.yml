@@ -7,7 +7,33 @@ services:
     # API 키 등 환경 변수 주입 - 사전에 cp .env.example .env 필요
     env_file:
       - .env
+    # 컨테이너 내부에서는 DB 호스트가 서비스명(db) - .env 의 localhost 덮어쓰기
+    environment:
+      - DATABASE_URL=postgresql://gogodoc:gogodoc@db:5432/gogodoc
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     # 개발 시 코드 변경 즉시 반영 - 필요 시 주석 해제
     # volumes:
     #   - .:/app
+
+  # pgvector 벡터 DB (retriever=pgvector 시 사용)
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: gogodoc
+      POSTGRES_PASSWORD: gogodoc
+      POSTGRES_DB: gogodoc
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gogodoc"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
