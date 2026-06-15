@@ -64,7 +64,6 @@ GoGoDoc/
 │   └── composition.py              컴포지션 루트 (어댑터 주입)
 ├── scripts/index_reference.py      해설 dict pgvector 색인
 ├── docs/SPEC.md                    기능 명세 요약
-├── 문서/                            원본 기획서·기능명세서 (docx)
 └── tests/                          domain·application·infrastructure 테스트
 ```
 
