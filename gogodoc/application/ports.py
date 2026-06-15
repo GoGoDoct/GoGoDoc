@@ -39,3 +39,12 @@ class RendererPort(Protocol):
     def render_pages(self, pdf_path: str) -> list:
         """페이지를 이미지 목록으로 변환"""
         ...
+
+
+@runtime_checkable
+class ReferenceRetrieverPort(Protocol):
+    """해설 근거 검색 포트 - dict 조회 또는 벡터 유사도 검색"""
+
+    def retrieve(self, canonical_name: str) -> dict | None:
+        """표준 항목명에 해당하는 해설 근거 엔트리 반환 (없으면 None)"""
+        ...

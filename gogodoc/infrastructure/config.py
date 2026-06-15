@@ -22,6 +22,9 @@ class Settings:
     db_name: str
     db_user: str
     db_password: str
+    retriever: str  # 근거 검색 방식 - "dict" | "pgvector"
+    database_url: str  # pgvector Postgres 연결 (retriever=pgvector 시)
+    embed_model: str  # 임베딩 모델
 
 
 def load_settings() -> Settings:
@@ -36,4 +39,7 @@ def load_settings() -> Settings:
         db_name=os.getenv("DB_NAME", "gogodoc"),
         db_user=os.getenv("DB_USER", "postgres"),
         db_password=os.getenv("DB_PASSWORD", ""),
+        retriever=os.getenv("RETRIEVER", "dict"),
+        database_url=os.getenv("DATABASE_URL", ""),
+        embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
     )

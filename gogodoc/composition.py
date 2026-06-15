@@ -8,6 +8,19 @@ from gogodoc.infrastructure.config import Settings, load_settings
 from gogodoc.infrastructure.llm.openai_client import OpenAILLM
 from gogodoc.infrastructure.pdf.pdfplumber_parser import PdfPlumberParser
 from gogodoc.infrastructure.pdf.pdf2image_renderer import Pdf2ImageRenderer
+from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
+
+
+def build_retriever(settings: Settings):
+    """retriever 선택 - RETRIEVER=pgvector 면 벡터 검색, 기본은 dict"""
+    if settings.retriever == "pgvector" and settings.database_url:
+        # 무거운 의존성(psycopg)은 필요 시에만 import
+        from gogodoc.infrastructure.retrieval.pgvector_retriever import PgvectorRetriever
+        from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
+
+        embedder = OpenAIEmbedder(settings.openai_api_key, settings.embed_model)
+        return PgvectorRetriever(settings.database_url, embedder, fallback=DictRetriever())
+    return DictRetriever()
 
 
 def build_pipeline(settings: Settings | None = None) -> Pipeline:
@@ -16,6 +29,7 @@ def build_pipeline(settings: Settings | None = None) -> Pipeline:
     return Pipeline(
         parser=PdfPlumberParser(),
         llm=OpenAILLM(settings),
+        retriever=build_retriever(settings),
     )
 
 
