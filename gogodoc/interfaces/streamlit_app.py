@@ -14,13 +14,14 @@ from gogodoc.infrastructure.pdf import (
 )
 from gogodoc.domain.models import UserProfile, Sex, Flag, FinalReport
 
-# 플래그별 표시 라벨·아이콘
-_FLAG_BADGE = {
-    Flag.NORMAL: ("정상", "🟢"),
-    Flag.CAUTION: ("주의", "🟡"),
-    Flag.ABNORMAL: ("이상", "🔴"),
-    Flag.EMERGENCY: ("응급", "🚨"),
-    Flag.UNKNOWN: ("판정불가", "⚪"),
+# 플래그별 표시 라벨
+_FLAG_LABEL = {
+    Flag.NORMAL: "정상",
+    Flag.CAUTION: "주의",
+    Flag.ABNORMAL: "이상",
+    Flag.EMERGENCY: "응급",
+    Flag.CHECK_NEEDED: "확인필요",
+    Flag.UNKNOWN: "알수없음",
 }
 
 
@@ -38,12 +39,16 @@ def _render_result(report: FinalReport) -> None:
     """해석 결과 렌더링"""
     # 응급 이상치 최우선 표시
     for alert in report.emergency_alerts:
-        st.error(f"🚨 {alert}")
+        st.error(alert)
+
+    # 부분 실패 등 비치명적 이슈 안내
+    for note in report.notes:
+        st.warning(note)
 
     for item in report.items:
-        label, icon = _FLAG_BADGE.get(item.flag, ("", ""))
+        label = _FLAG_LABEL.get(item.flag, "")
         with st.container(border=True):
-            st.markdown(f"**{icon} {item.canonical_name}** · {label}")
+            st.markdown(f"**{item.canonical_name}** · {label}")
             value_str = f"{item.value} {item.unit or ''}".strip()
             st.caption(f"측정값 {value_str}")
             st.write(item.explanation)
