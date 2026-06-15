@@ -56,7 +56,9 @@ class Pipeline:
         results: list[MatchedItem] = []
         for item in parsed.items:
             canonical, score, matched = normalization.canonicalize(item.name)
-            flag = classification.classify(canonical, item.value, profile.sex.value)
+            flag = classification.classify(
+                canonical, item.value, profile.sex.value, profile.age
+            )
             results.append(
                 MatchedItem(
                     canonical_name=canonical,
@@ -77,19 +79,28 @@ class Pipeline:
         results: list[InterpretedItem] = []
         for item in matched:
             grounding = reference_dict.lookup(item.canonical_name)
+            rng = (
+                reference_dict.select_range(grounding, profile.sex.value, profile.age)
+                if grounding
+                else None
+            )
 
-            # 미매칭 항목 - LLM 호출 없이 상담 안내
-            if not grounding:
+            # 미매칭·기준 미해당 항목 - LLM 호출 없이 상담 안내
+            if not grounding or rng is None:
+                msg = (
+                    "해설 기준이 없는 항목 - 의료진 상담 권장"
+                    if not grounding
+                    else "성인(19세 이상) 기준만 제공 - 의료진 상담 권장"
+                )
                 results.append(
                     InterpretedItem(
                         **item.model_dump(),
-                        explanation="해설 기준이 없는 항목 - 의료진 상담 권장",
-                        source=None,
+                        explanation=msg,
+                        source=grounding.get("source") if grounding else None,
                     )
                 )
                 continue
 
-            rng = reference_dict.range_for(grounding, profile.sex.value)
             explanation = self._llm.complete(
                 system=prompts.INTERPRET_SYSTEM,
                 user=prompts.build_interpret_user(item, profile, grounding, rng),
