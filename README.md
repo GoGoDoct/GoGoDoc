@@ -11,7 +11,7 @@
 ```
 interfaces (Streamlit)  →  application (유스케이스·포트)  →  domain (순수 규칙)
                                   ↑
-infrastructure (Anthropic·pdfplumber·pdf2image) ── 포트 구현으로 주입
+infrastructure (OpenAI·pdfplumber·pdf2image) ── 포트 구현으로 주입
 ```
 
 - **domain** - 의료 안전 규칙·판정·정적 지식. 외부 의존 없이 단위 테스트
@@ -23,9 +23,9 @@ infrastructure (Anthropic·pdfplumber·pdf2image) ── 포트 구현으로 주
 
 ```
 단계 0  사용자 입력      성별·나이 (Streamlit 사이드바)
-  ↓ ①  파싱·추출        pdfplumber → Claude Haiku JSON 구조화   [application + 포트]
+  ↓ ①  파싱·추출        pdfplumber → gpt-4o-mini JSON 구조화   [application + 포트]
   ↓ ②  정상범위 매칭     동의어 매핑 + rapidfuzz → 정상/주의/이상  [순수 도메인]
-  ↓ ③  해석·설명        Claude Sonnet, 해설 dict 근거 인용       [application + 포트]
+  ↓ ③  해석·설명        gpt-4o-mini, 해설 dict 근거 인용        [application + 포트]
   ↓ ④  안전·요약        추적·면책·과잉표현 필터·응급 안내         [순수 도메인]
   ↓     화면 출력        원본 PDF(좌) / 해석 결과(우) split 뷰
 ```
@@ -37,9 +37,9 @@ infrastructure (Anthropic·pdfplumber·pdf2image) ── 포트 구현으로 주
 | UI | Streamlit |
 | PDF 파싱 | pdfplumber |
 | PDF 렌더링 | pdf2image (poppler 필요) |
-| 수치 구조화 | Pydantic v2 + Claude Haiku |
+| 수치 구조화 | Pydantic v2 + gpt-4o-mini |
 | 항목 매핑 | Python dict + rapidfuzz |
-| LLM 해석 | Claude Sonnet |
+| LLM 해석 | gpt-4o-mini |
 
 ## 프로젝트 구조
 
@@ -60,7 +60,7 @@ GoGoDoc/
 │   │   └── pipeline.py             4단계 오케스트레이션
 │   ├── infrastructure/
 │   │   ├── config.py               환경 변수 로딩
-│   │   ├── llm/anthropic_client.py LLMPort 구현
+│   │   ├── llm/openai_client.py    LLMPort 구현
 │   │   └── pdf/                     pdfplumber·pdf2image 어댑터
 │   ├── interfaces/
 │   │   └── streamlit_app.py        UI
@@ -87,7 +87,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# .env 에 ANTHROPIC_API_KEY 입력
+# .env 에 OPENAI_API_KEY 입력
 ```
 
 ### 실행
@@ -102,7 +102,7 @@ poppler 등 시스템 의존성이 이미지에 포함되어 별도 설치가 �
 
 ```bash
 cp .env.example .env
-# .env 에 ANTHROPIC_API_KEY 입력
+# .env 에 OPENAI_API_KEY 입력
 
 docker compose up --build
 ```
