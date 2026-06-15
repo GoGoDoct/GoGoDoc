@@ -6,6 +6,7 @@ Ports & Adapters 구조 덕분에 LLM·PDF 없이 end-to-end 검증 가능
 from gogodoc.application.pipeline import Pipeline
 from gogodoc.application.ports import LLMTask
 from gogodoc.domain.models import UserProfile, Sex, Flag
+from gogodoc.domain.reference import reference_dict
 
 
 class FakeParser:
@@ -13,6 +14,13 @@ class FakeParser:
 
     def extract_text(self, pdf_path: str) -> str:
         return "검사항목 더미 텍스트"
+
+
+class FakeRetriever:
+    """ReferenceRetrieverPort 가짜 구현 - dict 조회"""
+
+    def retrieve(self, canonical_name: str) -> dict | None:
+        return reference_dict.lookup(canonical_name)
 
 
 class FakeLLM:
@@ -26,7 +34,7 @@ class FakeLLM:
 
 def test_pipeline_end_to_end():
     # 가짜 어댑터로 전체 파이프라인 관통
-    pipeline = Pipeline(parser=FakeParser(), llm=FakeLLM())
+    pipeline = Pipeline(parser=FakeParser(), llm=FakeLLM(), retriever=FakeRetriever())
     report = pipeline.run("dummy.pdf", UserProfile(sex=Sex.MALE, age=40))
 
     # GPT -> ALT 정규화, 200 -> 이상 판정
