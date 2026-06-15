@@ -17,6 +17,11 @@ class Settings:
     parse_model: str  # 파싱용 OpenAI 모델
     interpret_model: str  # 해석용 OpenAI 모델
     render_dpi: int
+    db_host: str
+    db_port: int
+    db_name: str
+    db_user: str
+    db_password: str
 
 
 def load_settings() -> Settings:
@@ -26,4 +31,9 @@ def load_settings() -> Settings:
         parse_model=os.getenv("PARSE_MODEL", "gpt-4o-mini"),
         interpret_model=os.getenv("INTERPRET_MODEL", "gpt-4o-mini"),
         render_dpi=int(os.getenv("RENDER_DPI", "150")),
+        db_host=os.getenv("DB_HOST", "localhost"),
+        db_port=int(os.getenv("DB_PORT", "5432")),
+        db_name=os.getenv("DB_NAME", "gogodoc"),
+        db_user=os.getenv("DB_USER", "postgres"),
+        db_password=os.getenv("DB_PASSWORD", ""),
     )
