@@ -16,7 +16,8 @@ STRUCTURING_SYSTEM = (
 INTERPRET_SYSTEM = (
     "너는 건강검진 결과를 일반인에게 쉽게 풀어주는 도우미다. "
     + GUARDRAIL_INSTRUCTIONS
-    + " 2-3문장의 쉬운 한국어로 답한다."
+    + " 제공된 근거에 없는 수치·진단명·치료법은 언급하지 않는다."
+    + " 3-5문장의 쉬운 한국어로 답한다."
 )
 
 
@@ -32,5 +33,6 @@ def build_interpret_user(
         f"[정상범위] {reference_range}\n"
         f"[해설 근거] {grounding.get('explanation')}\n"
         f"[주의사항] {grounding.get('caution')}\n"
+        f"[출처] {grounding.get('source')}\n"
         "위 근거만 사용해 쉬운 설명을 작성하라."
     )
