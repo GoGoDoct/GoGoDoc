@@ -8,7 +8,7 @@ import pytest
 from gogodoc.application.pipeline import Pipeline
 from gogodoc.application.ports import LLMTask
 from gogodoc.application.errors import ParseError
-from gogodoc.domain.models import UserProfile, Sex
+from gogodoc.domain.models import UserProfile, Sex, Flag
 
 
 def _profile():
@@ -69,3 +69,14 @@ def test_interpret_failure_is_resilient():
     report = pipeline.run("dummy.pdf", _profile())
     assert "실패" in report.items[0].explanation
     assert report.notes  # 부분 실패 보고
+
+
+def test_check_needed_for_null_value():
+    # 수치 null 항목 - 확인필요 플래그, LLM 미호출 확인 안내
+    pipeline = Pipeline(
+        parser=_Parser(),
+        llm=_LLM(parse_out='[{"name": "GPT", "value": null, "unit": "U/L"}]'),
+    )
+    report = pipeline.run("dummy.pdf", _profile())
+    assert report.items[0].flag == Flag.CHECK_NEEDED
+    assert "확인" in report.items[0].explanation
