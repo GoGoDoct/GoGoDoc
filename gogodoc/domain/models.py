@@ -70,3 +70,4 @@ class FinalReport(BaseModel):
     tracking_items: list[str] = Field(default_factory=list)  # 추적 권장 항목
     emergency_alerts: list[str] = Field(default_factory=list)  # 즉시 내원 안내
     disclaimer: str = ""  # 면책 문구
+    notes: list[str] = Field(default_factory=list)  # 비치명적 처리 이슈 (부분 실패 등)
