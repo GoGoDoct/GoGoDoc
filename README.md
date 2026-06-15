@@ -109,6 +109,20 @@ docker compose up --build
 
 실행 후 http://localhost:8501 접속
 
+### 벡터 RAG (pgvector, 선택)
+
+기본 근거 검색은 dict 키 조회(`RETRIEVER=dict`)입니다. 의미 검색이 필요하면 pgvector 로 전환합니다 (확장 모달리티 대비 트랙).
+
+```bash
+docker compose up -d db                              # pgvector Postgres 기동 (호스트 5433)
+docker compose run --rm app python -m scripts.index_reference   # 해설 dict 임베딩 색인
+# .env 에 RETRIEVER=pgvector 설정 후 앱 실행
+```
+
+- 저장소: pgvector / 임베딩: OpenAI text-embedding-3-small
+- 근거 검색은 해석 단계에만 적용, 정상범위 판정은 dict 유지 (결정론·의료 안전)
+- DB·임베딩 실패 시 dict 폴백
+
 ### 테스트
 
 ```bash
