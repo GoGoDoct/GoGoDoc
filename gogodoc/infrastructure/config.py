@@ -26,6 +26,7 @@ class Settings:
     database_url: str  # pgvector Postgres 연결 (retriever=pgvector 시)
     embed_model: str  # 임베딩 모델
     retriever_threshold: float  # 벡터 코사인 거리 임계값 - 초과 시 미수록(OOV) 처리
+    hira_api_key: str  # HIRA API 키
 
 
 def load_settings() -> Settings:
@@ -44,4 +45,5 @@ def load_settings() -> Settings:
         database_url=os.getenv("DATABASE_URL", ""),
         embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
         retriever_threshold=float(os.getenv("RETRIEVER_THRESHOLD", "0.45")),
+        hira_api_key=os.getenv("HIRA_API_KEY", ""),
     )

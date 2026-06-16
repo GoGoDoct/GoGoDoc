@@ -9,6 +9,7 @@ from gogodoc.infrastructure.config import Settings
 _TASK_PARAMS = {
     LLMTask.PARSE: {"temperature": 0.0, "max_tokens": 2048},
     LLMTask.INTERPRET: {"temperature": 0.3, "max_tokens": 1024},
+    LLMTask.RECOMMEND: {"temperature": 0.0, "max_tokens": 256},
 }
 
 
@@ -20,6 +21,7 @@ class OpenAILLM:
         self._models = {
             LLMTask.PARSE: settings.parse_model,
             LLMTask.INTERPRET: settings.interpret_model,
+            LLMTask.RECOMMEND: settings.interpret_model,
         }
 
     def complete(self, system: str, user: str, task: LLMTask) -> str:
