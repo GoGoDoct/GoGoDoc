@@ -195,6 +195,7 @@ with tab_trend:
     scope = [r for r in records if r.get("kind") == "chat_scope"]
     answer = [r for r in records if r.get("kind") == "chat_answer"]
     assertion = [r for r in records if r.get("kind") == "assertion"]
+    clinical = [r for r in records if r.get("kind") == "clinical"]
 
     if not records:
         st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
@@ -232,6 +233,17 @@ with tab_trend:
             "수치환각률": lambda r: r["metrics"].get("halluc_rate"),
         })
         st.line_chart(a.set_index("ts"), y_label="비율 (%)")
+
+    # ── 팀 골든 임상 채점 (Clinical Correctness) ───────
+    if clinical:
+        st.subheader("팀 공식 골든셋 임상 채점 추이")
+        cl = _chart(clinical, "ts", {
+            "Clinical Correctness": lambda r: r["metrics"].get("clinical_correctness"),
+            "Emergency Recall": lambda r: r["metrics"].get("emergency_recall"),
+            "Coverage": lambda r: r["metrics"].get("coverage"),
+        })
+        st.line_chart(cl.set_index("ts"), y_label="비율 (%)")
+        st.caption("팀 100케이스 대비 임상 판정 정확도·응급 검출. Emergency Recall 100% 목표(치명).")
 
     # ── 단정 표현 필터 (F-004 안전) ───────────────────
     if assertion:
