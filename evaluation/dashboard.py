@@ -197,6 +197,7 @@ with tab_trend:
     assertion = [r for r in records if r.get("kind") == "assertion"]
     clinical = [r for r in records if r.get("kind") == "clinical"]
     retrieval = [r for r in records if r.get("kind") == "retrieval"]
+    generation = [r for r in records if r.get("kind") == "generation"]
 
     if not records:
         st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
@@ -246,6 +247,22 @@ with tab_trend:
         })
         st.line_chart(rt.set_index("ts"), y_label="비율 (%)")
         st.caption("단일 권위 카드 구조(k_effective=1). Coverage 미달분은 비수치 소견·복합검사(다문서 KB 확장 과제).")
+
+    # ── 팀 골든 생성 (LLM-judge) ───────────────────────
+    if generation:
+        st.subheader("팀 공식 골든셋 생성 추이 (LLM-judge)")
+        gn = _chart(generation, "ts", {
+            "Groundedness": lambda r: r["metrics"].get("groundedness"),
+            "Keyword Coverage": lambda r: r["metrics"].get("keyword_coverage"),
+            "Major Hallucination": lambda r: r["metrics"].get("major_hallucination_rate"),
+        })
+        st.line_chart(gn.set_index("ts"), y_label="비율 (%)")
+        gv = _chart(generation, "ts", {
+            "금지어 위반": lambda r: r["metrics"].get("forbidden_violation"),
+            "응급톤 누락": lambda r: r["metrics"].get("emergency_urgency_miss"),
+        }, pct=False)
+        st.line_chart(gv.set_index("ts"), y_label="건수")
+        st.caption("실제 해설 생성 후 LLM 심판 채점. 금지어 위반·응급톤 누락·환각은 0 목표(안전).")
 
     # ── 팀 골든 임상 채점 (Clinical Correctness) ───────
     if clinical:
