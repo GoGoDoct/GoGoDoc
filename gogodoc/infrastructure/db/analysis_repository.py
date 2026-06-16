@@ -72,3 +72,16 @@ def find_by_user(conn: Any, user_id: int, limit: int = 10) -> list[dict[str, Any
         )
         rows = cur.fetchall()
     return [dict(r) for r in rows]
+
+
+def delete_by_id(conn: Any, user_id: int, analysis_id: int) -> bool:
+    """사용자의 분석 결과 1건 삭제 (커밋은 호출자 책임)"""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM analysis_results
+            WHERE id = %s AND user_id = %s
+            """,
+            (analysis_id, user_id),
+        )
+        return cur.rowcount > 0

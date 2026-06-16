@@ -25,3 +25,20 @@ def create(conn: Any, name: str, password_hash: str, sex: str, age: int, locatio
             "INSERT INTO users (name, password_hash, sex, age, location) VALUES (%s, %s, %s, %s, %s)",
             (name, password_hash, sex, age, location),
         )
+
+
+def update(conn: Any, user_id: int, *, sex: str | None = None,
+           age: int | None = None, location: str | None = None) -> None:
+    """사용자 프로필 수정 - None인 필드는 변경하지 않음"""
+    fields, values = [], []
+    if sex is not None:
+        fields.append("sex = %s"); values.append(sex)
+    if age is not None:
+        fields.append("age = %s"); values.append(age)
+    if location is not None:
+        fields.append("location = %s"); values.append(location)
+    if not fields:
+        return
+    values.append(user_id)
+    with conn.cursor() as cur:
+        cur.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", values)
