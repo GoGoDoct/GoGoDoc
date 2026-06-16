@@ -25,31 +25,29 @@ def bar_html(it) -> str:
 def result_card_html(it) -> str:
     """AI 해석 카드 1개 (값 + 정상범위 막대 + 펼쳐보는 쉬운 설명)."""
     s = STATUS[it["status"]]
-    border = "#E4E9F0" if it["status"] == "정상" else s["border"]
+    border = "#E2E8F2" if it["status"] == "정상" else s["border"]
+    accent = s["color"]
     return (
-        f'<div class="gg-card" style="border-color:{border}">'
+        f'<div class="gg-card" style="border-color:{border};border-left:4px solid {accent}">'
         f'<div class="gg-pad">'
-        # 헤더
         f'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
-        f'<div style="display:flex;align-items:center;gap:9px;min-width:0">'
+        f'<div style="display:flex;align-items:center;gap:10px;min-width:0">'
         f'<span class="gg-tag">{it["cat"]}</span>'
-        f'<span style="font-size:14.5px;font-weight:700;color:#2B3545">{it["name"]}</span>'
+        f'<span style="font-size:16px;font-weight:700;color:#1B2533">{it["name"]}</span>'
         f'</div>'
         f'<span class="gg-pill" style="color:{s["color"]};background:{s["bg"]}">'
         f'<span class="gg-dot" style="background:{s["color"]}"></span>{it["status"]}</span>'
         f'</div>'
-        # 값
-        f'<div style="display:flex;align-items:baseline;gap:8px;margin-top:12px">'
-        f'<span style="font-size:26px;font-weight:800;color:{s["color"]};line-height:1">{_val_label(it)}</span>'
-        f'<span style="font-size:13px;color:#9099A8;font-weight:500">{it["unit"]}</span>'
-        f'<span style="font-size:12px;color:#A4ACBA;margin-left:auto">참조 {range_text(it)}</span>'
+        f'<div style="display:flex;align-items:baseline;gap:10px;margin-top:14px">'
+        f'<span style="font-size:30px;font-weight:800;color:{s["color"]};line-height:1">{_val_label(it)}</span>'
+        f'<span style="font-size:14px;color:#9099A8;font-weight:500">{it["unit"]}</span>'
+        f'<span style="font-size:13px;color:#A4ACBA;margin-left:auto">참조 {range_text(it)}</span>'
         f'</div>'
         f'{bar_html(it) if it.get("low") is not None or it.get("high") is not None else ""}'
         f'</div>'
-        # 쉬운 설명 (네이티브 <details>)
         f'<details class="gg-details"><summary>쉬운 설명 보기</summary>'
         f'<div class="gg-explain"><div class="box">'
-        f'<div style="font-size:13px;line-height:1.7;color:#3C4656">{it["explain"]}</div>'
+        f'<div style="font-size:14.5px;line-height:1.8;color:#3C4656">{it["explain"]}</div>'
         f'<div class="gg-source">🔗 근거: {it["source"]}</div>'
         f'</div></div></details>'
         f'</div>'
@@ -91,12 +89,127 @@ def report_table_html(items, gender_short, age) -> str:
     )
 
 
+def report_table_top_html(gender_short: str, age: int,
+                          user_name: str = "수검자", date_str: str = "") -> str:
+    """통보서 제목·환자정보·컬럼 레이블 블록 (카드 래퍼 없음)."""
+    date_display = f"검진일: {date_str}" if date_str else "검진일: -"
+    return (
+        f'<div style="text-align:center;border-bottom:3px solid #1B2533;padding-bottom:14px">'
+        f'<div style="font-size:17px;font-weight:800;letter-spacing:3px;color:#1B2533">종 합 검 진 결 과 통 보 서</div>'
+        f'<div style="font-size:13px;color:#8590A1;margin-top:6px;font-weight:500">한빛종합건강검진센터</div></div>'
+        f'<div style="display:flex;justify-content:space-between;font-size:13px;color:#5B6678;'
+        f'margin-top:14px;padding-bottom:14px;border-bottom:1px solid #EDF1F6;font-weight:500">'
+        f'<span>수검자: {user_name} ({gender_short}, 만 {age}세)</span><span>{date_display}</span></div>'
+        f'<div style="display:grid;grid-template-columns:1.6fr 1fr 1.2fr;margin-top:14px;font-size:12.5px;'
+        f'font-weight:700;color:#8590A1;padding:0 6px 10px;border-bottom:1px solid #E4E9F0;letter-spacing:-.2px">'
+        f'<span>검사 항목</span><span style="text-align:right">결과</span>'
+        f'<span style="text-align:right">참조 범위</span></div>'
+    )
+
+
+def report_row_html(it: dict, is_selected: bool = False) -> str:
+    """단일 검사 항목 행 HTML (선택 여부 강조 포함)."""
+    s = STATUS[it["status"]]
+    if is_selected:
+        row_bg = "#E8F0FB"
+        border_left = "4px solid #15448A"
+        pl = "10px"
+        name_color = "#0F3A78"
+    elif it["status"] != "정상":
+        row_bg = s["bg"]
+        border_left = "none"
+        pl = "6px"
+        name_color = "#2B3545"
+    else:
+        row_bg = "transparent"
+        border_left = "none"
+        pl = "6px"
+        name_color = "#2B3545"
+    val_color = "#2B3545" if it["status"] == "정상" else s["color"]
+    return (
+        f'<div style="display:grid;grid-template-columns:1.6fr 1fr 1.2fr;align-items:center;'
+        f'padding:13px 6px 13px {pl};border-bottom:1px solid #F0F4FA;background:{row_bg};'
+        f'border-left:{border_left};transition:background .15s">'
+        f'<span style="font-size:14px;font-weight:600;color:{name_color}">{it["name"]}</span>'
+        f'<span style="text-align:right;font-size:14px;font-weight:800;color:{val_color}">'
+        f'{_val_label(it)} <span style="font-size:12px;font-weight:500;color:#9099A8">{it["unit"]}</span>'
+        f'<span class="gg-dot" style="background:{s["bar"]};margin-left:4px;vertical-align:middle"></span></span>'
+        f'<span style="text-align:right;font-size:13px;color:#8590A1;font-weight:500">{range_text(it)}</span>'
+        f'</div>'
+    )
+
+
+def report_table_note_html() -> str:
+    """하단 면책 주석 및 사용 안내."""
+    return (
+        '<div style="font-size:12px;color:#A4ACBA;margin-top:12px;line-height:1.7;padding-bottom:4px">'
+        '※ 데모용 샘플 데이터입니다. ● 정상 · ● 주의 · ● 이상 · '
+        '<span style="color:#15448A;font-weight:700">› 버튼을 누르면 항목별 AI 상세 해석을 볼 수 있어요</span></div>'
+    )
+
+
+def result_card_detail_html(it: dict, guide: dict | None = None) -> str:
+    """선택된 항목 상세 AI 해석 카드 (설명 펼침 + 생활 가이드)."""
+    s = STATUS[it["status"]]
+    accent = s["color"]
+    guide_html = ""
+    if guide:
+        guide_html = (
+            f'<div style="margin-top:20px;padding-top:18px;border-top:1px dashed #E2E8F2">'
+            f'<div style="font-size:14px;font-weight:800;color:#15448A;margin-bottom:12px">🌿 생활 가이드</div>'
+            f'<div style="background:#F6F9FD;border:1px solid #DCE8F5;border-radius:14px;padding:18px 20px">'
+            f'<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">'
+            f'<span class="gg-tag">{guide["category"]}</span>'
+            f'<span style="font-size:13px;color:#15448A;font-weight:700;background:#DCE8F5;'
+            f'border-radius:8px;padding:4px 11px">권장 진료과 · {guide["department"]}</span></div>'
+            f'<div style="font-size:15px;line-height:1.8;color:#3C4656">💡 {guide["lifestyle"]}</div>'
+            f'<div style="font-size:14px;line-height:1.7;color:#5B6678;margin-top:10px">📅 추적 · {guide["tracking"]}</div>'
+            f'<div class="gg-source" style="margin-top:11px;font-size:13px">🔗 근거: {guide["source"]}</div>'
+            f'</div></div>'
+        )
+    return (
+        f'<div class="gg-card" style="border-color:{accent};border-width:2px;border-left:6px solid {accent}">'
+        # 컬러 헤더 스트립
+        f'<div style="background:linear-gradient(135deg,{s["bg"]},{s["bg"]}88);padding:14px 22px 12px;'
+        f'border-bottom:1px solid {s["border"]}">'
+        f'<div style="font-size:12.5px;font-weight:700;color:{accent};margin-bottom:8px;'
+        f'display:flex;align-items:center;gap:6px">'
+        f'<span style="background:{accent};color:#fff;border-radius:5px;padding:2px 8px;font-size:11px">▶ 상세 해석</span>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
+        f'<div style="display:flex;align-items:center;gap:10px;min-width:0">'
+        f'<span class="gg-tag">{it["cat"]}</span>'
+        f'<span style="font-size:19px;font-weight:800;color:#1B2533">{it["name"]}</span>'
+        f'</div>'
+        f'<span class="gg-pill" style="color:{s["color"]};background:rgba(255,255,255,.8)">'
+        f'<span class="gg-dot" style="background:{s["color"]}"></span>{it["status"]}</span>'
+        f'</div>'
+        f'<div style="display:flex;align-items:baseline;gap:10px;margin-top:16px">'
+        f'<span style="font-size:40px;font-weight:800;color:{accent};line-height:1">{_val_label(it)}</span>'
+        f'<span style="font-size:16px;color:#9099A8;font-weight:500">{it["unit"]}</span>'
+        f'<span style="font-size:13.5px;color:#A4ACBA;margin-left:auto">참조 {range_text(it)}</span>'
+        f'</div>'
+        f'</div>'
+        # 본문
+        f'<div class="gg-pad">'
+        f'{bar_html(it) if it.get("low") is not None or it.get("high") is not None else ""}'
+        f'<div style="margin-top:18px;padding:18px 20px;background:#F6F9FD;border-radius:14px;'
+        f'border:1px solid #E2EAF5">'
+        f'<div style="font-size:15px;line-height:1.85;color:#3C4656">{it["explain"]}</div>'
+        f'<div class="gg-source" style="margin-top:12px;font-size:13px">🔗 근거: {it["source"]}</div>'
+        f'</div>'
+        f'{guide_html}'
+        f'</div>'
+        f'</div>'
+    )
+
+
 def disclaimer_html() -> str:
     return (
-        '<div style="display:flex;gap:10px;background:#FBFCFE;border:1px solid #E4E9F0;'
-        'border-radius:12px;padding:14px 16px;margin-top:12px">'
-        '<span style="color:#8590A1;font-weight:700">ⓘ</span>'
-        '<div style="font-size:11.5px;line-height:1.65;color:#7B8597">본 해석은 공인 의료 기준을 근거로 한 '
+        '<div style="display:flex;gap:12px;background:#F6F9FD;border:1px solid #DCE8F5;'
+        'border-radius:14px;padding:16px 18px;margin-top:14px">'
+        '<span style="color:#8590A1;font-weight:700;font-size:17px">ⓘ</span>'
+        '<div style="font-size:13.5px;line-height:1.7;color:#7B8597">본 해석은 공인 의료 기준을 근거로 한 '
         '<b style="color:#5B6678">참고용 정보이며 의료 진단이 아닙니다.</b> '
         '정확한 진단과 치료는 반드시 의료진과 상담하시기 바랍니다.</div></div>'
     )
@@ -116,13 +229,13 @@ def emergency_banner_html(it) -> str:
 def summary_pills_html(normal, caution, abnormal) -> str:
     def pill(n, label, color, bg, border):
         return (
-            f'<div style="text-align:center;min-width:62px;background:{bg};border:1px solid {border};'
-            f'border-radius:11px;padding:8px 12px">'
-            f'<div style="font-size:20px;font-weight:800;color:{color};line-height:1">{n}</div>'
-            f'<div style="font-size:11px;color:{color};margin-top:4px;font-weight:600">{label}</div></div>'
+            f'<div style="text-align:center;min-width:72px;background:{bg};border:1px solid {border};'
+            f'border-radius:14px;padding:10px 14px">'
+            f'<div style="font-size:26px;font-weight:800;color:{color};line-height:1">{n}</div>'
+            f'<div style="font-size:13px;color:{color};margin-top:5px;font-weight:700">{label}</div></div>'
         )
     return (
-        '<div style="display:flex;gap:9px;justify-content:flex-end">'
+        '<div style="display:flex;gap:10px;justify-content:flex-end">'
         + pill(normal, "정상", "#1F8A5B", "#E7F5EE", "#CDEBDB")
         + pill(caution, "주의", "#B26A00", "#FBF1E0", "#F2DFB8")
         + pill(abnormal, "이상", "#C0392B", "#FBEAE8", "#F3CFCB")
@@ -133,11 +246,11 @@ def summary_pills_html(normal, caution, abnormal) -> str:
 def summary_block_html(summary: str) -> str:
     """AI 종합 요약 블록 - 직장인용 결과 요약 (근거 기반 LLM 생성)."""
     return (
-        '<div style="background:linear-gradient(135deg,#F4F8FE,#EAF1FA);border:1px solid #DCE7F5;'
-        'border-radius:16px;padding:18px 22px;margin:14px 0">'
-        '<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:800;color:#15448A">'
-        '<span style="font-size:16px">🩺</span>AI 종합 요약</div>'
-        f'<div style="font-size:14px;line-height:1.85;color:#3C4656;margin-top:10px">{summary}</div>'
+        '<div style="background:linear-gradient(135deg,#EDF4FF,#E0EDFF);border:1px solid #C8DEFF;'
+        'border-radius:18px;padding:20px 24px;margin:16px 0;border-left:5px solid #15448A">'
+        '<div style="display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;color:#15448A">'
+        '<span style="font-size:18px">🩺</span>AI 종합 요약</div>'
+        f'<div style="font-size:15.5px;line-height:1.9;color:#2B3545;margin-top:12px">{summary}</div>'
         '</div>'
     )
 
@@ -149,59 +262,80 @@ def lifestyle_guide_html(guides) -> str:
     cards = ""
     for g in guides:
         cards += (
-            '<div style="background:#fff;border:1px solid #E4E9F0;border-radius:13px;padding:15px 17px;margin-top:10px">'
-            '<div style="display:flex;align-items:center;gap:8px">'
+            '<div style="background:#fff;border:1px solid #E2E8F2;border-radius:16px;padding:18px 20px;margin-top:12px;'
+            'box-shadow:0 2px 10px rgba(27,37,51,.05)">'
+            '<div style="display:flex;align-items:center;gap:9px">'
             f'<span class="gg-tag">{g["category"]}</span>'
-            '<span style="font-size:11.5px;color:#15448A;font-weight:700;background:#EAF1FA;'
-            f'border-radius:7px;padding:3px 9px">권장 진료과 · {g["department"]}</span></div>'
-            f'<div style="font-size:13px;line-height:1.7;color:#3C4656;margin-top:11px">💡 {g["lifestyle"]}</div>'
-            f'<div style="font-size:12.5px;line-height:1.6;color:#5B6678;margin-top:7px">📅 추적 · {g["tracking"]}</div>'
-            f'<div class="gg-source" style="margin-top:9px">🔗 근거: {g["source"]}</div>'
+            '<span style="font-size:13px;color:#15448A;font-weight:700;background:#E0EDFF;'
+            f'border-radius:8px;padding:4px 11px">권장 진료과 · {g["department"]}</span></div>'
+            f'<div style="font-size:15px;line-height:1.8;color:#2B3545;margin-top:13px">💡 {g["lifestyle"]}</div>'
+            f'<div style="font-size:14px;line-height:1.7;color:#5B6678;margin-top:9px">📅 추적 · {g["tracking"]}</div>'
+            f'<div class="gg-source" style="margin-top:11px;font-size:13px">🔗 근거: {g["source"]}</div>'
             '</div>'
         )
     return (
-        '<div style="margin-top:16px">'
-        '<div style="font-size:12.5px;font-weight:700;color:#15448A;margin-bottom:2px">🌿 생활 가이드</div>'
+        '<div style="margin-top:18px">'
+        '<div style="font-size:14px;font-weight:800;color:#15448A;margin-bottom:4px">🌿 생활 가이드</div>'
         f'{cards}</div>'
     )
 
 
 # ── 대시보드 ──────────────────────────────────────────
-def kpi_cards_html(manage, normal, caution, abnormal) -> str:
-    def small(label, val, color, sub):
+def kpi_cards_html(normal: int, caution: int, abnormal: int, emergency: int = 0) -> str:
+    manage = caution + abnormal + emergency
+    total = normal + caution + abnormal
+    parts = []
+    if caution:
+        parts.append(f"주의 {caution}")
+    if abnormal:
+        parts.append(f"이상 {abnormal}")
+    if emergency:
+        parts.append(f"응급 {emergency}")
+    sub_text = (" · ".join(parts) + " — 생활습관 관리로 개선 가능한 단계예요."
+                if parts else "모든 항목이 정상 범위 안에 있어요.")
+
+    def small(label, val, sub, accent):
+        pct = round(val / total * 100) if total else 0
+        bar = (
+            f'<div style="margin-top:12px;height:4px;background:#F0F4FA;border-radius:99px">'
+            f'<div style="width:{pct}%;height:100%;background:{accent};border-radius:99px"></div></div>'
+        )
         return (
-            f'<div style="flex:1;background:#fff;border:1px solid #E4E9F0;border-radius:16px;padding:18px">'
-            f'<div style="font-size:13px;color:#7B8597;font-weight:600">{label}</div>'
-            f'<div style="font-size:30px;font-weight:800;color:{color};margin-top:8px;line-height:1">{val}</div>'
-            f'<div style="font-size:12px;color:#A4ACBA;margin-top:8px">{sub}</div></div>'
+            f'<div style="flex:1;background:#fff;border:1px solid #E4E9F0;border-radius:18px;'
+            f'padding:20px 18px;border-top:3px solid {accent};position:relative;overflow:hidden">'
+            f'<div style="font-size:12.5px;color:#667085;font-weight:700;letter-spacing:.2px">{label}</div>'
+            f'<div style="font-size:36px;font-weight:800;color:#111827;margin-top:6px;line-height:1">{val}</div>'
+            f'<div style="font-size:12px;color:#667085;margin-top:5px">{sub}</div>'
+            f'{bar}</div>'
         )
     big = (
-        '<div style="flex:1.5;background:linear-gradient(150deg,#1B5AA8,#103A74);color:#fff;'
-        'border-radius:16px;padding:20px 22px;box-shadow:0 8px 22px rgba(16,54,110,.22)">'
-        '<div style="font-size:13px;opacity:.85;font-weight:600">관리가 필요한 항목</div>'
-        f'<div style="display:flex;align-items:baseline;gap:6px;margin-top:10px">'
-        f'<span style="font-size:38px;font-weight:800;line-height:1">{manage}</span>'
-        '<span style="font-size:15px;opacity:.85">개 항목</span></div>'
-        '<div style="font-size:12.5px;opacity:.82;margin-top:8px;line-height:1.5">'
-        '주의 7 · 이상 1 — 생활습관 관리로 개선 가능한 단계예요.</div></div>'
+        '<div style="flex:1.6;background:#fff;border:1px solid #E4E9F0;color:#111827;'
+        'border-radius:18px;padding:22px 24px;box-shadow:0 7px 18px rgba(17,24,39,.06);position:relative;overflow:hidden">'
+        '<div style="position:relative;z-index:1">'
+        '<div style="font-size:11.5px;font-weight:800;color:#667085;letter-spacing:.5px;text-transform:uppercase">'
+        '관리가 필요한 항목</div>'
+        f'<div style="display:flex;align-items:baseline;gap:8px;margin-top:10px">'
+        f'<span style="font-size:50px;font-weight:800;line-height:1">{manage}</span>'
+        '<span style="font-size:17px;color:#667085;margin-bottom:4px">개</span></div>'
+        f'<div style="font-size:13px;color:#475467;margin-top:11px;line-height:1.65">{sub_text}</div>'
+        '</div></div>'
     )
     return (
         '<div style="display:flex;gap:14px;margin-top:22px">'
         + big
-        + small("정상", normal, "#1F8A5B", "전체 12개 중")
-        + small("주의", caution, "#B26A00", "추적 권장")
-        + small("이상", abnormal, "#C0392B", "재검 필요")
+        + small("정상", normal, f"전체 {total}개 중", "#8391A5")
+        + small("주의", caution, "추적 권장", "#A8946B")
+        + small("이상", abnormal, "재검 필요", "#704B4B")
         + '</div>'
     )
 
 
 def records_html(records) -> str:
-    rows = ""
     doc_icon = _line_icon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
                           '<path d="M14 2v6h6"/>', 18)
     chevron = _line_icon('<path d="M9 18l6-6-6-6"/>', 18)
+    rows = ""
     for r in records:
-        # 상태별 아이콘 색조 (이상>주의>정상 우선)
         if r["abnormal"]:
             ic_col, ic_bg = "#C0392B", "#FBEAE8"
         elif r["caution"]:
@@ -209,22 +343,26 @@ def records_html(records) -> str:
         else:
             ic_col, ic_bg = "#1F8A5B", "#E7F5EE"
         rows += (
-            '<div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid #F2F5F9">'
-            f'<div style="width:42px;height:42px;flex:none;border-radius:11px;background:{ic_bg};color:{ic_col};'
+            '<div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid #F2F5F9">'
+            f'<div style="width:44px;height:44px;flex:none;border-radius:12px;background:{ic_bg};color:{ic_col};'
             f'display:flex;align-items:center;justify-content:center">{doc_icon}</div>'
-            f'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">{r["title"]}</div>'
-            f'<div style="font-size:12px;color:#8590A1;margin-top:3px">{r["date"]} · {r["center"]}</div></div>'
+            f'<div style="flex:1;min-width:0">'
+            f'<div style="font-size:14px;font-weight:700;color:#1B2533">{r["title"]}</div>'
+            f'<div style="font-size:12px;color:#8590A1;margin-top:3px">{r["date"]}</div></div>'
             '<div style="display:flex;gap:6px;flex:none;align-items:center">'
-            f'<span style="font-size:11.5px;font-weight:700;color:#1F8A5B;background:#E7F5EE;border-radius:7px;padding:3px 8px">정상 {r["normal"]}</span>'
-            f'<span style="font-size:11.5px;font-weight:700;color:#B26A00;background:#FBF1E0;border-radius:7px;padding:3px 8px">주의 {r["caution"]}</span>'
-            f'<span style="font-size:11.5px;font-weight:700;color:#C0392B;background:#FBEAE8;border-radius:7px;padding:3px 8px">이상 {r["abnormal"]}</span>'
+            f'<span style="font-size:11.5px;font-weight:700;color:#1F8A5B;background:#E7F5EE;'
+            f'border-radius:7px;padding:3px 9px">정상 {r["normal"]}</span>'
+            f'<span style="font-size:11.5px;font-weight:700;color:#B26A00;background:#FBF1E0;'
+            f'border-radius:7px;padding:3px 9px">주의 {r["caution"]}</span>'
+            f'<span style="font-size:11.5px;font-weight:700;color:#C0392B;background:#FBEAE8;'
+            f'border-radius:7px;padding:3px 9px">이상 {r["abnormal"]}</span>'
             f'<span style="color:#C4CCD8;margin-left:4px">{chevron}</span>'
             '</div></div>'
         )
     return (
         '<div class="gg-card" style="padding:22px 24px">'
-        '<div style="font-size:15px;font-weight:800">검진 기록</div>'
-        f'<div style="margin-top:8px">{rows}</div></div>'
+        '<div style="font-size:15px;font-weight:800;color:#1B2533">검진 기록</div>'
+        f'<div>{rows}</div></div>'
     )
 
 
@@ -232,36 +370,61 @@ def tracked_html(tracked) -> str:
     rows = ""
     for t in tracked:
         s = STATUS[t["status"]]
+        delta = str(t.get("delta", "-"))
+        if delta != "-" and delta != "0" and delta != "+0.0" and delta != "-0.0":
+            is_up = delta.startswith("+")
+            d_color = "#D94F3A" if is_up else "#1F8A5B"
+            d_icon = "↑" if is_up else "↓"
+            delta_html = (
+                f'<span style="font-size:12px;font-weight:700;color:{d_color};'
+                f'background:{"#FBEAE8" if is_up else "#E7F5EE"};'
+                f'border-radius:6px;padding:2px 7px">{d_icon} {delta.lstrip("+")}</span>'
+            )
+        else:
+            delta_html = '<span style="font-size:11.5px;color:#C4CCD8;font-weight:500">전회 동일</span>'
         rows += (
-            '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #F2F5F9">'
-            f'<span class="gg-dot" style="background:{s["color"]}"></span>'
-            f'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">{t["name"]}</div>'
-            f'<div style="font-size:11.5px;color:#9099A8;margin-top:2px">참조 {t["range"]}</div></div>'
+            '<div style="display:flex;align-items:center;gap:13px;padding:14px 0;border-top:1px solid #F2F5F9">'
+            f'<div style="width:42px;height:42px;flex:none;border-radius:12px;background:{s["bg"]};'
+            f'display:flex;align-items:center;justify-content:center">'
+            f'<div style="width:10px;height:10px;border-radius:50%;background:{s["color"]}"></div></div>'
+            f'<div style="flex:1;min-width:0">'
+            f'<div style="font-size:14px;font-weight:700;color:#1B2533">{t["name"]}</div>'
+            f'<div style="font-size:11.5px;color:#9099A8;margin-top:3px">참조 {t["range"]}</div></div>'
             '<div style="text-align:right;flex:none">'
-            f'<div style="font-size:15px;font-weight:800;color:{s["color"]}">{t["value"]} '
-            f'<span style="font-size:10.5px;font-weight:500;color:#9099A8">{t["unit"]}</span></div>'
-            f'<div style="font-size:11px;color:#C0392B;margin-top:2px;font-weight:600">▲ {t["delta"]}</div></div></div>'
+            f'<div style="font-size:17px;font-weight:800;color:{s["color"]}">{t["value"]}'
+            f'<span style="font-size:11px;font-weight:500;color:#9099A8;margin-left:3px">{t["unit"]}</span></div>'
+            f'<div style="margin-top:5px">{delta_html}</div></div></div>'
         )
     return (
         '<div class="gg-card" style="padding:22px 24px">'
-        '<div style="display:flex;align-items:center;justify-content:space-between">'
-        '<div style="font-size:15px;font-weight:800">추적 관찰 항목</div>'
-        '<span style="font-size:12px;color:#15448A;font-weight:700">전체보기</span></div>'
-        f'<div style="margin-top:6px">{rows}</div></div>'
+        '<div style="font-size:15px;font-weight:800;color:#1B2533">추적 관찰 항목</div>'
+        '<div style="font-size:12px;color:#9099A8;margin-top:3px;margin-bottom:4px">'
+        '다음 검진 때 반드시 확인이 필요한 항목이에요</div>'
+        f'<div>{rows}</div></div>'
     )
 
 
-def next_checkup_html() -> str:
+def next_checkup_html(next_date_str: str = "3개월 후", gcal_url: str = "") -> str:
+    cal_btn = ""
+    if gcal_url:
+        cal_btn = (
+            f'<a href="{gcal_url}" target="_blank" style="display:flex;align-items:center;'
+            f'justify-content:center;gap:7px;margin-top:14px;background:#fff;'
+            f'border:1.5px solid #15448A;color:#15448A;font-weight:700;font-size:13.5px;'
+            f'border-radius:11px;padding:12px;text-decoration:none;transition:background .15s">'
+            f'📅 구글 캘린더에 추가</a>'
+        )
     return (
         '<div class="gg-card" style="padding:22px 24px">'
-        '<div style="font-size:15px;font-weight:800">📅 다음 검진 예정</div>'
-        '<div style="margin-top:14px;background:#F8FAFC;border-radius:12px;padding:15px">'
-        '<div style="font-size:13px;color:#7B8597">권장 재검 시기</div>'
-        '<div style="font-size:19px;font-weight:800;color:#15448A;margin-top:5px">2026년 9월 (3개월 후)</div>'
-        '<div style="font-size:12px;color:#8590A1;margin-top:6px;line-height:1.5">'
+        '<div style="font-size:15px;font-weight:800;color:#1B2533;margin-bottom:14px">📅 다음 검진 예정</div>'
+        '<div style="background:linear-gradient(135deg,#EDF4FF 0%,#E3EEFF 100%);'
+        'border:1px solid #C4D8F2;border-radius:14px;padding:16px 18px">'
+        '<div style="font-size:11px;font-weight:700;color:#7B8597;letter-spacing:.5px;'
+        'text-transform:uppercase;margin-bottom:8px">권장 재검 시기</div>'
+        f'<div style="font-size:21px;font-weight:800;color:#15448A;line-height:1.2">{next_date_str}</div>'
+        '<div style="font-size:12px;color:#7B8597;margin-top:8px;line-height:1.65">'
         '주의·이상 항목의 변화를 확인하기 위한 권장 시점이에요.</div></div>'
-        '<div style="margin-top:13px;text-align:center;border:1px solid #15448A;color:#15448A;'
-        'font-weight:700;font-size:13.5px;border-radius:11px;padding:11px;cursor:pointer">캘린더에 추가</div></div>'
+        f'{cal_btn}</div>'
     )
 
 
@@ -302,18 +465,42 @@ def sidebar_nav_html(active: str) -> str:
     return f"<div>{rows}</div>"
 
 
-def sidebar_profile_html() -> str:
+def sidebar_profile_html(name: str = "사용자", gender: str = "male", age: int = 0) -> str:
     """사이드바 하단 사용자 프로필 칩."""
+    initial = name[0] if name else "U"
+    gender_str = "남" if gender == "male" else "여"
+    age_str = f"만 {age}세" if age else ""
+    info = f"{gender_str} · {age_str}" if age_str else gender_str
     out_icon = _line_icon('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>'
                           '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>', 18)
     return (
-        '<div style="display:flex;align-items:center;gap:11px;border-top:1px solid #EDF1F6;'
-        'padding:14px 4px 4px">'
-        '<div style="width:36px;height:36px;flex:none;border-radius:50%;background:#15448A;color:#fff;'
-        'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">홍</div>'
-        '<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:#1B2533">홍길동님</div>'
-        '<div style="font-size:11.5px;color:#8590A1;margin-top:1px">남 · 만 40세</div></div>'
-        f'<span style="color:#9099A8">{out_icon}</span></div>'
+        '<div style="display:flex;align-items:center;gap:11px;border-top:1px solid rgba(255,255,255,.10);'
+        'padding:14px 4px 4px;color:#fff">'
+        '<div style="width:36px;height:36px;flex:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;'
+        f'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">{initial}</div>'
+        f'<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:#fff">{name}님</div>'
+        f'<div style="font-size:11.5px;color:#B8C0CC;margin-top:1px">{info}</div></div>'
+        f'<span style="color:#B8C0CC">{out_icon}</span></div>'
+    )
+
+
+def chatbot_hospital_prompt_html(location: str = "") -> str:
+    """병원 추천을 독립 화면이 아닌 전역 챗봇 패널로 유도하는 카드."""
+    location_text = location or "거주지 미설정"
+    location_note = "현재 거주지 기준으로 추천할 수 있어요." if location else "설정에서 거주지를 입력하면 추천 정확도가 높아져요."
+    return (
+        '<div style="background:#fff;border:1px solid #E3E7EE;border-radius:18px;'
+        'padding:18px 20px;margin-top:14px;box-shadow:0 7px 18px rgba(17,24,39,.05)">'
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
+        '<div>'
+        '<div style="font-size:14.5px;font-weight:800;color:#182230">병원 추천은 AI 챗봇에서 이어집니다</div>'
+        '<div style="font-size:13px;color:#475467;line-height:1.65;margin-top:8px">'
+        '검진 결과를 보면서 진료과, 방문 우선순위, 주변 병원 추천을 대화형으로 확인할 수 있어요.</div>'
+        f'<div style="font-size:12px;color:#667085;margin-top:10px">위치: {location_text} · {location_note}</div>'
+        '</div>'
+        '<div style="flex:none;background:#F8FAFC;border:1px solid #D7DEE8;border-radius:13px;'
+        'padding:10px 12px;font-size:12px;font-weight:800;color:#173557">사이드바 AI 챗봇 열기</div>'
+        '</div></div>'
     )
 
 
@@ -410,20 +597,21 @@ def brand_panel_html() -> str:
         'fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     )
     return (
-        '<div style="position:fixed;top:0;left:0;bottom:0;width:26vw;z-index:5;overflow:hidden;'
-        'background:linear-gradient(160deg,#1B5AA8 0%,#103A74 60%,#0C2D5C 100%);color:#fff;'
+        '<div class="gg-auth-brand-panel" style="position:fixed;top:0;left:0;bottom:0;width:26vw;z-index:5;overflow:hidden;'
+        'background:linear-gradient(180deg,#172335 0%,#111C2B 55%,#0E1724 100%);color:#fff;'
         'padding:48px 44px;display:flex;flex-direction:column">'
         f'{deco}'
         '<div style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1;height:100%">'
         '<div style="display:flex;align-items:center;gap:12px">'
-        '<div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);'
+        '<div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.10);'
         f'display:flex;align-items:center;justify-content:center">{logo_icon}</div>'
-        '<div style="font-size:21px;font-weight:800">GoGoDoc</div></div>'
+        '<div><div style="font-size:21px;font-weight:800;line-height:1">GoGoDoc</div>'
+        '<div style="font-size:11px;color:#B8C0CC;margin-top:5px">Health report interpreter</div></div></div>'
         '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'
-        '<div style="font-size:13px;font-weight:600;letter-spacing:2px;opacity:.7">AI 검진 해석 비서</div>'
+        '<div style="font-size:12px;font-weight:700;letter-spacing:1.6px;color:#A8B3C7">AI HEALTH REPORT WORKSPACE</div>'
         '<div style="font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.3;margin-top:16px">'
-        '어려운 검진 수치,<br>쉬운 말로 풀어드려요</div>'
-        '<div style="font-size:15px;line-height:1.7;opacity:.82;margin-top:18px">'
-        '결과지를 올리면 신경 써야 할 항목과 추적할 항목을 정리해 드립니다. 매년 받는 검진, 이제 제대로 이해하세요.</div></div>'
+        '검진 결과를 읽고,<br>다음 액션까지 이어집니다</div>'
+        '<div style="font-size:15px;line-height:1.78;color:#D4DBE6;margin-top:18px">'
+        '수치를 해석하는 데서 끝나지 않고 관리가 필요한 항목, 추적 변화, 병원 상담 흐름까지 한 화면에서 정리합니다.</div></div>'
         f'<div>{pts}</div></div></div>'
     )
