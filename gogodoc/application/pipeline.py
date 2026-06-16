@@ -24,6 +24,7 @@ from gogodoc.domain.models import (
     MatchedItem,
     InterpretedItem,
     FinalReport,
+    Flag,
 )
 from gogodoc.domain.services import normalization, classification, safety
 from gogodoc.domain.reference import reference_dict
@@ -49,7 +50,44 @@ class Pipeline:
         interpreted, notes = self._interpret(matched, profile)
         report = safety.summarize(interpreted)
         report.notes = notes
+        report.summary = self._overall_summary(report, profile)
         return report
+
+    def _overall_summary(self, report: FinalReport, profile: UserProfile) -> str:
+        """단계 5 - 직장인용 종합 요약 (근거 고정 LLM 생성, 실패 시 결정적 폴백)
+
+        생활 가이드는 단계 4에서 결정적으로 채워지고, 여기서는 그 근거를 묶어 쉬운 요약문만 생성
+        """
+        if not report.items:
+            return ""
+        try:
+            text = self._llm.complete(
+                system=prompts.SUMMARY_SYSTEM,
+                user=prompts.build_summary_user(report, profile),
+                task=LLMTask.INTERPRET,
+            ).strip()
+            return safety.sanitize_text(text)
+        except Exception:
+            return self._fallback_summary(report)
+
+    @staticmethod
+    def _fallback_summary(report: FinalReport) -> str:
+        """LLM 실패 시 결정적 요약 - 구조화 데이터만으로 구성 (환각 없음)"""
+        parts: list[str] = []
+        if report.emergency_alerts:
+            parts.append(report.emergency_alerts[0])
+        flagged = [
+            it.canonical_name
+            for it in report.items
+            if it.flag in (Flag.CAUTION, Flag.ABNORMAL, Flag.EMERGENCY)
+        ]
+        if flagged:
+            parts.append(
+                f"신경 쓸 항목은 {', '.join(flagged)} 입니다. 생활 관리와 추적 검사가 권장됩니다."
+            )
+        else:
+            parts.append("전반적으로 정상 범위입니다.")
+        return " ".join(parts)
 
     def _parse_extract(self, pdf_path: str) -> ParsedReport:
         """단계 1 - 파싱·추출 (PDF 포트 + LLM 포트)

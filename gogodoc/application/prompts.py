@@ -1,6 +1,6 @@
 """LLM 프롬프트 - 구조화 및 해석 (가드레일은 도메인 정책에서 주입)"""
 
-from gogodoc.domain.models import MatchedItem, UserProfile
+from gogodoc.domain.models import MatchedItem, UserProfile, Flag
 from gogodoc.domain.policy import GUARDRAIL_INSTRUCTIONS
 
 # 단계 1 - 구조화 시스템 프롬프트
@@ -21,18 +21,59 @@ INTERPRET_SYSTEM = (
 )
 
 
+# 단계 5 - 종합 요약 시스템 프롬프트 (직장인용, 도메인 가드레일 결합)
+SUMMARY_SYSTEM = (
+    "너는 건강검진 결과 전체를 직장인이 이해하기 쉽게 요약해 주는 도우미다. "
+    + GUARDRAIL_INSTRUCTIONS
+    + " 제공된 항목·생활 가이드 근거에 없는 수치·진단명·식단·약물은 추가하지 않는다."
+    + " 응급 안내가 있으면 가장 먼저 즉시 내원을 안내한다."
+    + " 4-7문장의 쉬운 한국어로, 신경 쓸 항목과 생활 관리·추적 중심으로 답한다."
+)
+
+
+def build_summary_user(report, profile: UserProfile) -> str:
+    """종합 요약 사용자 프롬프트 - 플래그 항목 + 카테고리 생활 가이드 주입 (근거 고정)"""
+    flagged = [it for it in report.items if it.flag in (Flag.CAUTION, Flag.ABNORMAL, Flag.EMERGENCY)]
+    normal_n = sum(1 for it in report.items if it.flag == Flag.NORMAL)
+
+    lines = [f"[사용자] 성별 {profile.sex.value}, 나이 {profile.age}"]
+    lines.append(
+        "[응급] " + ("; ".join(report.emergency_alerts) if report.emergency_alerts else "없음")
+    )
+    if flagged:
+        lines.append("[주의·이상 항목]")
+        for it in flagged:
+            lines.append(f"- {it.canonical_name} ({it.flag.value}) {it.value} {it.unit or ''}")
+    lines.append(f"[정상 항목 수] {normal_n}")
+    if report.lifestyle_guide:
+        lines.append("[카테고리별 생활 가이드]")
+        for g in report.lifestyle_guide:
+            lines.append(
+                f"- {g.category}: {g.lifestyle} / 추적: {g.tracking} / 진료과: {g.department} (출처 {g.source})"
+            )
+    lines.append("위 근거만 사용해 직장인이 이해하기 쉽게 종합 요약을 작성하라.")
+    return "\n".join(lines)
+
+
 def build_interpret_user(
     item: MatchedItem, profile: UserProfile, grounding: dict, reference_range
 ) -> str:
-    """항목별 근거 포함 사용자 프롬프트 구성"""
-    return (
-        f"[사용자] 성별 {profile.sex.value}, 나이 {profile.age}\n"
-        f"[항목] {item.canonical_name}\n"
-        f"[측정값] {item.value} {item.unit or ''}\n"
-        f"[상태] {item.flag.value}\n"
-        f"[정상범위] {reference_range}\n"
-        f"[해설 근거] {grounding.get('explanation')}\n"
-        f"[주의사항] {grounding.get('caution')}\n"
-        f"[출처] {grounding.get('source')}\n"
-        "위 근거만 사용해 쉬운 설명을 작성하라."
-    )
+    """항목별 근거 포함 사용자 프롬프트 구성 - 응급 항목은 긴급 내원 톤 지시"""
+    lines = [
+        f"[사용자] 성별 {profile.sex.value}, 나이 {profile.age}",
+        f"[항목] {item.canonical_name}",
+        f"[측정값] {item.value} {item.unit or ''}",
+        f"[상태] {item.flag.value}",
+        f"[정상범위] {reference_range}",
+        f"[해설 근거] {grounding.get('explanation')}",
+        f"[주의사항] {grounding.get('caution')}",
+        f"[출처] {grounding.get('source')}",
+    ]
+    # 응급(패닉) 항목 - 추적 관찰이 아니라 즉시 내원 안내 강제
+    if item.flag == Flag.EMERGENCY:
+        lines.append(
+            "이 수치는 응급(패닉) 수준이다. 추적 관찰이 아니라 "
+            "즉시 의료기관에 내원해야 함을 첫 문장에서 분명히 안내하라."
+        )
+    lines.append("위 근거만 사용해 쉬운 설명을 작성하라.")
+    return "\n".join(lines)

@@ -123,16 +123,45 @@ def apply_safety(items: list[dict], emergency: bool = False) -> dict:
                 break
 
     tracked = [it["name"] for it in items if it["status"] in ("주의", "이상", "응급")]
+    guides, summary = _sample_summary_and_guides(items, emergency_hit, tracked)
     return {
         "items": items,
         "emergency": emergency_hit,
         "tracked": tracked,
+        "summary": summary,
+        "lifestyle_guide": guides,
         "counts": {
             "정상": sum(1 for it in items if it["status"] == "정상"),
             "주의": sum(1 for it in items if it["status"] == "주의"),
             "이상": sum(1 for it in items if it["status"] in ("이상", "응급")),
         },
     }
+
+
+def _sample_summary_and_guides(items, emergency_hit, tracked):
+    """샘플 경로 종합 요약·생활 가이드 - 도메인 CATEGORY_GUIDE 재사용 (결정적)"""
+    from gogodoc.domain.reference import category_guide
+
+    seen, guides = set(), []
+    for it in items:
+        if it["status"] not in ("주의", "이상", "응급"):
+            continue
+        cat = next((c for canon, c in category_guide.ITEM_CATEGORY.items() if canon in it["name"]), None)
+        if not cat or cat in seen:
+            continue
+        g = category_guide.guide_for(cat)
+        if g:
+            seen.add(cat)
+            guides.append({"category": cat, **g})
+
+    parts = []
+    if emergency_hit:
+        parts.append("응급 이상치가 있어 즉시 의료기관 내원이 필요합니다.")
+    if tracked:
+        parts.append(f"신경 쓸 항목은 {', '.join(tracked)} 입니다. 생활 관리와 추적 검사가 권장됩니다.")
+    else:
+        parts.append("전반적으로 정상 범위입니다.")
+    return guides, " ".join(parts)
 
 
 # ── 오케스트레이션 (함수 체이닝) ────────────────────────

@@ -33,6 +33,22 @@ def test_user_prompt_injects_grounding():
     assert "위 근거만 사용" in text
 
 
+def test_emergency_prompt_demands_urgency():
+    # 응급 항목 - 추적 관찰이 아니라 즉시 내원 톤 지시가 주입됨 (안전)
+    item = MatchedItem(
+        canonical_name="공복혈당", raw_name="FBS", value=600, unit="mg/dL",
+        flag=Flag.EMERGENCY, matched=True,
+    )
+    text = prompts.build_interpret_user(item, _profile(), _GROUNDING, (70, 99))
+    assert "즉시" in text and "내원" in text
+
+
+def test_non_emergency_prompt_has_no_urgency_injection():
+    # 비응급 항목 - 응급 톤 지시는 들어가지 않음
+    text = prompts.build_interpret_user(_item(), _profile(), _GROUNDING, (0, 40))
+    assert "응급(패닉)" not in text
+
+
 def test_system_prompt_constraints():
     # 근거 고정·단정 금지·3-5문장 제약
     assert "근거" in INTERPRET_SYSTEM
@@ -44,3 +60,34 @@ def test_system_prompt_constraints():
 def test_structuring_prompt_is_json():
     # 파싱 프롬프트는 JSON 구조화 지시
     assert "JSON" in STRUCTURING_SYSTEM
+
+
+def test_summary_prompt_injects_guide_and_emergency():
+    # 종합 요약 프롬프트 - 응급·플래그 항목·카테고리 생활 가이드가 주입됨
+    from gogodoc.domain.models import InterpretedItem
+    from gogodoc.domain.services import safety
+
+    items = [
+        InterpretedItem(
+            canonical_name="공복혈당", raw_name="FBS", value=600, unit="mg/dL",
+            flag=Flag.EMERGENCY, explanation="x",
+        ),
+        InterpretedItem(
+            canonical_name="ALT", raw_name="GPT", value=55, unit="U/L",
+            flag=Flag.CAUTION, explanation="y",
+        ),
+    ]
+    report = safety.summarize(items)
+    text = prompts.build_summary_user(report, _profile())
+    assert "응급" in text and "공복혈당" in text
+    assert "간기능" in text  # 생활 가이드 카테고리 주입
+    assert "소화기내과" in text  # 진료과 (F-006 매핑)
+    assert "위 근거만 사용" in text
+
+
+def test_summary_system_constraints():
+    # 종합 요약 시스템 - 근거 고정·응급 우선
+    from gogodoc.application.prompts import SUMMARY_SYSTEM
+
+    assert "근거" in SUMMARY_SYSTEM
+    assert "즉시 내원" in SUMMARY_SYSTEM

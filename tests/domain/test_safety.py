@@ -41,3 +41,22 @@ def test_emergency_alert_collected():
     # 패닉 밸류 항목 - 내원 안내 수집
     report = safety.summarize([_item("공복혈당", 600, Flag.EMERGENCY, "z")])
     assert len(report.emergency_alerts) == 1
+
+
+def test_lifestyle_guide_for_flagged_deduped():
+    # 플래그 항목의 카테고리별 생활 가이드 - 같은 카테고리 중복 제거, 순서 유지
+    report = safety.summarize(
+        [
+            _item("ALT", 200, Flag.ABNORMAL, "x"),
+            _item("AST", 100, Flag.CAUTION, "y"),  # ALT 와 같은 간기능 - 1개로
+            _item("총콜레스테롤", 300, Flag.ABNORMAL, "z"),
+        ]
+    )
+    assert [g.category for g in report.lifestyle_guide] == ["간기능", "지질"]
+    assert all(g.department and g.source for g in report.lifestyle_guide)
+
+
+def test_no_lifestyle_guide_when_all_normal():
+    # 정상만 있으면 생활 가이드 없음
+    report = safety.summarize([_item("ALT", 20, Flag.NORMAL, "정상")])
+    assert report.lifestyle_guide == []
