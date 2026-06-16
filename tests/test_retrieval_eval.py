@@ -27,12 +27,22 @@ def test_supported_recall_and_negative():
     assert m["k_effective"] == 1
 
 
-def test_unsupported_counted_not_hidden():
-    # 비수치 소견·복합검사 12건은 미지원으로 노출 (조용히 통과 금지)
+def test_full_coverage_after_kb_expansion():
+    # 정성 소견 KB + 복합검사 분해 도입으로 전 항목 시스템 지원
     result = retrieval_eval.evaluate(CASES, DictRetriever())
     unsup = [r for r in result["rows"] if not r["supported"]]
-    assert len(unsup) == 12
-    assert result["metrics"]["coverage"] == 0.88
+    assert len(unsup) == 0
+    assert result["metrics"]["coverage"] == 1.0
+
+
+def test_qualitative_and_composite_supported():
+    # 비수치 소견·복합검사가 미지원이 아닌 적중으로 채점
+    qual = [c for c in CASES if c["lab_item"] in ("요단백", "위내시경", "복부초음파")]
+    comp = [c for c in CASES if c["lab_item"] == "복합검사"]
+    for subset in (qual, comp):
+        r = retrieval_eval.evaluate(subset, DictRetriever())["metrics"]
+        assert r["coverage"] == 1.0
+        assert r["recall_at_3"] == 1.0
 
 
 def test_synonym_resolution_hits():
