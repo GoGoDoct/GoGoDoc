@@ -25,6 +25,7 @@ class Settings:
     retriever: str  # 근거 검색 방식 - "dict" | "pgvector"
     database_url: str  # pgvector Postgres 연결 (retriever=pgvector 시)
     embed_model: str  # 임베딩 모델
+    hira_api_key: str  # HIRA API 키
 
 
 def load_settings() -> Settings:
@@ -42,4 +43,5 @@ def load_settings() -> Settings:
         retriever=os.getenv("RETRIEVER", "dict"),
         database_url=os.getenv("DATABASE_URL", ""),
         embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
+        hira_api_key=os.getenv("HIRA_API_KEY", ""),
     )

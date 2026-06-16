@@ -6,10 +6,13 @@ pdfplumber==0.11.4
 pdf2image==1.17.0
 
 # Data validation
-pydantic==2.9.2
+pydantic==2.13.4
 
 # Fuzzy matching fallback
 rapidfuzz==3.10.1
+
+# HTTP 클라이언트 (HIRA API 호출)
+requests==2.32.3
 
 # LLM
 openai==1.57.0
@@ -22,6 +25,6 @@ psycopg[binary]==3.2.3
 python-dotenv==1.0.1
 
 # PostgreSQL driver and password hashing
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
