@@ -14,6 +14,7 @@ class LLMTask(str, Enum):
     INTERPRET = "interpret"  # 항목 해석 생성
     RECOMMEND = "recommend"  # 진료과목 추천 (F-006)
     CLASSIFY = "classify"  # 챗봇 질문 스코프 분류 (F-007)
+    JUDGE = "judge"  # 생성 답변 근거성·환각 심판 (평가 - 결정적)
 
 
 @runtime_checkable

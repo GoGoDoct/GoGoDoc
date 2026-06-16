@@ -11,6 +11,7 @@ _TASK_PARAMS = {
     LLMTask.INTERPRET: {"temperature": 0.3, "max_tokens": 1024},
     LLMTask.RECOMMEND: {"temperature": 0.0, "max_tokens": 256},
     LLMTask.CLASSIFY: {"temperature": 0.0, "max_tokens": 16},  # 스코프 라벨만 - 짧고 결정적
+    LLMTask.JUDGE: {"temperature": 0.0, "max_tokens": 128},  # 근거성·환각 JSON 판정 - 결정적
 }
 
 
@@ -24,6 +25,7 @@ class OpenAILLM:
             LLMTask.INTERPRET: settings.interpret_model,
             LLMTask.RECOMMEND: settings.interpret_model,
             LLMTask.CLASSIFY: settings.interpret_model,
+            LLMTask.JUDGE: settings.interpret_model,
         }
 
     def complete(self, system: str, user: str, task: LLMTask) -> str:
