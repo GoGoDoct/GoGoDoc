@@ -19,7 +19,12 @@ def build_retriever(settings: Settings):
         from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
 
         embedder = OpenAIEmbedder(settings.openai_api_key, settings.embed_model)
-        return PgvectorRetriever(settings.database_url, embedder, fallback=DictRetriever())
+        return PgvectorRetriever(
+            settings.database_url,
+            embedder,
+            fallback=DictRetriever(),
+            threshold=settings.retriever_threshold,
+        )
     return DictRetriever()
 
 
