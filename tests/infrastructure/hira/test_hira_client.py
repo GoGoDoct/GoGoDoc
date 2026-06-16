@@ -25,8 +25,8 @@ DEPT_XML = """<?xml version="1.0" encoding="UTF-8"?>
   <header><resultCode>00</resultCode></header>
   <body>
     <items>
-      <item><dgsbjtNm>내과</dgsbjtNm></item>
-      <item><dgsbjtNm>내분비내과</dgsbjtNm></item>
+      <item><dgsbjtCdNm>내과</dgsbjtCdNm></item>
+      <item><dgsbjtCdNm>내분비내과</dgsbjtCdNm></item>
     </items>
   </body>
 </response>"""

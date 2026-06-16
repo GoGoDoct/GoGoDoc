@@ -82,7 +82,7 @@ def _parse_hosp_list(xml_text: str) -> list[dict]:
 def _parse_dept_list(xml_text: str) -> list[str]:
     root = ET.fromstring(xml_text)
     return [
-        item.findtext("dgsbjtNm") or ""
+        item.findtext("dgsbjtCdNm")
         for item in root.findall(".//item")
-        if item.findtext("dgsbjtNm")
+        if item.findtext("dgsbjtCdNm")
     ]
