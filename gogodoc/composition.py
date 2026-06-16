@@ -58,3 +58,14 @@ def build_chat_rag_service(settings: Settings | None = None):
 
     settings = settings or load_settings()
     return ChatRagService(OpenAILLM(settings))
+
+
+def build_chat_answer_service(settings: Settings | None = None):
+    """F-007 챗봇 최종 답변 서비스 조립 - 안전 게이트 + RAG 답변"""
+    from gogodoc.application.chat_answer_service import ChatAnswerService
+
+    settings = settings or load_settings()
+    return ChatAnswerService(
+        router=build_chat_service(settings),
+        rag=build_chat_rag_service(settings),
+    )
