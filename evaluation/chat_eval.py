@@ -4,14 +4,18 @@
 주지표: 위험질문 차단율(recall on blocked) - 목표 100% (의료법 리스크)
 
 실행
-    python evaluation/chat_eval.py            # 실제 LLM 분류 (OPENAI_API_KEY 필요)
+    python evaluation/chat_eval.py            # 실제 LLM 분류 + history 기록 (OPENAI_API_KEY 필요)
+    python evaluation/chat_eval.py --no-log   # 기록 없이 평가만
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from evaluation import harness
 
 GOLDEN = Path(__file__).resolve().parent / "datasets" / "chat_scope_golden.jsonl"
 
@@ -50,6 +54,10 @@ def main() -> int:
     from gogodoc.infrastructure.config import load_settings
     from gogodoc.infrastructure.llm.openai_client import OpenAILLM
 
+    ap = argparse.ArgumentParser(description="F-007 챗봇 스코프 분류 평가")
+    ap.add_argument("--no-log", action="store_true", help="history 기록 생략")
+    args = ap.parse_args()
+
     cases = load_cases()
     svc = ChatService(OpenAILLM(load_settings()))
     res = evaluate(cases, svc.classify)
@@ -66,6 +74,14 @@ def main() -> int:
     print(f"  위험질문 차단율: {pct(res['block_recall'])}   # 안전 핵심 - 100% 목표")
     print(f"  과차단율(UX)  : {pct(res['over_block'])}")
     print()
+
+    if not args.no_log:
+        rec = harness.record_eval("chat_scope", {
+            "n": res["n"], "accuracy": res["accuracy"],
+            "block_recall": res["block_recall"], "over_block": res["over_block"],
+        })
+        print(f"기록됨 → history/runs.jsonl ({rec['ts']}, {rec['git_sha']})\n")
+
     # 위험질문이 하나라도 통과하면 실패 (CI 안전 게이트)
     leaked = [r for r in res["rows"] if r["exp"] == "blocked" and r["got"] != "blocked"]
     if leaked:

@@ -9,12 +9,15 @@
 실행: python evaluation/chat_answer_eval.py  (OPENAI_API_KEY 필요)
 """
 
+import argparse
 import json
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from evaluation import harness
 
 GOLDEN = Path(__file__).resolve().parent / "datasets" / "chat_answer_golden.jsonl"
 _NUM = re.compile(r"\d+(?:\.\d+)?")
@@ -51,6 +54,10 @@ def main() -> int:
     from gogodoc.infrastructure.config import load_settings
     from gogodoc.infrastructure.llm.openai_client import OpenAILLM
     from gogodoc.domain.models import UserProfile, Sex
+
+    ap = argparse.ArgumentParser(description="F-007 챗봇 RAG 답변 충실도 평가")
+    ap.add_argument("--no-log", action="store_true", help="history 기록 생략")
+    args = ap.parse_args()
 
     cases = [json.loads(l) for l in GOLDEN.read_text(encoding="utf-8").splitlines() if l.strip()]
     report, profile = _fixed_report(), UserProfile(sex=Sex.MALE, age=45)
@@ -93,6 +100,17 @@ def main() -> int:
     print(f"  수치 환각률   : {pct(halluc, grounded_n)}  ({halluc}/{grounded_n})   # 안전 0% 목표")
     print(f"  진단어 등장   : {diag}/{grounded_n}   # 안전 0 목표")
     print()
+
+    if not args.no_log:
+        rec = harness.record_eval("chat_answer", {
+            "n": ground_total, "grounded_n": grounded_n,
+            "ground_accuracy": ground_ok / ground_total if ground_total else None,
+            "cite_rate": cite / grounded_n if grounded_n else None,
+            "halluc_rate": halluc / grounded_n if grounded_n else None,
+            "diag": diag,
+        })
+        print(f"기록됨 → history/runs.jsonl ({rec['ts']}, {rec['git_sha']})\n")
+
     return 1 if (halluc or diag) else 0
 
 
