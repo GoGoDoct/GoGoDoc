@@ -93,6 +93,17 @@ def _report_to_result(report) -> dict:
         "counts": counts,
         "emergency": emergency,
         "tracked": report.tracking_items,
+        "summary": report.summary,
+        "lifestyle_guide": [
+            {
+                "category": g.category,
+                "lifestyle": g.lifestyle,
+                "tracking": g.tracking,
+                "department": g.department,
+                "source": g.source,
+            }
+            for g in report.lifestyle_guide
+        ],
     }
 
 
@@ -516,6 +527,10 @@ def _render_result():
     if res["emergency"]:
         st.markdown(ui.emergency_banner_html(res["emergency"]), unsafe_allow_html=True)
 
+    # AI 종합 요약 (직장인용)
+    if res.get("summary"):
+        st.markdown(ui.summary_block_html(res["summary"]), unsafe_allow_html=True)
+
     f1, f2, f3 = st.columns([1.4, 1, 1])
     with f1:
         st.session_state.item_filter = st.radio(
@@ -557,6 +572,9 @@ def _render_result():
                     '<div style="font-size:12px;opacity:.88;margin-top:13px;line-height:1.6">'
                     '위 항목은 약 3개월 후 재검을 권장해요. 생활습관 관리만으로 충분히 개선될 수 있는 단계입니다.</div></div>',
                     unsafe_allow_html=True)
+        # 카테고리별 생활 가이드 (근거 기반)
+        if res.get("lifestyle_guide"):
+            st.markdown(ui.lifestyle_guide_html(res["lifestyle_guide"]), unsafe_allow_html=True)
         st.markdown(ui.disclaimer_html(), unsafe_allow_html=True)
 
 
