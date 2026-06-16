@@ -196,6 +196,7 @@ with tab_trend:
     answer = [r for r in records if r.get("kind") == "chat_answer"]
     assertion = [r for r in records if r.get("kind") == "assertion"]
     clinical = [r for r in records if r.get("kind") == "clinical"]
+    retrieval = [r for r in records if r.get("kind") == "retrieval"]
 
     if not records:
         st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
@@ -233,6 +234,18 @@ with tab_trend:
             "수치환각률": lambda r: r["metrics"].get("halluc_rate"),
         })
         st.line_chart(a.set_index("ts"), y_label="비율 (%)")
+
+    # ── 팀 골든 검색 (Recall@3 / Negative Retrieval) ───
+    if retrieval:
+        st.subheader("팀 공식 골든셋 검색 추이")
+        rt = _chart(retrieval, "ts", {
+            "Recall@3": lambda r: r["metrics"].get("recall_at_3"),
+            "Precision@3": lambda r: r["metrics"].get("precision_at_3"),
+            "Negative Retrieval": lambda r: r["metrics"].get("negative_retrieval_rate"),
+            "Coverage": lambda r: r["metrics"].get("coverage"),
+        })
+        st.line_chart(rt.set_index("ts"), y_label="비율 (%)")
+        st.caption("단일 권위 카드 구조(k_effective=1). Coverage 미달분은 비수치 소견·복합검사(다문서 KB 확장 과제).")
 
     # ── 팀 골든 임상 채점 (Clinical Correctness) ───────
     if clinical:
