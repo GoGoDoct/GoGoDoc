@@ -144,10 +144,26 @@ class ChatAnswerService:
         profile: UserProfile | None = None,
     ) -> ChatMessage:
         """질문 안전성 확인 후 허용 질문만 최신 검진 결과 기반 RAG 답변으로 전달한다."""
-        routed = self._router.route(question)
+        routed = self.route(question)
         if routed is not None:
-            return routed.model_copy(update={"content": _with_disclaimer(routed.content)})
+            return routed
 
+        return self.answer_allowed(question, latest_analysis, profile=profile)
+
+    def route(self, question: str) -> ChatMessage | None:
+        """차단 질문이면 라우팅 메시지를 반환하고, 허용 질문이면 None을 반환한다."""
+        routed = self._router.route(question)
+        if routed is None:
+            return None
+        return routed.model_copy(update={"content": _with_disclaimer(routed.content)})
+
+    def answer_allowed(
+        self,
+        question: str,
+        latest_analysis: Mapping[str, Any] | FinalReport | None,
+        profile: UserProfile | None = None,
+    ) -> ChatMessage:
+        """허용 질문에 대해 최신 검진 결과 기반 RAG 답변을 생성한다."""
         if latest_analysis is None:
             return ChatMessage(
                 role="assistant",

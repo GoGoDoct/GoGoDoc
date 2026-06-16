@@ -69,3 +69,15 @@ def build_chat_answer_service(settings: Settings | None = None):
         router=build_chat_service(settings),
         rag=build_chat_rag_service(settings),
     )
+
+
+def build_chat_ui_contract(settings: Settings | None = None):
+    """F-007 챗봇 UI 호출 계약 조립 - 최신 결과 조회 + 답변 서비스."""
+    from gogodoc.application.chat_ui_contract import ChatUiContract
+    from gogodoc.infrastructure.db.analysis_repository import find_latest
+
+    settings = settings or load_settings()
+    return ChatUiContract(
+        answer_service=build_chat_answer_service(settings),
+        latest_reader=find_latest,
+    )
