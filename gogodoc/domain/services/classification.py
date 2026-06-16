@@ -4,10 +4,16 @@
 """
 
 from gogodoc.domain.models import Flag
-from gogodoc.domain.reference import reference_dict, panic_values, clinical_bands
+from gogodoc.domain.reference import reference_dict, panic_values, clinical_bands, findings
 
 # 정상범위 이탈폭 주의/이상 구분 기준 (범위 폭 대비 비율) - 임상 밴드 미정의 항목 폴백
 _CAUTION_RATIO = 0.5
+
+
+def classify_finding(item: str, text: str) -> Flag | None:
+    """정성 소견 텍스트 플래그 판정 - 소견 KB 매칭 시 Flag, 미수록·미매칭 시 None(폴백)"""
+    card = findings.lookup_finding(item, text)
+    return Flag(card["flag"]) if card else None
 
 
 def classify(canonical: str, value: float | None, sex: str, age: int) -> Flag:

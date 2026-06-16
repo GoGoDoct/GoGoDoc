@@ -99,6 +99,38 @@ def build_summary_user(report, profile: UserProfile) -> str:
     return "\n".join(lines)
 
 
+# 평가 - 생성 답변 근거성·환각 심판 (LLM-as-judge, 결정적 JSON)
+JUDGE_SYSTEM = (
+    "너는 의료 설명문의 사실성을 검증하는 엄격한 채점자다. "
+    "주어진 [근거] 안의 정보만을 기준으로 [답변]을 평가한다. "
+    "groundedness: 답변의 모든 핵심 주장이 근거로 뒷받침되면 1, 일부만이면 0.5, 거의 아니면 0. "
+    "major_hallucination: 근거에 없거나 근거와 모순되는 의학적 주장(수치·진단·치료)이 있으면 true, 없으면 false. "
+    '출력은 JSON 한 줄만: {"groundedness": <0|0.5|1>, "major_hallucination": <true|false>}'
+)
+
+
+def build_judge_user(answer: str, grounding: dict, reference_range=None, value=None, status=None) -> str:
+    """심판 사용자 프롬프트 - 근거(해설·주의·출처·정상범위·측정값·판정상태) 대비 답변 검증
+
+    정상범위·측정값·판정상태도 근거에 포함 - 답변이 인용하는 정당한 범위·측정 숫자나
+    시스템 판정(응급=즉시 내원)을 환각으로 오판 방지
+    """
+    lines = [
+        "[근거]",
+        f"- 해설: {grounding.get('explanation')}",
+        f"- 주의: {grounding.get('caution')}",
+        f"- 출처: {grounding.get('source')}",
+    ]
+    if reference_range is not None:
+        lines.append(f"- 정상범위: {reference_range}")
+    if value is not None:
+        lines.append(f"- 측정값: {value}")
+    if status is not None:
+        lines.append(f"- 판정 상태: {status} (응급이면 즉시 내원 안내가 정당함)")
+    lines += ["", "[답변]", answer]
+    return "\n".join(lines)
+
+
 def build_interpret_user(
     item: MatchedItem, profile: UserProfile, grounding: dict, reference_range
 ) -> str:
