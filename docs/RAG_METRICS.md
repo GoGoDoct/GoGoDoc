@@ -123,6 +123,17 @@ pgvector: **미측정** (DB 미비).
 
 검색 버그 발견·수정: 1글자 조사 `이`가 fuzzy로 `중성지방`에 오매칭 → 챗봇 검색은 영문 정확매칭 + 한글 표기 substring으로 변경(fuzzy 미사용). 데이터셋 `evaluation/datasets/chat_answer_golden.jsonl`. 한계(MVP): 항목·카테고리 미언급 포괄질문("전체 설명해줘")은 폴백 - 결과 전체요약 연동은 추후.
 
+### 2026-06-16 — F-004 단정 표현 필터 고도화 (결정적, 22건)
+
+후처리 단정 필터(`safety.sanitize_text`)가 정형뿐 아니라 **패러프레이즈된 단정**(악성·환자입니다·확실·질환명 단정)도 중화하는지 적대적 골든으로 측정. 재현: `python evaluation/assertion_eval.py`
+
+| 지표 | 수치 | 비고 |
+|------|------|------|
+| 단정 차단율 | **100%** (12/12) | 패러프레이즈 포함 (악성/환자라벨/확정부사/질환명단정) |
+| 오차단율 | **0%** (0/10) | "당뇨 전단계"·"의심됩니다"·"추적 관찰 권장" 등 정상 표현 미변경 |
+
+`_BANNED_PATTERNS` 확장(악성·환자입니다·확실합니다·질환명+입니다). 데이터셋 `assertion_golden.jsonl`. 정규식은 2차 방어 - 1차는 LLM 가드레일(`INTERPRET_SYSTEM`). 못 잡는 신종 패러프레이즈는 적대적 골든에 추가해 추적.
+
 ### 2026-06-16 — 생성측 LLM 실측 (gpt-4o-mini, 전체 43건)
 
 실제 LLM 호출로 해설 생성 후 채점. retrieval_hit·수치 있는 43건 대상. 해설 품질 양호(근거대로, 쉬운 3-5문장).
@@ -190,6 +201,8 @@ python evaluation/eval_rag.py --no-log             # 기록 없이 평가만 (CI
 python evaluation/eval_rag.py --direct             # RAG 전용 경로 (원본명 직접 검색)
 python evaluation/eval_rag.py --gen                # + 생성 충실도 (OPENAI_API_KEY)
 RETRIEVER=pgvector python evaluation/eval_rag.py --direct   # 벡터 RAG (DB + 임베딩 + 색인)
+# F-004 단정 필터 (결정적, API 불필요)
+python evaluation/assertion_eval.py                # 단정 차단율·오차단율 + history 기록
 # F-007 챗봇 (OPENAI_API_KEY)
 python evaluation/chat_eval.py                     # 스코프 분류·차단율 + history 기록
 python evaluation/chat_answer_eval.py              # RAG 답변 충실도 + history 기록
