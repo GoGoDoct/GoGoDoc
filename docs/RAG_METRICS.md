@@ -184,14 +184,20 @@ LLM 을 붙여 실제 생성해보니 환각 채점이 오탐하고 있었음 - 
 ## 6. 재현 방법
 
 ```bash
+# F-004 검색·분류·생성 (골든)
 python evaluation/eval_rag.py                      # 검색·분류 (결정적) + history 기록
 python evaluation/eval_rag.py --no-log             # 기록 없이 평가만 (CI·실험)
 python evaluation/eval_rag.py --direct             # RAG 전용 경로 (원본명 직접 검색)
 python evaluation/eval_rag.py --gen                # + 생성 충실도 (OPENAI_API_KEY)
 RETRIEVER=pgvector python evaluation/eval_rag.py --direct   # 벡터 RAG (DB + 임베딩 + 색인)
-streamlit run evaluation/dashboard.py              # 추이 대시보드
+# F-007 챗봇 (OPENAI_API_KEY)
+python evaluation/chat_eval.py                     # 스코프 분류·차단율 + history 기록
+python evaluation/chat_answer_eval.py              # RAG 답변 충실도 + history 기록
+# 추이 대시보드 (3종 평가 시계열)
+streamlit run evaluation/dashboard.py
 ```
 
+모든 평가(golden·chat_scope·chat_answer)가 `evaluation/history/runs.jsonl` 에 `kind` 태그로 누적되고 대시보드 추이 탭에서 한눈에 본다 (`--no-log` 로 기록 생략 가능).
 데이터셋 스키마·intent 분류는 [`evaluation/README.md`](../evaluation/README.md) 참고.
 회귀 게이트(핵심 100%·오적중 0): `tests/test_rag_golden.py`.
 
