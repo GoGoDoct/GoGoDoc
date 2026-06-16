@@ -229,10 +229,11 @@ def run(kind: str | None = None, cases: list[dict] | None = None) -> dict:
 def record_run(
     summary: dict, gen: dict | None = None, direct: dict | None = None, path: Path = HISTORY_PATH
 ) -> dict:
-    """실행 요약을 history/runs.jsonl 에 한 줄 추가 (시계열 누적) - 기록 객체 반환"""
+    """골든 실행 요약을 history/runs.jsonl 에 한 줄 추가 (시계열 누적) - 기록 객체 반환"""
     record = {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_sha": _git_sha(),
+        "kind": "golden",
         "retriever": summary["retriever"],
         "dataset": summary["dataset"],
         "n_cases": summary["n_cases"],
@@ -240,6 +241,23 @@ def record_run(
         "gap": summary["gap"],
         "direct": direct,
         "gen": gen,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return record
+
+
+def record_eval(kind: str, metrics: dict, path: Path = HISTORY_PATH) -> dict:
+    """범용 평가 기록 - golden 외(chat_scope·chat_answer 등)도 같은 시계열에 누적
+
+    kind: "chat_scope" | "chat_answer" 등. metrics: 지표 dict (수치/건수)
+    """
+    record = {
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "git_sha": _git_sha(),
+        "kind": kind,
+        "metrics": metrics,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
