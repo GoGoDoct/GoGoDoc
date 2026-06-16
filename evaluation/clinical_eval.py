@@ -12,6 +12,7 @@
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -28,6 +29,12 @@ GOLDEN = Path(__file__).resolve().parent / "datasets" / "team_golden.jsonl"
 RISK_OF_FLAG = {"normal": "정상", "caution": "주의", "abnormal": "이상", "emergency": "응급"}
 # 기본 프로필 (팀 골든은 성별·나이 미지정) - 성별 의존 항목은 남성 기준
 _SEX, _AGE = "male", 45
+_RISK_RANK = {"정상": 0, "주의": 1, "이상": 2, "응급": 3}
+_COMPOSITE_NAME_ALIASES = {
+    "혈압": "수축기혈압",
+    "총콜": "총콜레스테롤",
+}
+_COMPOSITE_TOKEN = re.compile(r"(?P<name>[A-Za-z가-힣]+(?:-[A-Za-z0-9]+)?)\s*(?P<value>\d+(?:\.\d+)?)")
 
 
 def _num(v: str):
@@ -37,16 +44,38 @@ def _num(v: str):
         return None
 
 
+def _classify_single(lab_item: str, value: str) -> tuple[str, str | None, bool]:
+    """단일 골든 케이스를 현재 분류기로 채점한다."""
+    canon, _, _ = canonicalize(lab_item)
+    val = _num(value)
+    supported = canon in reference_dict.REFERENCE and val is not None
+    if not supported:
+        return canon, None, False
+    flag = classify(canon, val, _SEX, _AGE).value
+    return canon, RISK_OF_FLAG.get(flag, flag), True
+
+
+def _classify_composite(value: str) -> tuple[str | None, bool]:
+    """팀 골든셋 복합검사 값을 구성 항목별로 분해해 가장 높은 위험도를 반환한다."""
+    predictions: list[str] = []
+    for match in _COMPOSITE_TOKEN.finditer(value or ""):
+        raw_name = _COMPOSITE_NAME_ALIASES.get(match.group("name"), match.group("name"))
+        _, pred, supported = _classify_single(raw_name, match.group("value"))
+        if supported and pred is not None:
+            predictions.append(pred)
+    if not predictions:
+        return None, False
+    return max(predictions, key=lambda pred: _RISK_RANK.get(pred, -1)), True
+
+
 def evaluate(cases: list[dict]) -> dict:
     rows = []
     for c in cases:
-        canon, _, matched = canonicalize(c["lab_item"])
-        val = _num(c["value"])
-        supported = canon in reference_dict.REFERENCE and val is not None
-        pred = None
-        if supported:
-            flag = classify(canon, val, _SEX, _AGE).value
-            pred = RISK_OF_FLAG.get(flag, flag)
+        if c["lab_item"] == "복합검사":
+            canon = "복합검사"
+            pred, supported = _classify_composite(c["value"])
+        else:
+            canon, pred, supported = _classify_single(c["lab_item"], c["value"])
         rows.append({
             "id": c["test_id"], "item": c["lab_item"], "value": c["value"],
             "true": c["risk_level"], "pred": pred, "supported": supported,
