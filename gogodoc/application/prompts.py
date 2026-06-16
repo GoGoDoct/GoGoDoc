@@ -31,6 +31,40 @@ CHAT_SCOPE_SYSTEM = (
 )
 
 
+# F-007 - 챗봇 RAG 답변 생성 (공인 출처 근거 고정)
+CHAT_ANSWER_SYSTEM = (
+    "너는 건강검진 결과 챗봇이다. 사용자의 검진 결과와 아래 제공된 공인 출처 근거 안에서만 답한다. "
+    + GUARDRAIL_INSTRUCTIONS
+    + " 근거에 없는 수치·진단명·약물·식단은 만들어내지 않는다."
+    + " 진단 단정이나 약 처방·복용 판단은 하지 않고, 필요하면 전문의 상담을 권한다."
+    + " 답변 끝에 사용한 출처 기관을 밝히고, 참고용임을 한 문장으로 안내한다."
+    + " 4-6문장의 쉬운 한국어로 답한다."
+)
+
+
+def build_chat_answer_user(question: str, grounding: dict) -> str:
+    """챗봇 답변 사용자 프롬프트 - 질문 + 검진결과·근거카드·생활가이드 주입 (근거 고정)"""
+    lines = [f"[질문] {question}"]
+    items = grounding.get("items", [])
+    if items:
+        lines.append("[관련 검진 항목 근거]")
+        for it in items:
+            mine = f" / 내 수치 {it['value']} ({it['flag']})" if it.get("in_report") else ""
+            lines.append(
+                f"- {it['name']}: {it['explanation']} / 주의: {it['caution']} / 정상범위 {it['range']}"
+                f"{mine} (출처 {it['source']})"
+            )
+    guides = grounding.get("guides", [])
+    if guides:
+        lines.append("[생활 가이드 근거]")
+        for g in guides:
+            lines.append(
+                f"- {g['category']}: {g['lifestyle']} / 추적: {g['tracking']} / 진료과: {g['department']} (출처 {g['source']})"
+            )
+    lines.append("위 근거만 사용해 질문에 쉽게 답하라. 근거가 부족하면 솔직히 말하고 전문의 상담을 권하라.")
+    return "\n".join(lines)
+
+
 # 단계 5 - 종합 요약 시스템 프롬프트 (직장인용, 도메인 가드레일 결합)
 SUMMARY_SYSTEM = (
     "너는 건강검진 결과 전체를 직장인이 이해하기 쉽게 요약해 주는 도우미다. "
