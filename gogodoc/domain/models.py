@@ -74,6 +74,32 @@ class GuideNote(BaseModel):
     source: str  # 출처
 
 
+class Scope(str, Enum):
+    """F-007 챗봇 질문 스코프 - 허용/비허용"""
+
+    ALLOWED = "allowed"  # 허용 (수치 설명·생활습관·진료과 안내)
+    BLOCKED = "blocked"  # 비허용 (진단·처방·복약 - 전문의 상담 라우팅)
+
+
+class ScopeDecision(BaseModel):
+    """F-007 질문분류 결과 - 스코프 판정 및 라우팅 여부"""
+
+    scope: Scope
+    routed: bool  # 전문의 상담으로 라우팅되었는지
+    reason: str = ""  # 판정 근거 (rule | llm | llm_error)
+
+
+class ChatMessage(BaseModel):
+    """F-007 챗봇 메시지 (기능명세서 4.4 스키마)"""
+
+    role: str  # user | assistant
+    content: str
+    scope_flag: Optional[Scope] = None  # 허용/비허용 (user 질문 판정)
+    routed: bool = False  # 전문의 상담 라우팅 여부
+    sources: list[str] = Field(default_factory=list)  # 답변 근거 출처
+    context_item_names: list[str] = Field(default_factory=list)  # 참조한 검진 항목
+
+
 class FinalReport(BaseModel):
     """단계 4 출력 - 안전 가드레일 적용 최종 결과"""
 
