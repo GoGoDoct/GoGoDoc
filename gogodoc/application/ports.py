@@ -12,7 +12,8 @@ class LLMTask(str, Enum):
 
     PARSE = "parse"  # 파싱 텍스트 JSON 구조화
     INTERPRET = "interpret"  # 항목 해석 생성
-    RECOMMEND = "recommend"  # 진료과목 추천
+    RECOMMEND = "recommend"  # 진료과목 추천 (F-006)
+    CLASSIFY = "classify"  # 챗봇 질문 스코프 분류 (F-007)
 
 
 @runtime_checkable

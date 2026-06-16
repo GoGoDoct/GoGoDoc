@@ -42,3 +42,11 @@ def build_renderer(settings: Settings | None = None) -> Pdf2ImageRenderer:
     """렌더러 조립 - API 키 불필요"""
     settings = settings or load_settings()
     return Pdf2ImageRenderer(dpi=settings.render_dpi)
+
+
+def build_chat_service(settings: Settings | None = None):
+    """F-007 챗봇 분류·라우팅 서비스 조립 (LLM 주입)"""
+    from gogodoc.application.chat_service import ChatService
+
+    settings = settings or load_settings()
+    return ChatService(OpenAILLM(settings))
