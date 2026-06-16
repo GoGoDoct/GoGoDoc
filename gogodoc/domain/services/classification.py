@@ -4,37 +4,44 @@
 """
 
 from gogodoc.domain.models import Flag
-from gogodoc.domain.reference import reference_dict, panic_values
+from gogodoc.domain.reference import reference_dict, panic_values, clinical_bands
 
-# 정상범위 이탈폭 주의/이상 구분 기준 (범위 폭 대비 비율)
+# 정상범위 이탈폭 주의/이상 구분 기준 (범위 폭 대비 비율) - 임상 밴드 미정의 항목 폴백
 _CAUTION_RATIO = 0.5
 
 
 def classify(canonical: str, value: float | None, sex: str, age: int) -> Flag:
-    """정상범위·패닉 밸류 기준 플래그 판정 (성별·나이 반영)"""
+    """플래그 판정 - 성인 범위 게이트 → 임상 밴드 우선, 미정의 시 정상범위·편차 폴백"""
     # 수치 인식 불가 - 확인필요
     if value is None:
         return Flag.CHECK_NEEDED
 
-    # 패닉 밸류 우선 검사
-    if panic_values.check_panic(canonical, value):
-        return Flag.EMERGENCY
-
-    # 해설 기준 없는 항목 - 알수없음
     entry = reference_dict.lookup(canonical)
+
+    # 패닉 전용 항목(REFERENCE 미존재) - 패닉 검사 후 알수없음
     if not entry:
+        if panic_values.check_panic(canonical, value):
+            return Flag.EMERGENCY
         return Flag.UNKNOWN
 
-    # 성별·나이 해당 정상범위 조회 - 미해당 시 알수없음
+    # 성인 범위 외(소아 등) - 판정 불가 (밴드도 성인 기준)
     rng = reference_dict.select_range(entry, sex, age)
     if not rng:
         return Flag.UNKNOWN
+
+    # 항목별 임상 밴드 우선 (정상/주의/이상/응급 컷오프)
+    band = clinical_bands.classify_band(canonical, value, sex)
+    if band is not None:
+        return Flag(band)
+
+    # 밴드 미정의 - 패닉 밸류 + 정상범위 편차 폴백
+    if panic_values.check_panic(canonical, value):
+        return Flag.EMERGENCY
 
     low, high = rng
     if low <= value <= high:
         return Flag.NORMAL
 
-    # 정상범위 이탈폭 기준 주의/이상 구분
     span = high - low or 1.0
     deviation = (value - high) / span if value > high else (low - value) / span
     return Flag.CAUTION if deviation <= _CAUTION_RATIO else Flag.ABNORMAL
