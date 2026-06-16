@@ -50,3 +50,11 @@ def build_chat_service(settings: Settings | None = None):
 
     settings = settings or load_settings()
     return ChatService(OpenAILLM(settings))
+
+
+def build_chat_rag_service(settings: Settings | None = None):
+    """F-007 챗봇 RAG 답변 서비스 조립 (LLM 주입)"""
+    from gogodoc.application.chat_rag_service import ChatRagService
+
+    settings = settings or load_settings()
+    return ChatRagService(OpenAILLM(settings))
