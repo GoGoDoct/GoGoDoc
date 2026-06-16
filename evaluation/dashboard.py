@@ -177,45 +177,80 @@ with tab_eval:
 # ════════════════════════════════════════════════════════════════════
 # 추이
 # ════════════════════════════════════════════════════════════════════
+def _chart(records, ts_key, cols_map, pct=True):
+    """records 리스트에서 (ts + 지정 컬럼) DataFrame 생성 - 시간순"""
+    rows = [{"ts": r.get(ts_key), **{label: get(r) for label, get in cols_map.items()}} for r in records]
+    df = pd.DataFrame(rows)
+    df["ts"] = pd.to_datetime(df["ts"])
+    df = df.sort_values("ts").reset_index(drop=True)
+    if pct:
+        for c in cols_map:
+            df[c] = df[c].apply(lambda v: v * 100 if isinstance(v, (int, float)) else v)
+    return df
+
+
 with tab_trend:
     records = harness.load_history()
+    golden = [r for r in records if r.get("kind", "golden") == "golden"]
+    scope = [r for r in records if r.get("kind") == "chat_scope"]
+    answer = [r for r in records if r.get("kind") == "chat_answer"]
+    assertion = [r for r in records if r.get("kind") == "assertion"]
+
     if not records:
-        st.info("아직 기록이 없습니다. **골든 평가** 탭에서 평가를 실행하세요.")
-    else:
-        out = []
-        for r in records:
-            core, gap = r.get("core", {}), r.get("gap", {})
-            direct, gen = r.get("direct") or {}, r.get("gen") or {}
-            out.append({
-                "ts": r.get("ts"), "retriever": r.get("retriever"),
-                "정규화": core.get("normalization"), "검색정답률": core.get("retrieval_correct"),
-                "분류정확도": core.get("classification"), "전체통과": core.get("all_pass"),
-                "오적중_핵심": core.get("false_pos"),
-                "RAG전용_정답률": direct.get("retrieval_correct"),
-                "RAG전용_OOV차단": direct.get("oov_rejected"),
-                "환각률": gen.get("hallucination_rate"),
-                "응급긴급성누락": gen.get("emergency_weak"),
-            })
-        df = pd.DataFrame(out)
-        df["ts"] = pd.to_datetime(df["ts"])
-        df = df.sort_values("ts").reset_index(drop=True)
+        st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
 
-        st.subheader("정확도 추이 (핵심 회귀 케이스)")
-        acc_cols = ["정규화", "검색정답률", "분류정확도", "전체통과"]
-        st.line_chart(df.set_index("ts")[acc_cols].apply(lambda s: s * 100), y_label="정확도 (%)")
+    # ── 검색·분류 (골든) ──────────────────────────────
+    if golden:
+        st.subheader("F-004 검색·분류 추이 (골든 핵심 케이스)")
+        g = _chart(golden, "ts", {
+            "정규화": lambda r: (r.get("core") or {}).get("normalization"),
+            "검색정답률": lambda r: (r.get("core") or {}).get("retrieval_correct"),
+            "분류정확도": lambda r: (r.get("core") or {}).get("classification"),
+            "전체통과": lambda r: (r.get("core") or {}).get("all_pass"),
+        })
+        st.line_chart(g.set_index("ts"), y_label="정확도 (%)")
+        fp = _chart(golden, "ts", {"오적중_핵심": lambda r: (r.get("core") or {}).get("false_pos")}, pct=False)
+        st.line_chart(fp.set_index("ts"), y_label="오적중 건수")
 
-        if df["RAG전용_정답률"].notna().any():
-            st.subheader("RAG 전용 경로 추이 (원본명 직접 벡터 검색)")
-            st.line_chart(
-                df.set_index("ts")[["RAG전용_정답률", "RAG전용_OOV차단"]].apply(lambda s: s * 100),
-                y_label="비율 (%)",
-            )
+    # ── 챗봇 스코프 분류 (F-007) ───────────────────────
+    if scope:
+        st.subheader("F-007 챗봇 스코프 분류 추이")
+        s = _chart(scope, "ts", {
+            "분류정확도": lambda r: r["metrics"].get("accuracy"),
+            "위험질문차단율": lambda r: r["metrics"].get("block_recall"),
+            "과차단율": lambda r: r["metrics"].get("over_block"),
+        })
+        st.line_chart(s.set_index("ts"), y_label="비율 (%)")
+        st.caption("위험질문 차단율 100% 유지가 안전 핵심 (의료법 리스크).")
 
-        st.subheader("오적중 추이 (낮을수록 좋음)")
-        st.line_chart(df.set_index("ts")[["오적중_핵심"]], y_label="오적중 건수")
+    # ── 챗봇 RAG 답변 (F-007) ─────────────────────────
+    if answer:
+        st.subheader("F-007 챗봇 RAG 답변 충실도 추이")
+        a = _chart(answer, "ts", {
+            "근거적중률": lambda r: r["metrics"].get("ground_accuracy"),
+            "출처인용률": lambda r: r["metrics"].get("cite_rate"),
+            "수치환각률": lambda r: r["metrics"].get("halluc_rate"),
+        })
+        st.line_chart(a.set_index("ts"), y_label="비율 (%)")
 
-        st.subheader("전체 실행 기록")
-        show = df.copy()
-        for col in acc_cols + ["RAG전용_정답률", "RAG전용_OOV차단", "환각률"]:
-            show[col] = (show[col] * 100).round(1)
-        st.dataframe(show, use_container_width=True, hide_index=True)
+    # ── 단정 표현 필터 (F-004 안전) ───────────────────
+    if assertion:
+        st.subheader("F-004 단정 표현 필터 추이")
+        f = _chart(assertion, "ts", {
+            "단정차단율": lambda r: r["metrics"].get("block_rate"),
+            "오차단율": lambda r: r["metrics"].get("over_block"),
+        })
+        st.line_chart(f.set_index("ts"), y_label="비율 (%)")
+        st.caption("단정 차단율 100%·오차단율 0% 유지 (진단 단정 2차 방어).")
+
+    if records:
+        st.subheader("전체 실행 기록 (kind별)")
+        st.dataframe(
+            pd.DataFrame([{
+                "ts": r.get("ts"), "kind": r.get("kind", "golden"), "sha": r.get("git_sha"),
+                "요약": (f"검색 {(r.get('core') or {}).get('retrieval_correct')}·오적중 {(r.get('core') or {}).get('false_pos')}"
+                         if r.get("kind", "golden") == "golden"
+                         else str(r.get("metrics"))),
+            } for r in records]),
+            use_container_width=True, hide_index=True,
+        )

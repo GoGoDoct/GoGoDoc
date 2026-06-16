@@ -44,6 +44,6 @@ def test_variant_synonyms_resolved():
 
 def test_unknown_not_false_matched():
     # 미수록 항목은 여전히 미매칭이어야 (동의어 확장이 오적중 유발 안 함)
-    for raw in ("TSH", "백혈구", "갑상선"):
+    for raw in ("요단백", "빌리루빈", "알부민"):
         canonical, _, matched = normalization.canonicalize(raw)
         assert matched is False, f"{raw} 가 {canonical} 로 오매칭됨"

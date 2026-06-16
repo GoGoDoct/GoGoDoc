@@ -1,0 +1,10 @@
+{"id": "A001", "question": "ALT가 60인데 괜찮은 건가요?", "expect_grounded": true, "intent": "수치설명", "notes": "내 결과 항목"}
+{"id": "A002", "question": "콜레스테롤 낮추려면 뭘 먹는 게 좋아요?", "expect_grounded": true, "intent": "생활습관", "notes": "지질 카테고리"}
+{"id": "A003", "question": "혈색소 수치는 뭘 의미하나요?", "expect_grounded": true, "intent": "수치설명", "notes": "한글 동의어"}
+{"id": "A004", "question": "공복혈당이 110이면 어떤 상태예요?", "expect_grounded": true, "intent": "수치설명", "notes": "항목+수치"}
+{"id": "A005", "question": "요산이 높으면 뭘 조심해야 해요?", "expect_grounded": true, "intent": "생활습관", "notes": "신규 항목 요산"}
+{"id": "A006", "question": "BMI가 27인데 어떻게 관리해요?", "expect_grounded": true, "intent": "생활습관", "notes": "계측 비만"}
+{"id": "A007", "question": "혈압 관리에 좋은 운동 알려줘", "expect_grounded": true, "intent": "생활습관", "notes": "혈압 카테고리"}
+{"id": "A008", "question": "간수치 높을 때 술 줄이면 도움이 돼요?", "expect_grounded": true, "intent": "생활습관", "notes": "간기능 카테고리"}
+{"id": "A009", "question": "오늘 날씨가 어때요?", "expect_grounded": false, "intent": "무관", "notes": "검진 무관 - 근거 없음 안내"}
+{"id": "A010", "question": "내 검진 결과를 전체적으로 설명해줄래?", "expect_grounded": false, "intent": "포괄", "notes": "특정 항목·카테고리 미언급 - MVP 한계(추후 결과 전체 요약 연동)"}

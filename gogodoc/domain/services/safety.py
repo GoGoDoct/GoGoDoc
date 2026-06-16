@@ -6,10 +6,22 @@ from gogodoc.domain.models import InterpretedItem, FinalReport, Flag, GuideNote
 from gogodoc.domain.reference import panic_values, category_guide
 from gogodoc.domain.policy import DISCLAIMER
 
-# 진단 단정 과잉표현 - 후처리 차단 대상
+# 진단 단정 과잉표현 - 후처리 차단 대상 (2차 방어, 1차는 LLM 가드레일)
+# 정형 표현뿐 아니라 패러프레이즈된 단정(악성·환자입니다·확실·질환명 단정)도 중화
+# 구체 패턴을 일반 패턴보다 먼저 둠 (sub 순차 적용)
 _BANNED_PATTERNS = [
+    # 질환명 단정 (X입니다/이에요) - '전단계입니다' 등 수식어 있으면 미매칭
+    (re.compile(r"(당뇨병|당뇨|고혈압|간경화|신부전|갑상선암|위암|대장암)\s*(입니다|이에요|예요|이십니다|이세요)"),
+     "추적 관찰이 필요한 항목입니다"),
+    # 환자 라벨링
+    (re.compile(r"환자(입니다|이십니다|예요|이에요|이세요|시네요)"), "관리가 필요한 상태입니다"),
+    # 악성(암) 표현
+    (re.compile(r"악성"), "추적 관찰이 필요한"),
+    # 단정 부사
+    (re.compile(r"확실(합니다|해요|하다|함|하게)|분명히|틀림없이"), "추적 관찰이 권장되는 소견으로"),
+    # 정형 표현 (기존)
     (re.compile(r"암입니다|암이다|암으로"), "추적 관찰이 필요한 소견으로"),
-    (re.compile(r"병입니다|질병입니다|확실히"), "주의가 필요한 항목으로"),
+    (re.compile(r"병입니다|질병입니다"), "주의가 필요한 항목으로"),
     (re.compile(r"진단"), "참고 소견"),
 ]
 

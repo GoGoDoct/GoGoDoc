@@ -46,7 +46,16 @@ PR [#37](https://github.com/GoGoDoct/GoGoDoc/pull/37)는 전해질·요산·계�
 - `category_guide.py`: 생활습관·추적·진료과 안내에 사용할 카테고리 근거 보강
 - `synonyms.py`: 질문에 들어온 항목명과 저장된 검사 항목명을 맞추기 위한 정규화 기반 보강
 
-현재 구현 범위는 PR #35의 안전 게이트를 유지한 채, 안전 게이트를 통과한 허용 질문에 대해 최신 검진 결과 컨텍스트와 PR #37의 근거 데이터를 사용해 답변을 생성하는 단계다. Streamlit UI 연결은 답변 서비스 검증 후 별도 단계로 진행한다.
+PR [#40](https://github.com/GoGoDoct/GoGoDoc/pull/40)은 허용 질문에 대해 공인 출처 근거를 검색하고 답변을 생성하는 `ChatRagService`를 구현한다.
+
+해당 PR의 역할은 다음과 같다.
+
+- `chat_rag_service.py`: 질문에서 검사 항목·카테고리를 식별하고 해설 dict·생활 가이드를 근거로 답변 생성
+- `prompts.py`: 공인 출처 근거 안에서만 답하도록 제한한 챗봇 답변 프롬프트
+- `chat_answer_golden.jsonl`: 허용 질문 답변 품질 평가용 골든셋
+- `chat_answer_eval.py`: 답변 근거성·금지 표현·출처 포함 여부 평가
+
+현재 구현 범위는 PR #35의 안전 게이트와 PR #40의 RAG 답변 엔진을 순서대로 연결하는 통합 단계다. `ChatAnswerService`는 최신 `analysis_results` row를 `FinalReport`로 변환해 RAG 서비스에 넘기며, 차단 질문은 답변 생성 LLM을 호출하지 않는다. Streamlit UI 연결은 답변 서비스 검증 후 별도 단계로 진행한다.
 
 ## 4. 질문 안전 분류 및 라우팅 플로우
 
@@ -160,16 +169,17 @@ LDL 높으면 스타틴 먹어야 해? 식단도 알려줘.
 - `explain`
 - `source`
 
-컨텍스트 압축 우선순위:
+컨텍스트 구성 원칙:
 
-1. 질문에 직접 언급된 검사 항목
-2. `주의`, `이상`, `응급` 상태의 항목
-3. `tracking_items`
-4. 위 항목이 없으면 최신 결과의 요약 수치만 사용
+1. 최신 `analysis_results.items_json`을 `FinalReport.items`로 변환한다.
+2. 질문에 직접 언급된 검사 항목 또는 카테고리를 RAG 단계에서 식별한다.
+3. 식별된 항목이 최신 검진 결과에 있으면 사용자의 수치와 상태를 함께 주입한다.
+4. 질문에서 관련 항목·카테고리를 찾지 못하면 플래그 항목을 임의 fallback으로 사용하지 않고 근거 부족 안내를 반환한다.
+5. `주의`, `이상`, `응급`, `tracking_items` 기반의 전체 요약형 답변은 별도 후속 슬라이스에서 다룬다.
 
 ## 8. RAG/해설 dict 근거 사용 방식
 
-허용 질문은 검사 항목별 해설 dict 또는 선택된 RAG retriever를 통해 근거를 찾는다.
+허용 질문은 검사 항목별 해설 dict와 카테고리 생활 가이드를 통해 근거를 찾는다. 현재 통합 단계에서는 `ChatRagService`가 해당 역할을 담당한다.
 
 원칙:
 
@@ -259,17 +269,17 @@ F-007 평가는 정답 문장 일치보다 라우팅·안전·근거성 기준 �
 
 ### 애플리케이션 테스트
 
-가짜 포트를 사용한다.
+가짜 LLM을 사용한다.
 
-- `FakeHealthContextRepository`
-- `FakeRetriever`
-- `FakeLLM`
+- `ChatService`에는 분류 결과를 반환하는 fake LLM 주입
+- `ChatRagService`에는 답변 생성 호출 여부를 기록하는 fake LLM 주입
 
 검증 항목:
 
-- 차단 질문에서 repository, retriever, answer LLM 호출 0회
-- 허용 질문에서 repository 조회 1회
-- 관련 항목 선택 결과가 기대와 일치
+- 차단 질문에서 RAG/answer LLM 호출 0회
+- 허용 질문에서 최신 `analysis_results`가 `FinalReport`로 변환됨
+- 관련 항목·카테고리가 질문 기반으로만 선택됨
+- 무관 질문이 `주의`·`이상` 항목으로 억지 grounding 되지 않음
 - `sources`, `context_item_names`, `scope_flag`, `routed`가 응답에 포함
 
 ### 수동 데모 테스트
@@ -288,7 +298,6 @@ F-007 평가는 정답 문장 일치보다 라우팅·안전·근거성 기준 �
 
 ```text
 LDL이 높다는데 무슨 뜻이야?
-내 결과에서 제일 문제되는 게 뭐야?
 ALT가 높으면 생활습관은 뭘 조심해야 해?
 무슨 과를 가야 해?
 ```
@@ -331,21 +340,23 @@ ALT가 높으면 생활습관은 뭘 조심해야 해?
 ## 13. 구현 순서
 
 1. PR #35 안전 게이트 유지
-2. PR #37의 `reference_dict`·`category_guide` 근거 데이터 재사용
-3. 차단 질문에서 답변 생성 LLM을 호출하지 않는 테스트 추가
-4. 허용 질문에서 최신 검진 결과와 출처를 프롬프트에 넣는 테스트 추가
-5. 답변 생성 애플리케이션 서비스 추가
-6. 답변 안전성 후처리와 면책 문구 보강
-7. Streamlit 대시보드 하단 챗봇 UI 연결
-8. Golden Set과 pytest 검증 추가
-9. README와 SPEC 최소 업데이트
+2. PR #40 `ChatRagService`와 답변 프롬프트 유지
+3. 차단 질문에서 RAG/answer LLM을 호출하지 않는 테스트 추가
+4. 허용 질문에서 최신 검진 결과 row가 `FinalReport`로 변환되는 테스트 추가
+5. 무관 질문이 플래그 항목으로 fallback 되지 않는 회귀 테스트 추가
+6. `ChatAnswerService`를 안전 게이트 + RAG 통합 래퍼로 재작성
+7. 답변 안전성 후처리와 표준 면책 문구 보강
+8. Streamlit 대시보드 하단 챗봇 UI 연결
+9. Golden Set과 pytest 검증 추가
+10. README와 SPEC 최소 업데이트
 
 ## 14. 수용 기준
 
 - 위험 질문 차단율 100%
 - 응급 증상 질문 라우팅 100%
-- 차단 질문 답변 생성 LLM 호출 0회
+- 차단 질문 RAG/answer LLM 호출 0회
 - 허용 질문은 최신 `analysis_results` 컨텍스트 사용
+- 무관 질문은 최신 결과의 플래그 항목으로 억지 grounding 하지 않음
 - 답변 처리 정보에 질문 유형, 안전 판단, 사용 항목, 출처 표시
 - 기존 F-001~F-006 동작 회귀 없음
 - `pytest` 통과

@@ -52,14 +52,20 @@ def build_chat_service(settings: Settings | None = None):
     return ChatService(OpenAILLM(settings))
 
 
+def build_chat_rag_service(settings: Settings | None = None):
+    """F-007 챗봇 RAG 답변 서비스 조립 (LLM 주입)"""
+    from gogodoc.application.chat_rag_service import ChatRagService
+
+    settings = settings or load_settings()
+    return ChatRagService(OpenAILLM(settings))
+
+
 def build_chat_answer_service(settings: Settings | None = None):
-    """F-007 챗봇 답변 서비스 조립 - 안전게이트 + 답변 LLM + 근거 검색"""
+    """F-007 챗봇 최종 답변 서비스 조립 - 안전 게이트 + RAG 답변"""
     from gogodoc.application.chat_answer_service import ChatAnswerService
 
     settings = settings or load_settings()
-    llm = OpenAILLM(settings)
     return ChatAnswerService(
         router=build_chat_service(settings),
-        answer_llm=llm,
-        retriever=build_retriever(settings),
+        rag=build_chat_rag_service(settings),
     )
