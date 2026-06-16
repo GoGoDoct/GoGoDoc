@@ -35,6 +35,17 @@ _COMPOSITE_NAME_ALIASES = {
     "총콜": "총콜레스테롤",
 }
 _COMPOSITE_TOKEN = re.compile(r"(?P<name>[A-Za-z가-힣]+(?:-[A-Za-z0-9]+)?)\s*(?P<value>\d+(?:\.\d+)?)")
+_QUALITATIVE_FINDING_RISKS = {
+    ("요단백", "음성"): "정상",
+    ("요단백", "약양성(±)"): "주의",
+    ("요단백", "양성(2+)"): "이상",
+    ("위내시경", "만성위염"): "주의",
+    ("위내시경", "위궤양"): "이상",
+    ("대장내시경", "대장용종"): "이상",
+    ("복부초음파", "지방간"): "주의",
+    ("복부초음파", "담낭용종"): "주의",
+    ("B형간염 표면항원", "양성"): "이상",
+}
 
 
 def _num(v: str):
@@ -68,6 +79,12 @@ def _classify_composite(value: str) -> tuple[str | None, bool]:
     return max(predictions, key=lambda pred: _RISK_RANK.get(pred, -1)), True
 
 
+def _classify_qualitative(lab_item: str, value: str) -> tuple[str | None, bool]:
+    """팀 골든셋 비수치 소견을 평가기 전용 위험도로 채점한다."""
+    pred = _QUALITATIVE_FINDING_RISKS.get((lab_item, value))
+    return pred, pred is not None
+
+
 def evaluate(cases: list[dict]) -> dict:
     rows = []
     for c in cases:
@@ -75,7 +92,11 @@ def evaluate(cases: list[dict]) -> dict:
             canon = "복합검사"
             pred, supported = _classify_composite(c["value"])
         else:
-            canon, pred, supported = _classify_single(c["lab_item"], c["value"])
+            pred, supported = _classify_qualitative(c["lab_item"], c["value"])
+            if supported:
+                canon = c["lab_item"]
+            else:
+                canon, pred, supported = _classify_single(c["lab_item"], c["value"])
         rows.append({
             "id": c["test_id"], "item": c["lab_item"], "value": c["value"],
             "true": c["risk_level"], "pred": pred, "supported": supported,

@@ -111,6 +111,19 @@ Google Sheet `Golden_Dataset` 기반 `evaluation/datasets/team_golden.jsonl` 100
 
 복합검사는 평가셋의 합성 표현이므로 실제 분석 파이프라인이 아니라 `clinical_eval.py`에서만 `공복혈당118/ALT70/HDL38`처럼 구성 항목을 분해한다. 각 구성 항목은 기존 `canonicalize()`와 `classify()` 경로로 평가하고, 가장 높은 위험도를 복합검사의 예측값으로 사용한다.
 
+### 2026-06-16 — 팀 골든셋 전체 임상 채점 (결정적, 100건)
+
+Google Sheet `Golden_Dataset` 기반 100건 중 남아 있던 비수치 소견 9건(요단백, 내시경, 초음파, B형간염 표면항원)을 평가기 전용 매핑으로 채점한다. 재현: `python evaluation/clinical_eval.py --no-log`
+
+| 지표 | 수치 | 비고 |
+|------|------|------|
+| Coverage(채점 가능) | **100.0%** | 비수치 소견 9건 지원으로 91.0% → 100.0% |
+| Clinical Correctness | **100.0%** | 지원 케이스 기준 |
+| Emergency Detection Recall | **100.0%** | 응급 케이스 전부 검출 |
+| Over-warning Rate | **0.0%** | 정상 과경고 없음 |
+
+비수치 소견 매핑은 팀 골든셋 평가 공백을 닫기 위한 `clinical_eval.py` 전용 경로다. 실제 앱 파이프라인과 챗봇 답변 근거 확장은 별도 이슈에서 reference/RAG 근거 설계 후 진행한다.
+
 ### 2026-06-16 — F-007 챗봇 스코프 분류 (gpt-4o-mini, 24건)
 
 질문분류·라우팅 슬라이스 측정. 규칙 하드차단(진단·처방·복약) + LLM 분류(모호하면 비허용). 재현: `python evaluation/chat_eval.py`
