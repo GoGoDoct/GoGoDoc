@@ -24,3 +24,26 @@ def test_unmatched():
     assert canonical == "알수없는항목xyz"
     assert matched is False
     assert score == 0.0
+
+
+def test_variant_synonyms_resolved():
+    # 검진지 변형 표기 - 동의어 등록으로 정확 매칭 (오적중·known_gap 해소)
+    cases = {
+        "혈색소": "헤모글로빈",
+        "Hb": "헤모글로빈",  # 과거 fuzzy 로 당화혈색소 오적중하던 케이스
+        "γ-GTP": "감마지티피",
+        "TG": "중성지방",
+        "SBP": "수축기혈압",
+        "사구체여과율": "eGFR",
+    }
+    for raw, expected in cases.items():
+        canonical, score, matched = normalization.canonicalize(raw)
+        assert canonical == expected, f"{raw} -> {canonical} (기대 {expected})"
+        assert matched is True and score == 100.0
+
+
+def test_unknown_not_false_matched():
+    # 미수록 항목은 여전히 미매칭이어야 (동의어 확장이 오적중 유발 안 함)
+    for raw in ("TSH", "백혈구", "요산"):
+        canonical, _, matched = normalization.canonicalize(raw)
+        assert matched is False, f"{raw} 가 {canonical} 로 오매칭됨"
