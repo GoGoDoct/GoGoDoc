@@ -12,7 +12,6 @@
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -20,8 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evaluation import harness
 from gogodoc.domain.services.normalization import canonicalize
-from gogodoc.domain.services.classification import classify
-from gogodoc.domain.reference import reference_dict
+from gogodoc.domain.services.classification import classify, classify_finding
+from gogodoc.domain.services import composite
+from gogodoc.domain.reference import reference_dict, findings
 
 GOLDEN = Path(__file__).resolve().parent / "datasets" / "team_golden.jsonl"
 
@@ -30,22 +30,6 @@ RISK_OF_FLAG = {"normal": "정상", "caution": "주의", "abnormal": "이상", "
 # 기본 프로필 (팀 골든은 성별·나이 미지정) - 성별 의존 항목은 남성 기준
 _SEX, _AGE = "male", 45
 _RISK_RANK = {"정상": 0, "주의": 1, "이상": 2, "응급": 3}
-_COMPOSITE_NAME_ALIASES = {
-    "혈압": "수축기혈압",
-    "총콜": "총콜레스테롤",
-}
-_COMPOSITE_TOKEN = re.compile(r"(?P<name>[A-Za-z가-힣]+(?:-[A-Za-z0-9]+)?)\s*(?P<value>\d+(?:\.\d+)?)")
-_QUALITATIVE_FINDING_RISKS = {
-    ("요단백", "음성"): "정상",
-    ("요단백", "약양성(±)"): "주의",
-    ("요단백", "양성(2+)"): "이상",
-    ("위내시경", "만성위염"): "주의",
-    ("위내시경", "위궤양"): "이상",
-    ("대장내시경", "대장용종"): "이상",
-    ("복부초음파", "지방간"): "주의",
-    ("복부초음파", "담낭용종"): "주의",
-    ("B형간염 표면항원", "양성"): "이상",
-}
 
 
 def _num(v: str):
@@ -67,11 +51,10 @@ def _classify_single(lab_item: str, value: str) -> tuple[str, str | None, bool]:
 
 
 def _classify_composite(value: str) -> tuple[str | None, bool]:
-    """팀 골든셋 복합검사 값을 구성 항목별로 분해해 가장 높은 위험도를 반환한다."""
+    """복합검사 값을 도메인 분해기로 구성 항목별 분해 후 최댓값 위험도 반환"""
     predictions: list[str] = []
-    for match in _COMPOSITE_TOKEN.finditer(value or ""):
-        raw_name = _COMPOSITE_NAME_ALIASES.get(match.group("name"), match.group("name"))
-        _, pred, supported = _classify_single(raw_name, match.group("value"))
+    for raw_name, val in composite.parse_composite(value):
+        _, pred, supported = _classify_single(raw_name, str(val))
         if supported and pred is not None:
             predictions.append(pred)
     if not predictions:
@@ -80,9 +63,11 @@ def _classify_composite(value: str) -> tuple[str | None, bool]:
 
 
 def _classify_qualitative(lab_item: str, value: str) -> tuple[str | None, bool]:
-    """팀 골든셋 비수치 소견을 평가기 전용 위험도로 채점한다."""
-    pred = _QUALITATIVE_FINDING_RISKS.get((lab_item, value))
-    return pred, pred is not None
+    """비수치 소견을 도메인 정성 소견 KB로 채점 - risk_level 문자열 반환"""
+    flag = classify_finding(lab_item, value)
+    if flag is None:
+        return None, False
+    return RISK_OF_FLAG.get(flag.value, flag.value), True
 
 
 def evaluate(cases: list[dict]) -> dict:

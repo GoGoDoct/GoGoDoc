@@ -24,6 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evaluation import harness
 from evaluation.harness import canonicalize, reference_dict
+from gogodoc.domain.reference import findings
+from gogodoc.domain.services import composite
 
 TEAM_GOLDEN = Path(__file__).resolve().parent / "datasets" / "team_golden.jsonl"
 
@@ -42,16 +44,24 @@ def evaluate(cases: list[dict], retriever) -> dict:
     """검색 결정적 채점 - 케이스별 row + 집계 dict 반환"""
     rows = []
     for c in cases:
-        canon = _canon_in_kb(c["lab_item"])
-        supported = canon is not None
-
+        item, value = c["lab_item"], c["value"]
         # must_not_retrieve -> KB 표준명 집합 (회피 대상)
         forbidden = {x for m in c.get("must_not_retrieve", []) if (x := _canon_in_kb(m))}
 
-        hit = False
         retrieved_subject = None
-        if supported:
-            entry = retriever.retrieve(canon)
+        if findings.is_finding_item(item):
+            # 정성 소견 KB 근거 - 소견 텍스트 매칭 카드
+            supported = True
+            hit = findings.lookup_finding(item, value) is not None
+        elif composite.is_composite(value):
+            # 복합검사 - 구성 수치 모두 KB 수록 시 적중
+            subs = [_canon_in_kb(n) for n, _ in composite.parse_composite(value)]
+            supported = True
+            hit = bool(subs) and all(s is not None for s in subs)
+        else:
+            canon = _canon_in_kb(item)
+            supported = canon is not None
+            entry = retriever.retrieve(canon) if supported else None
             hit = entry is not None
             retrieved_subject = canon if hit else None
 
@@ -60,7 +70,7 @@ def evaluate(cases: list[dict], retriever) -> dict:
 
         rows.append({
             "id": c["test_id"],
-            "lab_item": c["lab_item"],
+            "lab_item": item,
             "supported": supported,
             "hit": hit,
             "negative_ok": negative_ok,
