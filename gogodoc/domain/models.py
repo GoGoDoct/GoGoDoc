@@ -64,11 +64,23 @@ class InterpretedItem(MatchedItem):
     source: Optional[str] = None  # 인용 출처
 
 
+class GuideNote(BaseModel):
+    """카테고리별 생활 가이드 - 근거 기반 관리법·추적·진료과 (CATEGORY_GUIDE 출처)"""
+
+    category: str  # 간기능·혈당·지질 등
+    lifestyle: str  # 생활수칙
+    tracking: str  # 추적 권장
+    department: str  # 권장 진료과 (F-006 매핑)
+    source: str  # 출처
+
+
 class FinalReport(BaseModel):
     """단계 4 출력 - 안전 가드레일 적용 최종 결과"""
 
     items: list[InterpretedItem] = Field(default_factory=list)
     tracking_items: list[str] = Field(default_factory=list)  # 추적 권장 항목
     emergency_alerts: list[str] = Field(default_factory=list)  # 즉시 내원 안내
+    summary: str = ""  # 직장인용 종합 요약 (근거 기반 LLM 생성)
+    lifestyle_guide: list[GuideNote] = Field(default_factory=list)  # 카테고리별 생활 가이드 (결정적)
     disclaimer: str = ""  # 면책 문구
     notes: list[str] = Field(default_factory=list)  # 비치명적 처리 이슈 (부분 실패 등)

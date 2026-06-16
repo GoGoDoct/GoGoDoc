@@ -130,6 +130,42 @@ def summary_pills_html(normal, caution, abnormal) -> str:
     )
 
 
+def summary_block_html(summary: str) -> str:
+    """AI 종합 요약 블록 - 직장인용 결과 요약 (근거 기반 LLM 생성)."""
+    return (
+        '<div style="background:linear-gradient(135deg,#F4F8FE,#EAF1FA);border:1px solid #DCE7F5;'
+        'border-radius:16px;padding:18px 22px;margin:14px 0">'
+        '<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:800;color:#15448A">'
+        '<span style="font-size:16px">🩺</span>AI 종합 요약</div>'
+        f'<div style="font-size:14px;line-height:1.85;color:#3C4656;margin-top:10px">{summary}</div>'
+        '</div>'
+    )
+
+
+def lifestyle_guide_html(guides) -> str:
+    """카테고리별 생활 가이드 카드 - 관리법·추적·권장 진료과·출처."""
+    if not guides:
+        return ""
+    cards = ""
+    for g in guides:
+        cards += (
+            '<div style="background:#fff;border:1px solid #E4E9F0;border-radius:13px;padding:15px 17px;margin-top:10px">'
+            '<div style="display:flex;align-items:center;gap:8px">'
+            f'<span class="gg-tag">{g["category"]}</span>'
+            '<span style="font-size:11.5px;color:#15448A;font-weight:700;background:#EAF1FA;'
+            f'border-radius:7px;padding:3px 9px">권장 진료과 · {g["department"]}</span></div>'
+            f'<div style="font-size:13px;line-height:1.7;color:#3C4656;margin-top:11px">💡 {g["lifestyle"]}</div>'
+            f'<div style="font-size:12.5px;line-height:1.6;color:#5B6678;margin-top:7px">📅 추적 · {g["tracking"]}</div>'
+            f'<div class="gg-source" style="margin-top:9px">🔗 근거: {g["source"]}</div>'
+            '</div>'
+        )
+    return (
+        '<div style="margin-top:16px">'
+        '<div style="font-size:12.5px;font-weight:700;color:#15448A;margin-bottom:2px">🌿 생활 가이드</div>'
+        f'{cards}</div>'
+    )
+
+
 # ── 대시보드 ──────────────────────────────────────────
 def kpi_cards_html(manage, normal, caution, abnormal) -> str:
     def small(label, val, color, sub):
