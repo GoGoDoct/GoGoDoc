@@ -1,6 +1,6 @@
 """LLM 프롬프트 - 구조화 및 해석 (가드레일은 도메인 정책에서 주입)"""
 
-from gogodoc.domain.models import MatchedItem, UserProfile
+from gogodoc.domain.models import MatchedItem, UserProfile, Flag
 from gogodoc.domain.policy import GUARDRAIL_INSTRUCTIONS
 
 # 단계 1 - 구조화 시스템 프롬프트
@@ -24,15 +24,22 @@ INTERPRET_SYSTEM = (
 def build_interpret_user(
     item: MatchedItem, profile: UserProfile, grounding: dict, reference_range
 ) -> str:
-    """항목별 근거 포함 사용자 프롬프트 구성"""
-    return (
-        f"[사용자] 성별 {profile.sex.value}, 나이 {profile.age}\n"
-        f"[항목] {item.canonical_name}\n"
-        f"[측정값] {item.value} {item.unit or ''}\n"
-        f"[상태] {item.flag.value}\n"
-        f"[정상범위] {reference_range}\n"
-        f"[해설 근거] {grounding.get('explanation')}\n"
-        f"[주의사항] {grounding.get('caution')}\n"
-        f"[출처] {grounding.get('source')}\n"
-        "위 근거만 사용해 쉬운 설명을 작성하라."
-    )
+    """항목별 근거 포함 사용자 프롬프트 구성 - 응급 항목은 긴급 내원 톤 지시"""
+    lines = [
+        f"[사용자] 성별 {profile.sex.value}, 나이 {profile.age}",
+        f"[항목] {item.canonical_name}",
+        f"[측정값] {item.value} {item.unit or ''}",
+        f"[상태] {item.flag.value}",
+        f"[정상범위] {reference_range}",
+        f"[해설 근거] {grounding.get('explanation')}",
+        f"[주의사항] {grounding.get('caution')}",
+        f"[출처] {grounding.get('source')}",
+    ]
+    # 응급(패닉) 항목 - 추적 관찰이 아니라 즉시 내원 안내 강제
+    if item.flag == Flag.EMERGENCY:
+        lines.append(
+            "이 수치는 응급(패닉) 수준이다. 추적 관찰이 아니라 "
+            "즉시 의료기관에 내원해야 함을 첫 문장에서 분명히 안내하라."
+        )
+    lines.append("위 근거만 사용해 쉬운 설명을 작성하라.")
+    return "\n".join(lines)
