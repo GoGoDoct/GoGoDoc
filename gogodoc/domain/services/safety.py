@@ -2,8 +2,8 @@
 
 import re
 
-from gogodoc.domain.models import InterpretedItem, FinalReport, Flag
-from gogodoc.domain.reference import panic_values
+from gogodoc.domain.models import InterpretedItem, FinalReport, Flag, GuideNote
+from gogodoc.domain.reference import panic_values, category_guide
 from gogodoc.domain.policy import DISCLAIMER
 
 # 진단 단정 과잉표현 - 후처리 차단 대상
@@ -24,8 +24,39 @@ def _filter_expression(text: str) -> str:
     return text
 
 
+def sanitize_text(text: str) -> str:
+    """외부 생성 텍스트(종합 요약 등) 과잉표현 필터 - summarize 와 동일 규칙"""
+    return _filter_expression(text)
+
+
+def _build_lifestyle_guide(interpreted: list[InterpretedItem]) -> list[GuideNote]:
+    """플래그된 항목의 카테고리별 생활 가이드 수집 - 카테고리 중복 제거 (결정적, 근거 그대로)"""
+    seen: set[str] = set()
+    guides: list[GuideNote] = []
+    for item in interpreted:
+        if item.flag not in _TRACKING_FLAGS:
+            continue
+        category = category_guide.category_of(item.canonical_name)
+        if not category or category in seen:
+            continue
+        g = category_guide.guide_for(category)
+        if not g:
+            continue
+        seen.add(category)
+        guides.append(
+            GuideNote(
+                category=category,
+                lifestyle=g["lifestyle"],
+                tracking=g["tracking"],
+                department=g["department"],
+                source=g["source"],
+            )
+        )
+    return guides
+
+
 def summarize(interpreted: list[InterpretedItem]) -> FinalReport:
-    """단계 4 - 과잉표현 필터, 추적·응급 수집, 면책 삽입"""
+    """단계 4 - 과잉표현 필터, 추적·응급 수집, 생활 가이드, 면책 삽입"""
     tracking: list[str] = []
     emergencies: list[str] = []
 
@@ -46,5 +77,6 @@ def summarize(interpreted: list[InterpretedItem]) -> FinalReport:
         items=interpreted,
         tracking_items=tracking,
         emergency_alerts=emergencies,
+        lifestyle_guide=_build_lifestyle_guide(interpreted),
         disclaimer=DISCLAIMER,
     )
