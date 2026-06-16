@@ -27,4 +27,7 @@ tmp/
 
 # 스트림릿 로컬 설정
 .streamlit/secrets.toml
-session_state.result 
+session_state.result
+
+# RAG 평가 실행 기록 - 환경별 누적이라 공유 불필요, 폴더는 .gitkeep 으로 유지
+evaluation/history/*.jsonl
