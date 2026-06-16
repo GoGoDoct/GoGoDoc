@@ -194,6 +194,7 @@ with tab_trend:
     golden = [r for r in records if r.get("kind", "golden") == "golden"]
     scope = [r for r in records if r.get("kind") == "chat_scope"]
     answer = [r for r in records if r.get("kind") == "chat_answer"]
+    assertion = [r for r in records if r.get("kind") == "assertion"]
 
     if not records:
         st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
@@ -231,6 +232,16 @@ with tab_trend:
             "수치환각률": lambda r: r["metrics"].get("halluc_rate"),
         })
         st.line_chart(a.set_index("ts"), y_label="비율 (%)")
+
+    # ── 단정 표현 필터 (F-004 안전) ───────────────────
+    if assertion:
+        st.subheader("F-004 단정 표현 필터 추이")
+        f = _chart(assertion, "ts", {
+            "단정차단율": lambda r: r["metrics"].get("block_rate"),
+            "오차단율": lambda r: r["metrics"].get("over_block"),
+        })
+        st.line_chart(f.set_index("ts"), y_label="비율 (%)")
+        st.caption("단정 차단율 100%·오차단율 0% 유지 (진단 단정 2차 방어).")
 
     if records:
         st.subheader("전체 실행 기록 (kind별)")

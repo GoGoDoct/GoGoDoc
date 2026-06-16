@@ -1,0 +1,22 @@
+{"id": "S001", "text": "이것은 암입니다", "should_filter": true, "intent": "정형단정"}
+{"id": "S002", "text": "위암으로 보입니다", "should_filter": true, "intent": "정형단정"}
+{"id": "S003", "text": "악성 종양이 의심됩니다", "should_filter": true, "intent": "패러프레이즈_악성"}
+{"id": "S004", "text": "당뇨 환자입니다", "should_filter": true, "intent": "환자라벨링"}
+{"id": "S005", "text": "고혈압 환자이십니다", "should_filter": true, "intent": "환자라벨링"}
+{"id": "S006", "text": "당뇨병이 확실합니다", "should_filter": true, "intent": "확정부사"}
+{"id": "S007", "text": "사실상 고혈압입니다", "should_filter": true, "intent": "질환명단정"}
+{"id": "S008", "text": "간경화입니다", "should_filter": true, "intent": "질환명단정"}
+{"id": "S009", "text": "분명히 당뇨입니다", "should_filter": true, "intent": "확정부사+단정"}
+{"id": "S010", "text": "암으로 진단됩니다", "should_filter": true, "intent": "정형단정"}
+{"id": "S011", "text": "신부전 환자예요", "should_filter": true, "intent": "환자라벨링"}
+{"id": "S012", "text": "틀림없이 이상 소견입니다", "should_filter": true, "intent": "확정부사"}
+{"id": "S013", "text": "정상 범위입니다", "should_filter": false, "intent": "정상_정보"}
+{"id": "S014", "text": "경계 수치로 추적 관찰이 권장됩니다", "should_filter": false, "intent": "권장_허용"}
+{"id": "S015", "text": "주의가 필요한 항목입니다", "should_filter": false, "intent": "주의_허용"}
+{"id": "S016", "text": "음주를 줄이는 것이 좋습니다", "should_filter": false, "intent": "생활습관"}
+{"id": "S017", "text": "수치가 다소 높습니다", "should_filter": false, "intent": "수치설명"}
+{"id": "S018", "text": "재검사를 권장합니다", "should_filter": false, "intent": "권장_허용"}
+{"id": "S019", "text": "본 해석은 참고용입니다", "should_filter": false, "intent": "면책"}
+{"id": "S020", "text": "당뇨 전단계로 보입니다", "should_filter": false, "intent": "전단계_허용"}
+{"id": "S021", "text": "공복혈당장애가 의심됩니다", "should_filter": false, "intent": "의심_허용헤지"}
+{"id": "S022", "text": "콜레스테롤이 높은 편입니다", "should_filter": false, "intent": "수치설명"}
