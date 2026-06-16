@@ -10,6 +10,7 @@
 """
 import time
 import tempfile
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -27,7 +28,13 @@ from gogodoc.infrastructure.db.analysis_repository import (
     find_by_user,
 )
 from gogodoc.application.auth_service import login, register, AuthError, DuplicateNameError
-from gogodoc.composition import build_pipeline, build_renderer
+from gogodoc.composition import build_pipeline, build_renderer, build_chat_ui_contract
+from gogodoc.application.chat_ui_session import (
+    append_chat_exchange,
+    is_test_ui_enabled,
+    profile_from_session,
+    submit_latest_question,
+)
 from gogodoc.infrastructure.pdf import (
     PdfValidationError,
     validate_uploaded_pdf_metadata,
@@ -290,6 +297,122 @@ def _latest_to_tracked(latest: dict, prev: dict | None) -> list[dict]:
     return tracked
 
 
+def _get_chat_ui_contract(settings):
+    """F-007 챗봇 UI 계약을 세션 단위로 재사용한다."""
+    key = "_f007_chat_ui_contract"
+    if key not in st.session_state:
+        st.session_state[key] = build_chat_ui_contract(settings)
+    return st.session_state[key]
+
+
+def _render_chat_debug(payload: dict):
+    """챗봇 응답 payload의 테스트용 메타데이터를 표시한다."""
+    meta = {
+        "scope_flag": payload.get("scope_flag"),
+        "routed": payload.get("routed"),
+        "latest_analysis_checked": payload.get("latest_analysis_checked"),
+        "has_latest_analysis": payload.get("has_latest_analysis"),
+        "analysis_id": payload.get("analysis_id"),
+        "analysis_filename": payload.get("analysis_filename"),
+        "context_item_names": payload.get("context_item_names") or [],
+        "sources": payload.get("sources") or [],
+    }
+    st.caption(
+        f"scope={meta['scope_flag']} · routed={meta['routed']} · "
+        f"latest={meta['has_latest_analysis']}"
+    )
+    with st.expander("응답 메타데이터", expanded=False):
+        st.json(meta)
+
+
+def _render_chatbot_panel(settings, pool):
+    """대시보드용 F-007 챗봇 수동 테스트 패널."""
+    st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
+    st.subheader("검진 결과 챗봇 테스트")
+    st.caption("현재 로그인 사용자와 최신 검진 결과를 기준으로 F-007 답변 서비스를 직접 확인합니다.")
+
+    history_key = "f007_chat_messages"
+    st.session_state.setdefault(history_key, [])
+
+    with st.container(border=True):
+        top_left, top_right = st.columns([3, 1])
+        with top_left:
+            st.caption("허용 질문은 최신 검진 결과를 조회하고, 차단 질문은 전문의 상담 안내로 라우팅됩니다.")
+        with top_right:
+            if st.button("대화 초기화", use_container_width=True, key="f007_chat_reset"):
+                st.session_state[history_key] = []
+                st.rerun()
+
+        for message in st.session_state[history_key]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+                if message["role"] == "assistant" and message.get("payload"):
+                    _render_chat_debug(message["payload"])
+
+        c1, c2, c3 = st.columns(3)
+        sample_prompt = None
+        if c1.button("BMI 관리 질문", use_container_width=True):
+            sample_prompt = "BMI가 높으면 어떻게 관리해요?"
+        if c2.button("ALT 의미 질문", use_container_width=True):
+            sample_prompt = "ALT 수치가 높으면 어떤 의미예요?"
+        if c3.button("약물 질문 차단 확인", use_container_width=True):
+            sample_prompt = "이 수치면 무슨 약을 먹어야 하나요?"
+
+        typed_prompt = st.chat_input("검진 결과에 대해 질문해보세요", key="f007_chat_input")
+        prompt = sample_prompt or typed_prompt
+        if not prompt:
+            return
+
+        user_id = int(st.session_state.get("user_id") or 0)
+        profile = profile_from_session(
+            st.session_state.get("gender"),
+            st.session_state.get("age"),
+        )
+        contract = _get_chat_ui_contract(settings)
+
+        with st.spinner("챗봇 답변을 생성하고 있어요"):
+            try:
+                payload = submit_latest_question(
+                    contract=contract,
+                    pool=pool,
+                    user_id=user_id,
+                    question=prompt,
+                    profile=profile,
+                    get_conn_fn=get_conn,
+                    put_conn_fn=put_conn,
+                )
+            except Exception:
+                st.error("챗봇 답변 생성 중 오류가 발생했습니다. 설정과 최신 검진 결과를 확인하세요.")
+                return
+
+        if payload is None:
+            return
+
+        st.session_state[history_key] = append_chat_exchange(
+            st.session_state[history_key],
+            prompt.strip(),
+            payload,
+        )
+        st.rerun()
+
+
+def _chat_test_ui_enabled() -> bool:
+    """제품 화면 기본값에서 테스트용 챗봇 UI를 숨긴다."""
+    return is_test_ui_enabled(os.getenv("ENABLE_F007_CHAT_TEST_UI"))
+
+
+def _save_result_for_user(pool, user_id: int, filename: str, result: dict):
+    """분석 결과를 로그인 사용자 이력으로 저장한다."""
+    if not user_id:
+        return
+    db_conn = get_conn(pool)
+    try:
+        save_analysis(db_conn, user_id, filename, result)
+        db_conn.commit()
+    finally:
+        put_conn(pool, db_conn)
+
+
 # ══════════════════════════════════════════════════════════
 # 대시보드
 # ══════════════════════════════════════════════════════════
@@ -333,6 +456,8 @@ def render_dashboard(pool):
 
     if not latest:
         st.info("검진 결과지 PDF를 업로드하면 AI 해석 결과가 여기에 표시됩니다.")
+        if _chat_test_ui_enabled():
+            _render_chatbot_panel(settings, pool)
         return
 
     normal = latest["normal_count"]
@@ -364,6 +489,9 @@ def render_dashboard(pool):
             st.markdown(ui.tracked_html(tracked), unsafe_allow_html=True)
         st.markdown(ui.next_checkup_html(), unsafe_allow_html=True)
         st.markdown(ui.disclaimer_html(), unsafe_allow_html=True)
+
+    if _chat_test_ui_enabled():
+        _render_chatbot_panel(settings, pool)
 
 
 # ══════════════════════════════════════════════════════════
@@ -436,6 +564,12 @@ def _run_and_store(file, settings, pool):
         res = run_pipeline(None, st.session_state.gender, st.session_state.age,
                            st.session_state.emergency)
         st.session_state.result = res
+        _save_result_for_user(
+            pool,
+            int(st.session_state.get("user_id") or 0),
+            "sample_checkup.pdf",
+            res,
+        )
         st.session_state.analyzed = True
         st.rerun()
         return
@@ -483,14 +617,12 @@ def _run_and_store(file, settings, pool):
         st.session_state.result = result
 
         # 분석 결과 DB 저장
-        user_id = st.session_state.get("user_id", 0)
-        if user_id:
-            db_conn = get_conn(pool)
-            try:
-                save_analysis(db_conn, user_id, file.name, result)
-                db_conn.commit()
-            finally:
-                put_conn(pool, db_conn)
+        _save_result_for_user(
+            pool,
+            int(st.session_state.get("user_id") or 0),
+            file.name,
+            result,
+        )
 
         st.session_state.analyzed = True
         st.rerun()
