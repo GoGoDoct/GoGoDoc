@@ -170,3 +170,24 @@ def test_checkup_summary_uses_latest_result_without_answer_llm_call():
     assert "ALT" in msg.content
     assert DISCLAIMER in msg.content
     assert answer_llm.calls == []
+
+
+def test_no_grounding_answer_preserves_classifier_question_type():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"department_guide","route_reason":"진료과 안내"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("어느 진료과 가야 해요?", _latest_analysis())
+
+    assert msg.routed is False
+    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.DEPARTMENT_GUIDE
+    assert msg.route_reason == "no_grounding"
+    assert msg.context_item_names == []
+    assert msg.sources == []
+    assert answer_llm.calls == []

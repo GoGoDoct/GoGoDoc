@@ -43,6 +43,7 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
         "emergency_rule",
         re.compile(
             r"가슴.*(통증|아프|답답|조이|압박)|흉통|숨이?\s*(차|막히|안\s*쉬|가쁘)|호흡\s*곤란|"
+            r"숨\s*쉬기\s*(힘들|어렵)|숨\s*못\s*쉬|숨이\s*안\s*쉬|"
             r"한쪽.*(마비|힘이?\s*안|감각)|말이?\s*어눌|의식.*(잃|저하|없)|실신|경련|"
             r"심한\s*출혈|극심한\s*두통|갑자기.*두통|얼굴.*마비|팔.*마비"
         ),
@@ -50,14 +51,19 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
     (
         QuestionType.DOSAGE_REQUEST,
         "dosage_rule",
-        re.compile(r"용량|몇\s*(알|정|mg|밀리그램)|증량|감량"),
+        re.compile(
+            r"용량|몇\s*(알|정)|증량|감량|"
+            r"(약|스타틴|메트포민|혈압약|고지혈증약|당뇨약|치료제).{0,20}몇\s*(mg|밀리그램)|"
+            r"몇\s*(mg|밀리그램).{0,20}(먹|복용|드시|처방)"
+        ),
     ),
     (
         QuestionType.PRESCRIPTION_REQUEST,
         "prescription_rule",
         re.compile(
             r"무슨\s*약|어떤\s*약|약\s*(을|를|은|이|좀)?\s*(먹|복용|드시|바꾸|바꿔|끊|줄여|늘려)|"
-            r"(스타틴|메트포민|혈압약|고지혈증약|당뇨약).*(먹|복용|시작|끊|바꾸)|처방|복용|투약"
+            r"(스타틴|메트포민|혈압약|고지혈증약|당뇨약|아스피린).*(먹|복용|시작|끊|바꾸|추천)|"
+            r"약\s*추천|치료제\s*추천|추천.*(약|치료제)|처방|복용|투약"
         ),
     ),
     (
@@ -66,6 +72,8 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
         re.compile(
             r"(암|종양|간암|위암|대장암|간경화|당뇨병|고혈압|갑상선암|신부전)\s*"
             r"(이에요|이예요|인가요|입니까|맞나요|인지|일까요|이라는|진단)|"
+            r"(당뇨|당뇨병|고혈압|고지혈증|암|종양|간경화|신부전)\s*"
+            r"(이야|야|인가|일까|일까요|일\s*가능성|가능성)|"
             r"무슨\s*병|병명|큰\s*병|위험한\s*상태|진단(해|받|명|을|이)|확진"
         ),
     ),
@@ -73,6 +81,11 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
         QuestionType.PROCEDURE_REQUEST,
         "procedure_rule",
         re.compile(r"수술|시술|항암|입원|주사\s*(맞|놓)"),
+    ),
+    (
+        QuestionType.CHECKUP_SUMMARY,
+        "summary_rule",
+        re.compile(r"검진\s*결과.*(확인해야|신경\s*쓸|요약|전체|전반)|제일\s*(문제|신경)"),
     ),
     (
         QuestionType.UNSUPPORTED,
@@ -85,7 +98,11 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
     (
         QuestionType.APP_HELP,
         "app_help_rule",
-        re.compile(r"업로드|로그인|회원가입|PDF|결과\s*(어디|보기|확인)|사용법"),
+        re.compile(
+            r"업로드|로그인|회원가입|사용법|"
+            r"PDF.*(어디|업로드|올리|등록|첨부|제출)|"
+            r"(결과|기록).*(어디|메뉴|화면|보는\s*법|확인\s*(방법|위치)|어떻게\s*(봐|확인))"
+        ),
     ),
     (
         QuestionType.OUT_OF_SCOPE_NONMEDICAL,

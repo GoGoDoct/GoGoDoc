@@ -251,7 +251,7 @@ class ChatAnswerService:
             )
 
         updates: dict[str, Any] = {"content": _with_disclaimer(answered.content)}
-        if decision and answered.question_type is None:
+        if decision and answered.question_type in (None, QuestionType.UNKNOWN):
             updates["question_type"] = decision.question_type
         if decision and not answered.route_reason:
             updates["route_reason"] = decision.route_reason or "rag_answer"
