@@ -4,7 +4,7 @@ from gogodoc.application.chat_answer_service import ChatAnswerService
 from gogodoc.application.chat_rag_service import ChatRagService
 from gogodoc.application.chat_service import ChatService
 from gogodoc.application.ports import LLMTask
-from gogodoc.domain.models import Scope
+from gogodoc.domain.models import QuestionType, Scope
 from gogodoc.domain.policy import DISCLAIMER
 
 
@@ -59,6 +59,7 @@ def test_blocked_question_returns_routing_without_rag_llm_call():
 
     assert msg.routed is True
     assert msg.scope_flag == Scope.BLOCKED
+    assert msg.question_type == QuestionType.PRESCRIPTION_REQUEST
     assert "전문의" in msg.content
     assert DISCLAIMER in msg.content
     assert classifier_llm.calls == []
@@ -66,7 +67,7 @@ def test_blocked_question_returns_routing_without_rag_llm_call():
 
 
 def test_allowed_question_converts_latest_analysis_to_report_for_rag():
-    classifier_llm = _CountingLLM("허용")
+    classifier_llm = _CountingLLM('{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}')
     answer_llm = _CountingLLM("BMI는 체중과 키의 관계를 보는 지표입니다.")
     service = ChatAnswerService(
         router=ChatService(classifier_llm),
@@ -77,6 +78,7 @@ def test_allowed_question_converts_latest_analysis_to_report_for_rag():
 
     assert msg.routed is False
     assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.LIFESTYLE_GENERAL
     assert msg.context_item_names == ["BMI"]
     assert any("대한비만학회" in source for source in msg.sources)
     assert DISCLAIMER in msg.content
@@ -91,7 +93,7 @@ def test_allowed_question_converts_latest_analysis_to_report_for_rag():
     assert "ALT" not in call["user"]
 
 
-def test_unrelated_allowed_question_does_not_fallback_to_flagged_items():
+def test_out_of_scope_question_routes_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
     service = ChatAnswerService(
@@ -101,13 +103,14 @@ def test_unrelated_allowed_question_does_not_fallback_to_flagged_items():
 
     msg = service.answer("오늘 날씨 어때요?", _latest_analysis())
 
-    assert msg.routed is False
-    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.routed is True
+    assert msg.scope_flag == Scope.BLOCKED
+    assert msg.question_type == QuestionType.OUT_OF_SCOPE_NONMEDICAL
     assert msg.context_item_names == []
     assert msg.sources == []
-    assert "질문과 관련된 항목을 찾지 못했습니다" in msg.content
+    assert "건강검진 결과 해석" in msg.content
     assert DISCLAIMER in msg.content
-    assert len(classifier_llm.calls) == 1
+    assert classifier_llm.calls == []
     assert answer_llm.calls == []
 
 
@@ -123,6 +126,47 @@ def test_missing_latest_result_returns_guidance_without_rag_llm_call():
 
     assert msg.routed is True
     assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.UNKNOWN
     assert "최신 검진 결과" in msg.content
+    assert DISCLAIMER in msg.content
+    assert answer_llm.calls == []
+
+
+def test_emergency_question_returns_119_guidance_without_rag_llm_call():
+    classifier_llm = _CountingLLM("허용")
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("가슴이 답답하고 숨이 차요", _latest_analysis())
+
+    assert msg.routed is True
+    assert msg.scope_flag == Scope.BLOCKED
+    assert msg.question_type == QuestionType.EMERGENCY_SYMPTOM
+    assert "119" in msg.content
+    assert "진단" in msg.content or "의료" in msg.content
+    assert "참고 소견" not in msg.content
+    assert classifier_llm.calls == []
+    assert answer_llm.calls == []
+
+
+def test_checkup_summary_uses_latest_result_without_answer_llm_call():
+    classifier_llm = _CountingLLM('{"scope":"allowed","question_type":"checkup_summary","route_reason":"전체 요약"}')
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("내 검진 결과 전체적으로 설명해줘", _latest_analysis())
+
+    assert msg.routed is False
+    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.CHECKUP_SUMMARY
+    assert "최신 검진 결과" in msg.content
+    assert "BMI" in msg.content
+    assert "ALT" in msg.content
     assert DISCLAIMER in msg.content
     assert answer_llm.calls == []

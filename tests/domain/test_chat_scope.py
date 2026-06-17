@@ -1,7 +1,7 @@
 """F-007 챗봇 스코프 규칙 단위 테스트 - 하드 차단 패턴 (순수 도메인)"""
 
 from gogodoc.domain import chat_scope
-from gogodoc.domain.models import Scope
+from gogodoc.domain.models import QuestionType, Scope
 
 
 def test_blocks_prescription_and_medication():
@@ -25,7 +25,56 @@ def test_allowed_questions_not_hard_blocked():
         assert chat_scope.classify_rule(q) is None, q
 
 
+def test_reference_range_comparison_not_hard_blocked():
+    # 정상범위와의 비교는 최신 검진 결과 설명 범위라 LLM/RAG 경로로 위임
+    assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") is None
+
+
+def test_past_result_comparison_still_unsupported():
+    # 과거 결과와의 추세 비교는 최신 검진 1건 기준 범위를 벗어나므로 미지원 라우팅
+    d = chat_scope.classify_rule_detail("작년보다 혈당이 오른 건가요?")
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.UNSUPPORTED
+
+
+def test_waist_circumference_not_symptom_routed():
+    # 허리둘레는 지원되는 검진 항목이므로 단독 '허리' 증상 힌트로 차단하면 안 됨
+    assert chat_scope.classify_rule("허리둘레가 95cm인데 무슨 의미예요?") is None
+
+
+def test_rule_routes_emergency_symptoms_before_llm():
+    # 응급 가능 증상은 답변 생성 전에 즉시 라우팅
+    for q in ["가슴이 답답하고 숨이 차요", "한쪽 팔에 힘이 안 들어가고 말이 어눌해요", "갑자기 의식을 잃었어요"]:
+        d = chat_scope.classify_rule_detail(q)
+        assert d is not None
+        assert d.scope == Scope.BLOCKED
+        assert d.question_type == QuestionType.EMERGENCY_SYMPTOM
+
+
+def test_rule_routes_self_harm_crisis_before_llm():
+    # 자해·자살 위기 표현은 별도 위기 안내로 라우팅
+    d = chat_scope.classify_rule_detail("죽고 싶어요")
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.SELF_HARM_CRISIS
+
+
+def test_rule_routes_general_symptom_and_nonmedical_out_of_scope():
+    # 일반 증상과 비의료 질문은 서로 다른 유형으로 라우팅
+    symptom = chat_scope.classify_rule_detail("나 지금 허리가 아픈데")
+    out_of_scope = chat_scope.classify_rule_detail("나 지금 배고파")
+
+    assert symptom is not None
+    assert symptom.scope == Scope.BLOCKED
+    assert symptom.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+    assert out_of_scope is not None
+    assert out_of_scope.scope == Scope.BLOCKED
+    assert out_of_scope.question_type == QuestionType.OUT_OF_SCOPE_NONMEDICAL
+
+
 def test_empty_question_blocked():
     # 빈 질문은 보수적으로 차단
     assert chat_scope.classify_rule("") == Scope.BLOCKED
     assert chat_scope.classify_rule("   ") == Scope.BLOCKED
+    assert chat_scope.classify_rule_detail("").question_type == QuestionType.UNKNOWN

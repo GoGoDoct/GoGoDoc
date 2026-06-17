@@ -10,7 +10,7 @@ _TASK_PARAMS = {
     LLMTask.PARSE: {"temperature": 0.0, "max_tokens": 2048},
     LLMTask.INTERPRET: {"temperature": 0.3, "max_tokens": 1024},
     LLMTask.RECOMMEND: {"temperature": 0.0, "max_tokens": 256},
-    LLMTask.CLASSIFY: {"temperature": 0.0, "max_tokens": 16},  # 스코프 라벨만 - 짧고 결정적
+    LLMTask.CLASSIFY: {"temperature": 0.0, "max_tokens": 96},  # 질문 scope/type JSON - 짧고 결정적
     LLMTask.JUDGE: {"temperature": 0.0, "max_tokens": 128},  # 근거성·환각 JSON 판정 - 결정적
 }
 

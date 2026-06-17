@@ -2,7 +2,7 @@
 
 from gogodoc.application.chat_service import ChatService
 from gogodoc.application.ports import LLMTask
-from gogodoc.domain.models import Scope
+from gogodoc.domain.models import QuestionType, Scope
 
 
 class _FakeLLM:
@@ -30,16 +30,39 @@ def test_rule_block_overrides_llm():
 
 
 def test_llm_allowed():
-    svc = ChatService(_FakeLLM("허용"))
+    svc = ChatService(_FakeLLM('{"scope":"allowed","question_type":"checkup_explanation","route_reason":"항목 설명"}'))
     d = svc.classify("ALT가 60인데 무슨 의미예요?")
     assert d.scope == Scope.ALLOWED and not d.routed and d.reason == "llm"
+    assert d.question_type == QuestionType.CHECKUP_EXPLANATION
 
 
 def test_llm_blocked():
-    # '비허용'이 '허용'을 부분문자로 포함해도 정확히 차단 파싱
-    svc = ChatService(_FakeLLM("비허용"))
+    svc = ChatService(_FakeLLM('{"scope":"blocked","question_type":"diagnosis_request","route_reason":"진단 요청"}'))
     d = svc.classify("이 수치면 큰 병인가요?")
     assert d.scope == Scope.BLOCKED and d.routed
+    assert d.question_type == QuestionType.DIAGNOSIS_REQUEST
+
+
+def test_legacy_label_allowed_still_supported():
+    svc = ChatService(_FakeLLM("허용"))
+    d = svc.classify("ALT가 뭐예요?")
+    assert d.scope == Scope.ALLOWED
+    assert d.question_type == QuestionType.UNKNOWN
+
+
+def test_invalid_or_ambiguous_label_is_blocked():
+    # '허용하지 않음'처럼 허용을 포함한 모호한 출력은 fail-closed
+    svc = ChatService(_FakeLLM("허용하지 않음"))
+    d = svc.classify("애매한 질문입니다")
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.UNKNOWN
+
+
+def test_json_scope_type_mismatch_is_blocked():
+    svc = ChatService(_FakeLLM('{"scope":"allowed","question_type":"emergency_symptom","route_reason":"불일치"}'))
+    d = svc.classify("애매한 질문입니다")
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.UNKNOWN
 
 
 def test_llm_error_is_conservative():
@@ -54,3 +77,12 @@ def test_route_returns_message_only_when_blocked():
     assert blocked is not None and blocked.routed and blocked.role == "assistant"
     allowed = ChatService(_FakeLLM("허용")).route("ALT가 뭐예요?")
     assert allowed is None
+
+
+def test_emergency_route_message_is_specific_and_skips_llm():
+    svc = ChatService(_FakeLLM("허용"))
+    msg = svc.route("가슴이 답답하고 숨이 차요")
+    assert msg is not None
+    assert msg.scope_flag == Scope.BLOCKED
+    assert msg.question_type == QuestionType.EMERGENCY_SYMPTOM
+    assert "119" in msg.content

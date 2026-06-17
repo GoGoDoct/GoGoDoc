@@ -104,24 +104,28 @@ flowchart TD
 
 | 유형 | 설명 | 처리 |
 |------|------|------|
-| `EMERGENCY_SYMPTOM` | 흉통, 호흡곤란, 마비, 실신 등 응급 증상 | LLM 답변 생성 없이 즉시 의료기관 또는 119 안내 |
-| `DIAGNOSIS_REQUEST` | 당뇨병인지, 암인지, 병명인지 묻는 질문 | LLM 답변 생성 없이 전문의 상담 안내 |
-| `PRESCRIPTION_REQUEST` | 약 추천, 처방 여부, 치료제 판단 질문 | LLM 답변 생성 없이 전문의 상담 안내 |
-| `DOSAGE_REQUEST` | 몇 mg, 하루 몇 알, 증량·감량 등 용량 질문 | LLM 답변 생성 없이 전문의 상담 안내 |
-| `OUT_OF_SCOPE` | 건강검진 결과와 무관한 질문 | 서비스 범위 안내 |
-| `ALLOWED` | 수치 설명, 생활습관, 진료과 안내 등 허용 질문 | DB 컨텍스트 기반 답변 생성 |
-| `UNCLEAR` | 규칙만으로 판단하기 어려운 질문 | LLM fallback classifier로 분류 |
+| `emergency_symptom` | 흉통, 호흡곤란, 마비, 실신 등 응급 가능 증상 | answer LLM/RAG 호출 없이 즉시 119 또는 응급실 안내 |
+| `self_harm_crisis` | 자해·자살 위기 표현 | answer LLM/RAG 호출 없이 109/119/112 등 위기 안내 |
+| `diagnosis_request` | 당뇨병인지, 암인지, 병명인지 묻는 질문 | answer LLM/RAG 호출 없이 전문의 상담 안내 |
+| `prescription_request` | 약 추천, 처방 여부, 복약 판단 질문 | answer LLM/RAG 호출 없이 전문의 또는 약사 상담 안내 |
+| `dosage_request` | 몇 mg, 하루 몇 알, 증량·감량 등 용량 질문 | answer LLM/RAG 호출 없이 전문의 또는 약사 상담 안내 |
+| `procedure_request` | 수술·시술·입원 등 의료행위 판단 질문 | answer LLM/RAG 호출 없이 전문의 상담 안내 |
+| `symptom_non_emergency` | 응급 신호가 명확하지 않은 일반 증상 질문 | 증상 원인 판단 제한과 진료 권고 안내 |
+| `out_of_scope_nonmedical` | 건강검진 결과와 무관한 질문 | 서비스 범위 안내 |
+| `app_help` | 업로드, 로그인, 결과 확인 등 앱 사용법 질문 | 앱 사용 범위 안내 |
+| `unsupported` | 과거 추세 비교, 실제 병원 추천 등 현재 미지원 질문 | 현재 지원 범위 안내 |
+| `unknown` | 분류 실패 또는 불명확 질문 | 보수적 범위 안내 |
 
 ### 2단계: 허용 질문 답변 유형
 
 | 유형 | 예시 | 처리 |
 |------|------|------|
-| `RESULT_EXPLANATION` | "LDL이 높다는데 무슨 뜻이야?" | 관련 검사 수치와 상태 설명 |
-| `RESULT_SUMMARY` | "내 결과에서 제일 문제되는 게 뭐야?" | 주의·이상·응급·추적 항목 중심 요약 |
-| `LIFESTYLE_GENERAL` | "LDL 높으면 식단은 뭘 조심해야 해?" | 일반 생활습관 참고 정보 |
-| `DEPARTMENT_GUIDE` | "무슨 과를 가야 해?" | 관련 진료과 상담 안내 |
-| `HOSPITAL_GUIDE` | "근처 병원 추천해줘" | F-006 미구현 안내 또는 진료과 안내 |
-| `TREND_ANALYSIS` | "작년보다 혈당 오른 거야?" | 다년도 비교 미지원 시 범위 제한 안내 |
+| `checkup_explanation` | "LDL이 높다는데 무슨 뜻이야?" | 관련 검사 수치와 상태 설명 |
+| `checkup_summary` | "내 결과에서 제일 문제되는 게 뭐야?" | 주의·이상·응급·추적 항목 중심 요약 |
+| `lifestyle_general` | "LDL 높으면 식단은 뭘 조심해야 해?" | 일반 생활습관 참고 정보 |
+| `department_guide` | "무슨 과를 가야 해?" | 관련 진료과 상담 안내 |
+
+`Scope`는 답변 생성 단계로 보낼 수 있는지만 나타낸다. `allowed`는 최신 검진 결과 기반 답변 생성 가능, `blocked`는 answer LLM/RAG 호출 금지를 뜻한다. 실제 사용자 응답의 종류는 `question_type`과 `route_reason`으로 구분한다.
 
 ## 6. 라우팅 원칙
 
@@ -230,6 +234,8 @@ Streamlit UI는 챗봇 답변 생성 세부 흐름을 직접 조립하지 않는
 - `content`: 최종 답변 본문
 - `scope_flag`: `allowed` 또는 `blocked`
 - `routed`: 전문의 상담 또는 준비 상태 안내로 라우팅되었는지 여부
+- `question_type`: 질문 세부 유형. 예: `checkup_explanation`, `emergency_symptom`, `out_of_scope_nonmedical`
+- `route_reason`: rule 또는 LLM fallback이 선택한 라우팅 근거
 - `sources`: 답변 근거 출처 목록
 - `context_item_names`: 답변에 사용한 검진 항목 목록
 - `latest_analysis_checked`: 최신 검진 결과 조회 여부
@@ -239,7 +245,7 @@ Streamlit UI는 챗봇 답변 생성 세부 흐름을 직접 조립하지 않는
 UI 연결 원칙:
 
 - 챗봇 UI는 `find_latest()`를 직접 호출하지 않고 `ChatUiContract.answer_latest()`를 사용한다.
-- UI는 `scope_flag`, `routed`, `sources`, `context_item_names`를 그대로 표시할 수 있어야 한다.
+- UI는 `scope_flag`, `routed`, `question_type`, `route_reason`, `sources`, `context_item_names`를 그대로 표시할 수 있어야 한다.
 - 최신 분석 결과가 없을 때도 예외 대신 안내 payload를 표시한다.
 - 차단 질문에서는 최신 결과 DB 조회와 answer LLM 호출이 발생하지 않아야 한다.
 
@@ -253,6 +259,8 @@ F-007 평가는 정답 문장 일치보다 라우팅·안전·근거성 기준 �
 
 - 위험 질문 차단율: 100%
 - 응급 질문 라우팅: 100%
+- 질문 유형 정확도: 100%
+- 응급 유형 재현율: 100%
 - 차단 질문 LLM 답변 생성 호출 수: 0
 - 허용 질문 답변 생성 호출 성공
 - 범위 밖 질문 차단
@@ -403,6 +411,7 @@ ALT가 높으면 생활습관은 뭘 조심해야 해?
 
 - 위험 질문 차단율 100%
 - 응급 증상 질문 라우팅 100%
+- 질문 유형 정확도 100%
 - 차단 질문 RAG/answer LLM 호출 0회
 - 허용 질문은 최신 `analysis_results` 컨텍스트 사용
 - 무관 질문은 최신 결과의 플래그 항목으로 억지 grounding 하지 않음

@@ -37,7 +37,8 @@ class ChatUiContract:
         profile: UserProfile | None = None,
     ) -> dict[str, Any]:
         """최신 분석 결과 1건을 읽어 챗봇 답변 UI payload로 변환한다."""
-        routed = self._answer_service.route(question)
+        decision = self._answer_service.classify(question)
+        routed = self._answer_service.route_decision(decision)
         if routed is not None:
             return _to_payload(
                 routed,
@@ -50,6 +51,7 @@ class ChatUiContract:
             question,
             latest_analysis,
             profile=profile,
+            decision=decision,
         )
         return _to_payload(
             message,
@@ -70,6 +72,8 @@ def _to_payload(
         "content": message.content,
         "scope_flag": message.scope_flag.value if message.scope_flag else None,
         "routed": message.routed,
+        "question_type": message.question_type.value if message.question_type else None,
+        "route_reason": message.route_reason,
         "sources": list(message.sources),
         "context_item_names": list(message.context_item_names),
         "latest_analysis_checked": latest_analysis_checked,
