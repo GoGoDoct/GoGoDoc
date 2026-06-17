@@ -192,6 +192,14 @@ def test_rule_routes_cost_as_unsupported_before_procedure():
     assert procedure.question_type == QuestionType.PROCEDURE_REQUEST
 
 
+def test_unsupported_routing_message_mentions_cost_and_trend_limits():
+    message = chat_scope.routing_message(QuestionType.UNSUPPORTED)
+
+    assert "추세 비교" in message
+    assert "비용" in message
+    assert "보험" in message
+
+
 def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
     # 스트레스 관리가 검진 생활습관 질문이면 rule에서 증상 차단하지 않음
     assert chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?") is None
