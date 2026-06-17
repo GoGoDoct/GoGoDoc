@@ -46,7 +46,8 @@ def build_retriever(kind: str | None = None):
 
         s = load_settings()
         embedder = OpenAIEmbedder(api_key=s.openai_api_key, model=s.embed_model)
-        return PgvectorRetriever(s.database_url, embedder), "pgvector"
+        # 설정 임계값 반영 - 평가가 운영과 동일 임계값으로 측정 (기존엔 상수 기본값 무시)
+        return PgvectorRetriever(s.database_url, embedder, threshold=s.retriever_threshold), "pgvector"
     from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
 
     return DictRetriever(), "dict"

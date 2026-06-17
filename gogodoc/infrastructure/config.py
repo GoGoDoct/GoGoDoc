@@ -44,6 +44,6 @@ def load_settings() -> Settings:
         retriever=os.getenv("RETRIEVER", "dict"),
         database_url=os.getenv("DATABASE_URL", ""),
         embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
-        retriever_threshold=float(os.getenv("RETRIEVER_THRESHOLD", "0.45")),
+        retriever_threshold=float(os.getenv("RETRIEVER_THRESHOLD", "0.55")),  # 실측 캘리브레이션 - 0.45→0.55
         hira_api_key=os.getenv("HIRA_API_KEY", ""),
     )
