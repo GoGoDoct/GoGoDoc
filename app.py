@@ -546,22 +546,98 @@ _LOGIN_CSS = """
 <style>
 /* ── 로그인 폼 ── */
 
-/* 폼 전체 최대 너비 제한: 브랜드 패널(26vw) + 좌측 여백(80px) + 폼(440px) */
+/* 폼 전체 최대 너비 제한 */
 .block-container {
-    max-width: calc(26vw + 520px) !important;
+    max-width: 100% !important;
+}
+
+/* 로그인 화면 전역 카드형 래퍼 제거 */
+[data-testid="stVerticalBlockBorderWrapper"] > div,
+[data-testid="stVerticalBlock"],
+[data-testid="stVerticalBlock"] > div,
+[data-testid="stHorizontalBlock"],
+[data-testid="stHorizontalBlock"] > div,
+[data-testid="column"],
+[data-testid="column"] > div,
+.element-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.gg-login-shell {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+}
+
+.gg-login-kicker {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #64748B;
+    margin-bottom: 14px;
+}
+
+.gg-login-title {
+    font-size: 30px;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -.03em;
+    margin: 0;
+}
+
+.gg-login-sub {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #667085;
+    margin: 12px 0 28px;
+}
+
+.gg-login-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+    font-size: 13.5px;
+    color: #98A2B3;
+}
+
+/* 로그인 폼 래퍼 박스 제거 */
+[data-testid="stForm"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+[data-testid="stForm"] > div,
+[data-testid="stForm"] [data-testid="stVerticalBlock"],
+[data-testid="stForm"] [data-testid="stVerticalBlock"] > div,
+[data-testid="stForm"] [data-testid="stHorizontalBlock"],
+[data-testid="stForm"] [data-testid="stHorizontalBlock"] > div,
+[data-testid="stForm"] [data-testid="column"],
+[data-testid="stForm"] [data-testid="column"] > div,
+[data-testid="stForm"] .element-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
 }
 
 /* 입력 필드: 흰 배경 + 연한 테두리 */
 [data-testid="stTextInput"] input {
-    border-radius: 10px !important;
-    border: 1.5px solid #D8E0EE !important;
+    border-radius: 12px !important;
+    border: 1px solid #D7DEE8 !important;
     background: #FFFFFF !important;
     box-shadow: none !important;
     padding: 12px 16px !important;
     font-size: 15px !important;
-    color: #2D3748 !important;
-    height: 50px !important;
-    transition: border-color .15s !important;
+    color: #182230 !important;
+    height: 52px !important;
+    transition: border-color .15s, box-shadow .15s !important;
 }
 [data-testid="stTextInput"] input:focus {
     border-color: #15448A !important;
@@ -573,28 +649,30 @@ _LOGIN_CSS = """
 /* 레이블 */
 [data-testid="stTextInput"] label {
     font-size: 13px !important;
-    font-weight: 600 !important;
-    color: #4A5568 !important;
+    font-weight: 700 !important;
+    color: #344054 !important;
     display: block !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 7px !important;
 }
 
 /* 로그인 버튼 */
-[data-testid="stButton"]:has(button[kind="primary"]) button {
-    border-radius: 10px !important;
-    background: #1E3A78 !important;
+[data-testid="stButton"]:has(button[kind="primary"]) button,
+[data-testid="stFormSubmitButton"] button[kind="primary"] {
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #274777, #1C3559) !important;
     color: #fff !important;
     font-size: 16px !important;
     font-weight: 700 !important;
-    letter-spacing: 1px !important;
+    letter-spacing: -.01em !important;
     height: 52px !important;
     border: none !important;
-    box-shadow: 0 4px 14px rgba(30,58,120,.28) !important;
+    box-shadow: 0 8px 18px rgba(28,53,89,.22) !important;
     transition: background .15s, box-shadow .15s !important;
 }
-[data-testid="stButton"]:has(button[kind="primary"]) button:hover {
-    background: #15448A !important;
-    box-shadow: 0 6px 18px rgba(30,58,120,.35) !important;
+[data-testid="stButton"]:has(button[kind="primary"]) button:hover,
+[data-testid="stFormSubmitButton"] button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #22406B, #162E4D) !important;
+    box-shadow: 0 10px 22px rgba(28,53,89,.28) !important;
 }
 
 /* 회원가입 버튼 → 링크 텍스트 */
@@ -603,8 +681,8 @@ _LOGIN_CSS = """
     background: transparent !important;
     color: #15448A !important;
     font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 4px 0 !important;
+    font-weight: 700 !important;
+    padding: 0 !important;
     box-shadow: none !important;
     text-decoration: underline !important;
     height: auto !important;
@@ -613,7 +691,7 @@ _LOGIN_CSS = """
 /* 체크박스 */
 [data-testid="stCheckbox"] label {
     font-size: 13px !important;
-    color: #4A5568 !important;
+    color: #475467 !important;
 }
 </style>
 """
@@ -624,29 +702,44 @@ def render_login(pool):
     st.markdown(ui.brand_panel_html(), unsafe_allow_html=True)
     st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
 
-    # 제목 + 부제목
-    st.markdown(
-        '<h1 style="font-size:32px;font-weight:800;color:#1A202C;margin:0 0 8px;letter-spacing:-.5px">로그인</h1>'
-        '<p style="font-size:14px;color:#718096;margin:0 0 24px">검진 기록과 해석 결과를 한곳에서 관리하세요.</p>',
-        unsafe_allow_html=True,
-    )
+    submitted = False
+    _left, center, _right = st.columns([0.9, 1.15, 1.05], gap="large")
 
-    st.text_input("이름", placeholder="홍길동", key="login_email")
-    st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
-
-    # 체크박스 + 비밀번호 찾기 (폭 제어용 컬럼 — 배경 투명 처리됨)
-    chk_col, link_col = st.columns([1.2, 1])
-    with chk_col:
-        st.checkbox("로그인 상태 유지", value=False, key="login_remember")
-    with link_col:
+    with center:
         st.markdown(
-            '<div style="text-align:right;padding-top:6px">'
-            '<span style="font-size:13px;color:#15448A;font-weight:600;cursor:pointer">비밀번호 찾기</span>'
-            '</div>',
+            '<div class="gg-login-shell">'
+            '<div class="gg-login-kicker">Account Access</div>'
+            '<h1 class="gg-login-title">로그인</h1>'
+            '<p class="gg-login-sub">검진 기록과 해석 결과를 한곳에서 확인하고, 필요한 후속 관리 흐름까지 이어서 볼 수 있습니다.</p>',
             unsafe_allow_html=True,
         )
 
-    if st.button("로그인", type="primary", use_container_width=True):
+        with st.form("login_form"):
+            st.text_input("이름", placeholder="홍길동", key="login_email")
+            st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
+
+            chk_col, link_col = st.columns([1.2, 1])
+            with chk_col:
+                st.checkbox("로그인 상태 유지", value=False, key="login_remember")
+            with link_col:
+                st.markdown(
+                    '<div style="text-align:right;padding-top:6px">'
+                    '<span style="font-size:13px;color:#15448A;font-weight:700;cursor:pointer">비밀번호 찾기</span>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+
+            submitted = st.form_submit_button("로그인", type="primary", use_container_width=True)
+
+        st.markdown(
+            '<div class="gg-login-footer"><span>계정이 없으신가요?</span></div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("회원가입", use_container_width=True, key="to_signup"):
+            go("signup")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if submitted:
         name = st.session_state.get("login_email", "")
         pw = st.session_state.get("login_pw", "")
         if not name or not pw:
@@ -662,13 +755,6 @@ def render_login(pool):
                 go("dashboard")
             except AuthError:
                 st.error("이름 또는 비밀번호가 올바르지 않습니다")
-
-    st.markdown(
-        '<div style="text-align:center;font-size:13px;color:#A0AEC0;margin-top:20px">계정이 없으신가요?</div>',
-        unsafe_allow_html=True,
-    )
-    if st.button("회원가입", use_container_width=True, key="to_signup"):
-        go("signup")
 
 
 def render_signup(pool):
