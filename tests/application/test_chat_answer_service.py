@@ -47,6 +47,14 @@ def _latest_analysis() -> dict:
     }
 
 
+def _empty_latest_analysis() -> dict:
+    return {
+        "tracking_items": [],
+        "emergency_alerts": [],
+        "items_json": [],
+    }
+
+
 def test_blocked_question_returns_routing_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
@@ -172,11 +180,11 @@ def test_checkup_summary_uses_latest_result_without_answer_llm_call():
     assert answer_llm.calls == []
 
 
-def test_no_grounding_answer_preserves_classifier_question_type():
+def test_report_fallback_answer_preserves_classifier_question_type():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"department_guide","route_reason":"진료과 안내"}'
     )
-    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    answer_llm = _CountingLLM("최신 결과의 주의 항목 기준으로 진료과 상담 방향을 안내합니다.")
     service = ChatAnswerService(
         router=ChatService(classifier_llm),
         rag=ChatRagService(answer_llm),
@@ -187,7 +195,54 @@ def test_no_grounding_answer_preserves_classifier_question_type():
     assert msg.routed is False
     assert msg.scope_flag == Scope.ALLOWED
     assert msg.question_type == QuestionType.DEPARTMENT_GUIDE
+    assert msg.route_reason == "report_fallback_answer"
+    assert msg.context_item_names == ["BMI", "ALT"]
+    assert msg.sources
+    assert "특정 검진 항목을 찾지 못해" in msg.content
+    assert len(answer_llm.calls) == 1
+    assert "최신 검진 결과 관련 수치 있음" in answer_llm.calls[0]["user"]
+
+
+def test_no_grounding_answer_preserves_question_type_when_report_has_no_fallback_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"department_guide","route_reason":"진료과 안내"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("어느 진료과 가야 해요?", _empty_latest_analysis())
+
+    assert msg.routed is False
+    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.DEPARTMENT_GUIDE
     assert msg.route_reason == "no_grounding"
     assert msg.context_item_names == []
     assert msg.sources == []
     assert answer_llm.calls == []
+
+
+def test_reference_only_answer_marks_item_missing_from_latest_result():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("요산은 생활습관 관리가 중요합니다.")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("요산이 높으면 뭘 조심해야 해요?", _latest_analysis())
+
+    assert msg.routed is False
+    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.LIFESTYLE_GENERAL
+    assert msg.route_reason == "reference_only_answer"
+    assert msg.context_item_names == ["요산"]
+    assert msg.sources
+    assert "최신 검진 결과에서 요산" in msg.content
+    assert "일반 정보" in msg.content
+    assert len(answer_llm.calls) == 1
+    assert "최신 검진 결과에 해당 항목 없음" in answer_llm.calls[0]["user"]
