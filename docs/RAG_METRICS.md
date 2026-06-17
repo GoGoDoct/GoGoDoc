@@ -15,7 +15,7 @@ RAG(F-004 근거기반 해석 + F-007 결과기반 챗봇)의 성능을 정량 �
 |------|------|------|-----------|
 | **검색 RAG** | F-003 정규화 + F-004 근거검색 | ✅ 구현 | 원본 항목명 → 표준명 → 근거 엔트리 |
 | **생성 RAG** | F-004 해석 생성 | ✅ 구현 | 근거 위에서만 설명 생성 (환각 억제) |
-| **챗봇 RAG** | F-007 결과기반 챗봇 | 🟡 부분 | 질문분류·라우팅(석준) ✅ + **공인출처 RAG 답변생성(희정) ✅** / 챗봇 UI 미연동 |
+| **챗봇 RAG** | F-007 결과기반 챗봇 | ✅ 구현 | 질문분류·안전 라우팅(석준) + 공인출처 RAG 답변생성(희정) + 최신 검진 결과 연결 |
 
 현재 코드 검색 방식: `dict` 키조회 기본 / `pgvector` 선택 (retriever 포트 교체). 동일 골든셋으로 둘 다 측정 가능.
 
@@ -53,7 +53,7 @@ RAG(F-004 근거기반 해석 + F-007 결과기반 챗봇)의 성능을 정량 �
 
 > 출처 인용은 생성 지표가 아니다 - 실제 파이프라인은 출처를 설명 텍스트가 아니라 `InterpretedItem.source` 필드로 별도 표기하므로, 출처 충실도는 검색측(§2.1 출처 일치율)에서 결정적으로 측정한다.
 
-### 2.3 챗봇 지표 (F-007, 미구현 - 설계 기준)
+### 2.3 챗봇 지표 (F-007)
 
 ChatMessage 스키마(`scope_flag`, `routed`, `sources`)와 직결.
 
@@ -64,6 +64,8 @@ ChatMessage 스키마(`scope_flag`, `routed`, `sources`)와 직결.
 | **과차단율** (Over-routing) | 허용 질문을 잘못 차단한 비율 | 낮을수록 좋음 (UX) |
 | **컨텍스트 정합성** (Context Relevance) | 답변이 검진결과 컨텍스트·공인출처에 근거한 비율 | 높을수록 좋음 |
 | **인용 정확도** | `sources`가 실제 근거와 일치 | 높을수록 좋음 |
+
+F-007은 범용 의료 상담 챗봇이 아니라 최신 검진 결과 해석 보조 기능이다. 장기 대화 memory, 다년도 추세 비교, 진단 확정, 처방·복약·용량 판단은 평가 대상에서 제외하고 차단 또는 안내 라우팅으로 측정한다.
 
 ---
 
@@ -147,7 +149,18 @@ Google Sheet `Golden_Dataset` 기반 100건 중 남아 있던 비수치 소견 9
 | 수치 환각률 | **0%** (0/8) | 근거(카드·범위·내수치) 밖 숫자 없음 |
 | 진단어 등장 | 0/8 | 안전 |
 
-검색 버그 발견·수정: 1글자 조사 `이`가 fuzzy로 `중성지방`에 오매칭 → 챗봇 검색은 영문 정확매칭 + 한글 표기 substring으로 변경(fuzzy 미사용). 데이터셋 `evaluation/datasets/chat_answer_golden.jsonl`. 한계(MVP): 항목·카테고리 미언급 포괄질문("전체 설명해줘")은 폴백 - 결과 전체요약 연동은 추후.
+검색 버그 발견·수정: 1글자 조사 `이`가 fuzzy로 `중성지방`에 오매칭 → 챗봇 검색은 영문 정확매칭 + 한글 표기 substring으로 변경(fuzzy 미사용). 데이터셋 `evaluation/datasets/chat_answer_golden.jsonl`. 이 평가는 RAG 답변 단독 평가이며, 최신 결과 전체요약은 `ChatAnswerService` 통합 정책 평가에서 별도로 검증한다.
+
+### 2026-06-17 — F-007 챗봇 라우팅·통합 정책 재검증
+
+F-007 백엔드 현재 범위는 최신 `analysis_results` 1건 기반의 검진 결과 해석 보조다. 장기 대화 memory와 UI 개편은 이 측정 범위에 포함하지 않는다.
+
+| 평가 | 데이터셋 | 수치 | 재현 |
+|------|----------|------|------|
+| 스코프 분류 | `chat_scope_golden.jsonl` 59건 | 분류 정확도 100%, 위험질문 차단율 100%, 응급 라우팅 100% | `python evaluation/chat_eval.py --no-log` |
+| 통합 정책 | `chat_answer_service_golden.jsonl` 8건 | 8/8 통과, 차단 질문 answer LLM 호출 0 | `python evaluation/chat_answer_service_eval.py --no-log` |
+
+현재 남은 과제는 기능 구현보다 실제 업로드 결과·사용자군·질문 표현을 늘리는 평가셋 확장이다.
 
 ### 2026-06-16 — F-004 단정 표현 필터 고도화 (결정적, 22건)
 
@@ -212,7 +225,7 @@ LLM 을 붙여 실제 생성해보니 환각 채점이 오탐하고 있었음 - 
 | ~~G043 Hb 오적중~~ | ✅ 해결 (2026-06-16) - `hb`·`혈색소`→`헤모글로빈` 동의어 등록(exact 우선)으로 fuzzy 오적중 제거, 오적중 0 | 완료 |
 | ~~영문약어 미등록~~ | ✅ 해결 (2026-06-16) - γ-GTP·TG·SBP·Hb·혈색소·사구체여과율 등 동의어 확장, known_gap 4건 회귀 승격 | 완료 |
 | 금지어 드리프트 | G010 공복혈당(정상) 해설이 타도메인어 언급 1/43 - 검토 권장 | 낮음 |
-| F-007 챗봇 미구현 | 질문분류·라우팅·공인출처 골든셋 부재 | 기능 구현 후 |
+| F-007 평가 데이터 다양성 | 실제 업로드 결과·사용자군·질문 표현을 더 넓힌 반복 평가 필요 | 중 |
 | 출처 정합성 | dict `source`가 공인출처(HIRA·질병관리청·대한임상검사정도관리협회) 기준과 일부만 일치 | 중 |
 | ~~pgvector 미측정~~ | ✅ 해결 (2026-06-16) - 실측·임계값 0.55 캘리브레이션, direct 60.9%·오적중 0 (§7) | 완료 |
 
@@ -232,11 +245,13 @@ python evaluation/assertion_eval.py                # 단정 차단율·오차단
 # F-007 챗봇 (OPENAI_API_KEY)
 python evaluation/chat_eval.py                     # 스코프 분류·차단율 + history 기록
 python evaluation/chat_answer_eval.py              # RAG 답변 충실도 + history 기록
-# 추이 대시보드 (3종 평가 시계열)
+python evaluation/chat_answer_service_eval.py      # 최신 결과 연결·LLM 호출 정책 + history 기록
+python evaluation/chat_answer_smoke.py --user-id 1 --question "BMI가 높으면 어떻게 관리해요?" --mode fake
+# 추이 대시보드 (주요 RAG·챗봇 평가 시계열)
 streamlit run evaluation/dashboard.py
 ```
 
-모든 평가(golden·chat_scope·chat_answer)가 `evaluation/history/runs.jsonl` 에 `kind` 태그로 누적되고 대시보드 추이 탭에서 한눈에 본다 (`--no-log` 로 기록 생략 가능).
+`--no-log` 없이 실행한 평가는 `evaluation/history/runs.jsonl` 에 `kind` 태그로 누적된다. 대시보드는 주요 RAG·챗봇 평가 추이를 표시하며, 표시 범위는 `evaluation/dashboard.py` 구현을 따른다.
 데이터셋 스키마·intent 분류는 [`evaluation/README.md`](../evaluation/README.md) 참고.
 회귀 게이트(핵심 100%·오적중 0): `tests/test_rag_golden.py`.
 

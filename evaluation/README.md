@@ -7,7 +7,9 @@ GoGoDoc RAG 파이프라인의 end-to-end 성능을 측정·추적하는 평가 
 
 ```
 evaluation/
-  datasets/rag_golden.jsonl   골든 케이스 52건 (한 줄당 한 케이스)
+  datasets/rag_golden.jsonl   RAG 골든 케이스 69건 (한 줄당 한 케이스)
+  datasets/team_golden.jsonl  팀 골든셋 임상 채점 100건
+  datasets/chat_*.jsonl       F-007 챗봇 분류·답변·통합 정책 골든셋
   harness.py                  코어 - 로드·채점·지표 산출·기록 (CLI·대시보드·테스트 공통)
   eval_rag.py                 CLI - 평가 실행·출력·history 누적 기록
   dashboard.py                Streamlit 추이 대시보드
@@ -76,15 +78,26 @@ evaluation/
 | `oov_miss` | 지식베이스 미수록 -> 검색 미적중·unknown 이 정답(환각 금지) |
 | `fuzzy_false_positive_guard` | 미수록 항목이 엉뚱한 표준명으로 오매칭되면 안 됨 |
 | `check_needed_null_value` | 측정값 null -> check_needed |
-| `known_gap_no_synonym` | 영문약어(γ-GTP, TG, SBP, Hb) 동의어 미등록 -> 현재 실패 예상 |
+| `known_gap_no_synonym` | 과거 영문약어(γ-GTP, TG, SBP, Hb) 동의어 미등록 회귀 설명용. 현재 대표 케이스는 회귀 승격됨 |
 
 ## known_gap 케이스
 
-`known_gap: true` 인 4건은 **현재 코드가 통과하지 못할 것으로 예상되는** 케이스다. 데이터셋에 일부러 넣어 동의어 사전 확장이 필요한 지점을 드러낸다. 하니스는 이들을 headline 점수에서 분리해 별도 집계한다.
+`known_gap: true` 케이스는 **현재 코드가 통과하지 못할 것으로 예상되는** 의도적 미해결 케이스를 뜻한다. 하니스는 이들을 headline 점수에서 분리해 별도 집계한다.
 
-- G009 `γ-GTP`, G026 `TG`, G038 `SBP`, G043 `Hb` — 영문약어 동의어 미등록 → 현재 miss/unknown
+과거 G009 `γ-GTP`, G026 `TG`, G038 `SBP`, G043 `Hb` 는 영문약어 동의어 미등록과 Hb 오적중을 드러내기 위한 known gap이었다. 현재는 동의어 확장으로 회귀 케이스로 승격되었고, 최신 데이터셋 기준 `rag_golden.jsonl`은 69건이다.
 
-이 갭은 `synonyms.py` 에 약어를 추가하면 해소된다. 해소 후 해당 케이스의 `known_gap` 을 내려 회귀 테스트로 승격한다.
+현재 대표 known gap은 활성 상태가 아니다. 새 미해결 케이스를 추가할 때만 `known_gap: true` 로 분리하고, 해소 후에는 플래그를 내려 회귀 테스트로 승격한다.
+
+## F-007 챗봇 평가
+
+F-007은 최신 검진 결과 1건을 근거로 수치 설명, 일반 생활습관, 진료과 안내만 제공하는 제한형 챗봇이다. 진단, 처방, 복약, 용량, 응급 증상, 일반 증상 상담, 범위 밖 질문은 답변 생성 전에 라우팅한다.
+
+| 평가기 | 데이터셋 | 목적 |
+|--------|----------|------|
+| `chat_eval.py` | `chat_scope_golden.jsonl` 59건 | 질문 분류, 위험질문 차단율, 응급 라우팅 |
+| `chat_answer_eval.py` | `chat_answer_golden.jsonl` 10건 | 허용 질문의 RAG 답변 근거성, 출처, 환각 방지 |
+| `chat_answer_service_eval.py` | `chat_answer_service_golden.jsonl` 8건 | 최신 결과 연결, `question_type`·`route_reason`, answer LLM 호출 정책 |
+| `chat_answer_smoke.py` | 로컬 DB 최신 `analysis_results` | Streamlit 없이 실제 DB row와 답변 서비스 연결 확인 |
 
 ## 생성 충실도 채점 규칙
 
@@ -113,6 +126,18 @@ RETRIEVER=pgvector python evaluation/eval_rag.py --direct
 
 # 생성 충실도까지 (OPENAI_API_KEY 필요)
 python evaluation/eval_rag.py --gen
+
+# F-007 질문 라우팅·위험질문 차단율
+python evaluation/chat_eval.py --no-log
+
+# F-007 챗봇 RAG 답변 근거성
+python evaluation/chat_answer_eval.py --no-log
+
+# F-007 최신 결과 연결·LLM 호출 정책
+python evaluation/chat_answer_service_eval.py --no-log
+
+# F-007 로컬 DB 스모크
+python evaluation/chat_answer_smoke.py --user-id 1 --question "BMI가 높으면 어떻게 관리해요?" --mode fake
 
 # 추이 대시보드
 streamlit run evaluation/dashboard.py

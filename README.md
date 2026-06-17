@@ -149,11 +149,14 @@ python evaluation/eval_rag.py                    # 검색·정규화·판정 (�
 python evaluation/clinical_eval.py               # 팀 골든 임상 채점
 python evaluation/retrieval_eval.py              # Recall@3·Negative Retrieval·Coverage
 python evaluation/gen_eval.py                    # 생성 LLM-judge (Groundedness·환각, OPENAI_API_KEY)
+python evaluation/chat_eval.py --no-log          # F-007 질문 라우팅·위험질문 차단율
+python evaluation/chat_answer_eval.py --no-log   # F-007 챗봇 RAG 답변 근거성
+python evaluation/chat_answer_service_eval.py --no-log  # F-007 최신 결과 연결·LLM 호출 정책
 RETRIEVER=hybrid python evaluation/variant_eval.py   # 하이브리드 변형 구제 효과 (DB)
 streamlit run evaluation/dashboard.py            # 지표 추이 대시보드
 ```
 
-결과는 `evaluation/history/runs.jsonl`(gitignore) 에 누적되고 대시보드가 추이를 그립니다.
+`--no-log` 없이 실행한 평가는 `evaluation/history/runs.jsonl`(gitignore) 에 누적됩니다. 대시보드는 주요 RAG·챗봇 평가 추이를 표시합니다.
 
 ### 테스트
 
