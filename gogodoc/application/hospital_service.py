@@ -25,6 +25,7 @@ _DEPT_SYSTEM_PROMPT = (
 )
 
 _MAX_RESULTS = 5
+_DEPT_ATTACH_LIMIT = 15  # 진료과 API 호출 상한 (병원당 1회이므로 제한 필요)
 
 
 def recommend_hospitals(
@@ -63,6 +64,7 @@ def recommend_hospitals(
     if not hospitals:
         return []
 
+    hospitals = hospitals[:_DEPT_ATTACH_LIMIT]
     hospitals = _attach_departments(settings.hira_api_key, hospitals)
     hospitals = _filter_by_departments(hospitals, departments)
 
