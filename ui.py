@@ -53,6 +53,27 @@ def _val_label(it):
     return it.get("value_text", it["value"])
 
 
+def _fmt_num(value) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if number.is_integer():
+        return str(int(number))
+    return f"{number:.1f}"
+
+
+def _safe_range_text(it: dict) -> str:
+    low, high = it.get("low"), it.get("high")
+    if low is None and high is None:
+        return "기준 정보 없음"
+    if high is None:
+        return f"{_fmt_num(low)} 이상"
+    if low in (None, 0):
+        return f"{_fmt_num(high)} 이하"
+    return f"{_fmt_num(low)}~{_fmt_num(high)}"
+
+
 def bar_html(it) -> str:
     marker, n_left, n_width = bar_metrics(it["value"], it["low"], it["high"])
     bar_color = STATUS[it["status"]]["bar"]
@@ -137,13 +158,14 @@ def report_table_top_html(gender_short: str, age: int,
     date_display = f"검진일: {date_str}" if date_str else "검진일: -"
     return (
         f'<div style="text-align:center;border-bottom:3px solid #1B2533;padding-bottom:14px">'
-        f'<div style="font-size:17px;font-weight:800;letter-spacing:3px;color:#1B2533">종 합 검 진 결 과 통 보 서</div>'
-        f'<div style="font-size:13px;color:#8590A1;margin-top:6px;font-weight:500">한빛종합건강검진센터</div></div>'
-        f'<div style="display:flex;justify-content:space-between;font-size:13px;color:#5B6678;'
-        f'margin-top:14px;padding-bottom:14px;border-bottom:1px solid #EDF1F6;font-weight:500">'
+        f'<div style="font-size:17px;font-weight:850;letter-spacing:3px;color:#1B2533;line-height:1.25">종 합 검 진 결 과 통 보 서</div>'
+        f'<div style="font-size:13px;color:#8590A1;margin-top:6px;font-weight:600;line-height:1.35">한빛종합건강검진센터</div></div>'
+        f'<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:#5B6678;'
+        f'margin-top:14px;padding-bottom:14px;border-bottom:1px solid #EDF1F6;font-weight:650;line-height:1.45">'
         f'<span>수검자: {user_name} ({gender_short}, 만 {age}세)</span><span>{date_display}</span></div>'
-        f'<div style="display:grid;grid-template-columns:1.6fr 1fr 1.2fr;margin-top:14px;font-size:12.5px;'
-        f'font-weight:700;color:#8590A1;padding:0 6px 10px;border-bottom:1px solid #E4E9F0;letter-spacing:-.2px">'
+        f'<div style="display:grid;grid-template-columns:minmax(180px,1.45fr) minmax(160px,1fr) minmax(160px,1.1fr);'
+        f'gap:8px;margin-top:14px;font-size:12.5px;line-height:1.35;'
+        f'font-weight:800;color:#8590A1;padding:0 6px 10px;border-bottom:1px solid #E4E9F0;letter-spacing:-.2px">'
         f'<span>검사 항목</span><span style="text-align:right">결과</span>'
         f'<span style="text-align:right">참조 범위</span></div>'
     )
@@ -181,12 +203,215 @@ def report_row_html(it: dict, is_selected: bool = False) -> str:
     )
 
 
+def report_value_cell_html(it: dict) -> str:
+    """검진 결과 행의 결과값 셀."""
+    s = STATUS[it["status"]]
+    val_color = "#2B3545" if it["status"] == "정상" else s["color"]
+    return (
+        f'<div style="display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;'
+        f'padding:0 8px;border-bottom:1px solid #F0F4FA;height:56px;min-height:56px;white-space:nowrap;overflow:hidden">'
+        f'<span style="display:inline-flex;align-items:center;gap:5px;border:1px solid {s["border"]};'
+        f'background:{s["bg"]};color:{s["color"]};border-radius:999px;padding:4px 8px;'
+        f'font-size:11.5px;font-weight:850;letter-spacing:-.1px;line-height:1.1;flex:none">'
+        f'<span style="width:6px;height:6px;border-radius:50%;background:{s["color"]};display:inline-block;flex:none"></span>{it["status"]}</span>'
+        f'<span style="font-size:14px;font-weight:900;color:{val_color};line-height:1.2;overflow:hidden;text-overflow:ellipsis;min-width:0">'
+        f'{_val_label(it)} <span style="font-size:12px;font-weight:650;color:#9099A8">{it["unit"]}</span></span>'
+        f'</div>'
+    )
+
+
+def report_range_cell_html(it: dict) -> str:
+    """검진 결과 행의 참조 범위 셀."""
+    return (
+        '<div style="display:flex;align-items:center;justify-content:center;text-align:center;'
+        'font-size:13px;color:#8590A1;font-weight:650;line-height:1.35;'
+        'padding:0 8px;border-bottom:1px solid #F0F4FA;height:56px;min-height:56px;word-break:keep-all;'
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+        f'{_safe_range_text(it)}</div>'
+    )
+
+
 def report_table_note_html() -> str:
     """하단 면책 주석 및 사용 안내."""
     return (
-        '<div style="font-size:12px;color:#A4ACBA;margin-top:12px;line-height:1.7;padding-bottom:4px">'
+        '<div style="font-size:12px;color:#A4ACBA;margin-top:12px;line-height:1.75;padding-bottom:4px;word-break:keep-all">'
         '※ 데모용 샘플 데이터입니다. ● 정상 · ● 주의 · ● 이상 · '
-        '<span style="color:#15448A;font-weight:700">› 버튼을 누르면 항목별 AI 상세 해석을 볼 수 있어요</span></div>'
+        '<span style="color:#15448A;font-weight:700">항목명을 클릭하면 쉬운 정의를 볼 수 있어요</span></div>'
+    )
+
+
+def _definition_for_item(name: str, category: str = "") -> str:
+    """검진 항목을 일반 사용자가 이해하기 쉬운 말로 설명."""
+    n = (name or "").lower()
+    c = category or ""
+    definitions = [
+        (("ldl", "저밀도"), "LDL은 혈관 벽에 콜레스테롤을 쌓이게 하기 쉬운 운반체입니다. 흔히 나쁜 콜레스테롤이라고 부르며, 높을수록 혈관 건강을 함께 확인하는 것이 좋습니다."),
+        (("hdl", "고밀도"), "HDL은 혈관에 남은 콜레스테롤을 간으로 가져가 정리하는 데 도움을 주는 운반체입니다. 흔히 좋은 콜레스테롤이라고 부릅니다."),
+        (("총콜레스테롤", "콜레스테롤"), "콜레스테롤은 세포막과 호르몬을 만드는 데 필요한 지방 성분입니다. 다만 혈액 속에 너무 많으면 혈관 벽에 쌓여 혈액 흐름에 부담을 줄 수 있습니다."),
+        (("중성지방", "triglyceride", "tg"), "중성지방은 음식으로 섭취한 에너지 중 남은 부분이 지방 형태로 저장된 것입니다. 높으면 혈당, 체중, 혈관 건강을 함께 살펴보는 것이 좋습니다."),
+        (("공복혈당", "혈당", "glucose"), "혈당은 혈액 속 포도당의 양입니다. 포도당은 몸의 주요 에너지원이며, 공복 상태에서 높게 나오면 당 조절 상태를 확인해야 합니다."),
+        (("당화혈색소", "hba1c"), "당화혈색소는 최근 2~3개월 동안의 평균 혈당 흐름을 보여주는 지표입니다. 하루의 일시적인 혈당보다 장기적인 당 조절 상태를 보는 데 도움이 됩니다."),
+        (("ast", "got"), "AST는 간, 심장, 근육 등에 있는 효소입니다. 수치가 높으면 간이나 근육이 자극을 받았는지 함께 확인합니다."),
+        (("alt", "gpt"), "ALT는 주로 간세포 안에 있는 효소입니다. 간세포가 손상되거나 부담을 받으면 혈액에서 높게 보일 수 있습니다."),
+        (("감마", "γ", "ggt", "gtp"), "감마지티피는 간과 담도 상태를 볼 때 참고하는 효소입니다. 음주, 지방간, 담도 문제와 관련되어 높아질 수 있습니다."),
+        (("크레아티닌", "creatinine"), "크레아티닌은 근육에서 만들어져 콩팥을 통해 배출되는 노폐물입니다. 콩팥이 노폐물을 잘 걸러내는지 확인할 때 사용합니다."),
+        (("egfr", "사구체"), "eGFR은 콩팥이 혈액을 얼마나 잘 걸러내는지 추정한 값입니다. 낮을수록 콩팥 기능을 더 주의 깊게 살펴봐야 합니다."),
+        (("요소질소", "bun"), "요소질소는 단백질이 분해된 뒤 생기는 노폐물입니다. 콩팥 기능, 수분 상태, 단백질 섭취 상태를 함께 볼 때 참고합니다."),
+        (("혈압", "수축기", "이완기"), "혈압은 심장이 피를 보낼 때 혈관에 가해지는 압력입니다. 지속적으로 높으면 심장과 혈관에 부담이 커질 수 있습니다."),
+        (("헤모글로빈", "혈색소", "hemoglobin", " hb"), "헤모글로빈은 적혈구 안에서 산소를 운반하는 단백질입니다. 낮으면 빈혈 가능성을, 높으면 혈액 농축 상태 등을 함께 봅니다."),
+        (("백혈구", "wbc"), "백혈구는 세균이나 바이러스 같은 외부 자극에 대응하는 면역 세포입니다. 염증이나 감염 여부를 확인할 때 참고합니다."),
+        (("혈소판", "platelet", "plt"), "혈소판은 피가 났을 때 지혈을 돕는 작은 혈액 성분입니다. 너무 낮거나 높으면 출혈 또는 혈전 위험과 관련해 확인이 필요합니다."),
+        (("요산", "uric"), "요산은 음식과 몸속 세포에서 나온 퓨린이라는 물질이 분해되며 생기는 노폐물입니다. 높으면 통풍이나 신장 부담과 관련될 수 있습니다."),
+        (("tsh", "갑상선"), "TSH는 갑상선 호르몬 분비를 조절하라고 신호를 보내는 호르몬입니다. 갑상선 기능이 적절한지 확인하는 데 사용합니다."),
+        (("bmi", "체질량", "비만"), "BMI는 키와 몸무게를 이용해 체중 상태를 대략적으로 보는 지표입니다. 근육량은 반영하지 못하므로 다른 건강 지표와 함께 보는 것이 좋습니다."),
+        (("시력",), "시력은 눈이 사물을 얼마나 선명하게 구분하는지 보여주는 지표입니다. 변화가 크거나 불편감이 있으면 안과 확인이 도움이 됩니다."),
+        (("청력",), "청력은 소리를 듣고 구분하는 능력을 확인하는 항목입니다. 한쪽만 떨어지거나 일상 대화가 불편하면 추가 검사를 고려합니다."),
+    ]
+    for keys, text in definitions:
+        if any(key in n for key in keys):
+            return text
+
+    category_fallbacks = {
+        "지질": "지질 항목은 혈액 속 지방 성분의 상태를 보는 검사입니다. 혈관 건강과 심혈관 질환 위험을 판단할 때 참고합니다.",
+        "혈당": "혈당 항목은 몸이 포도당을 얼마나 안정적으로 조절하는지 확인하는 검사입니다. 당뇨병 위험을 살펴볼 때 중요합니다.",
+        "간기능": "간기능 항목은 간이 영양소 처리와 해독을 하는 과정에서 관련 효소가 혈액에 얼마나 보이는지 확인하는 검사입니다.",
+        "신장": "신장 항목은 콩팥이 노폐물을 걸러내고 몸의 수분 균형을 조절하는 기능을 확인하는 검사입니다.",
+        "혈액": "혈액 항목은 산소 운반, 면역 반응, 지혈 기능처럼 혈액의 기본 상태를 확인하는 검사입니다.",
+        "혈압": "혈압 항목은 혈관에 가해지는 압력을 확인해 심장과 혈관에 부담이 있는지 살펴보는 지표입니다.",
+    }
+    return category_fallbacks.get(c, "이 항목은 검진에서 몸 상태를 간접적으로 확인하기 위해 측정하는 지표입니다. 수치 하나만으로 판단하기보다 다른 검사 결과와 증상을 함께 보는 것이 좋습니다.")
+
+
+def _has_final_consonant(text: str) -> bool:
+    """마지막 한글 음절의 받침 여부 확인."""
+    for char in reversed((text or "").strip()):
+        code = ord(char)
+        if 0xAC00 <= code <= 0xD7A3:
+            return (code - 0xAC00) % 28 != 0
+        if char.isalnum():
+            return False
+    return False
+
+
+def definition_question(name: str) -> str:
+    """항목명에 맞는 '이란/란' 질문 문구."""
+    particle = "이란?" if _has_final_consonant(name) else "란?"
+    return f"{name}{particle}"
+
+
+def result_comparison_html(it: dict) -> str:
+    """표준 기준과 내 검사 결과 비교 시각화."""
+    value = it.get("value")
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return ""
+
+    low, high = it.get("low"), it.get("high")
+    if low is None and high is None:
+        return (
+            '<div style="margin-top:14px;border:1px solid #E5EAF2;border-radius:16px;background:#FFFFFF;padding:14px 16px">'
+            '<div style="font-size:14px;font-weight:850;color:#111827;margin-bottom:8px;line-height:1.3">표준 기준과 내 결과 비교</div>'
+            '<div style="font-size:14px;line-height:1.7;color:#64748B;word-break:keep-all">이 항목은 표준 기준값이 제공되지 않아 수치 위치 비교를 표시하지 않습니다.</div>'
+            '</div>'
+        )
+
+    marker, normal_left, normal_width = bar_metrics(numeric_value, low, high)
+    s = STATUS[it["status"]]
+    unit = it.get("unit", "")
+    standard_label = _safe_range_text(it)
+    value_label = f'{_val_label(it)} {unit}'.strip()
+
+    if high is not None and numeric_value > float(high):
+        diff = numeric_value - float(high)
+        compare_text = f'기준 상한보다 {_fmt_num(diff)} {unit} 높습니다.'.strip()
+    elif low is not None and numeric_value < float(low):
+        diff = float(low) - numeric_value
+        compare_text = f'기준 하한보다 {_fmt_num(diff)} {unit} 낮습니다.'.strip()
+    else:
+        compare_text = "표준 기준 범위 안에 위치합니다."
+
+    left_label = _fmt_num(low) if low is not None else "0"
+    right_label = _fmt_num(high) if high is not None else "상한 참고"
+    normal_label = "표준 기준 구간"
+    if high is None and low is not None:
+        normal_label = f'{_fmt_num(low)} 이상 기준'
+    elif low in (None, 0) and high is not None:
+        normal_label = f'{_fmt_num(high)} 이하 기준'
+
+    return (
+        '<div style="margin-top:15px;border:1px solid #DDE6F2;border-radius:18px;background:#FFFFFF;'
+        'box-shadow:0 8px 22px rgba(15,23,42,.05);padding:15px 16px">'
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;flex-wrap:wrap">'
+        '<div style="font-size:15px;font-weight:850;color:#111827;line-height:1.3">표준 기준과 내 결과 비교</div>'
+        f'<span style="display:inline-flex;align-items:center;border:1px solid {s["border"]};background:{s["bg"]};'
+        f'color:{s["color"]};border-radius:999px;padding:5px 10px;font-size:12px;font-weight:850;line-height:1.1">{it["status"]}</span>'
+        '</div>'
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-bottom:15px">'
+        '<div style="background:#F8FAFC;border:1px solid #E5EAF2;border-radius:14px;padding:11px 12px">'
+        '<div style="font-size:11.5px;color:#64748B;font-weight:800;margin-bottom:6px;line-height:1.25">표준 기준</div>'
+        f'<div style="font-size:15px;color:#1F2937;font-weight:850;line-height:1.25;word-break:keep-all">{standard_label}</div></div>'
+        '<div style="background:#F8FAFC;border:1px solid #E5EAF2;border-radius:14px;padding:11px 12px">'
+        '<div style="font-size:11.5px;color:#64748B;font-weight:800;margin-bottom:6px;line-height:1.25">내 검사 결과</div>'
+        f'<div style="font-size:15px;color:{s["color"]};font-weight:900;line-height:1.25;word-break:keep-all">{value_label}</div></div>'
+        '<div style="background:#F8FAFC;border:1px solid #E5EAF2;border-radius:14px;padding:11px 12px">'
+        '<div style="font-size:11.5px;color:#64748B;font-weight:800;margin-bottom:6px;line-height:1.25">비교 결과</div>'
+        f'<div style="font-size:13.5px;color:#334155;font-weight:750;line-height:1.5;word-break:keep-all">{compare_text}</div></div>'
+        '</div>'
+        '<div style="position:relative;height:38px;margin:4px 2px 8px">'
+        '<div style="position:absolute;left:0;right:0;top:17px;height:8px;background:#E9EEF5;border-radius:999px;overflow:hidden">'
+        f'<div style="position:absolute;left:{normal_left:.1f}%;width:{normal_width:.1f}%;height:8px;'
+        'background:#DCEBDD;border-left:1px solid #7EB28D;border-right:1px solid #7EB28D"></div>'
+        '</div>'
+        f'<div style="position:absolute;left:{marker:.1f}%;top:4px;transform:translateX(-50%);'
+        f'display:flex;flex-direction:column;align-items:center;gap:3px">'
+        f'<div style="background:{s["color"]};color:#fff;border-radius:999px;padding:3px 8px;'
+        f'font-size:11px;font-weight:850;white-space:nowrap;line-height:1.15">내 결과</div>'
+        f'<div style="width:3px;height:17px;background:{s["color"]};border-radius:999px"></div>'
+        '</div>'
+        '</div>'
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;color:#7A8494;font-weight:750;line-height:1.3;word-break:keep-all">'
+        f'<span>{left_label}</span><span style="color:#3F7B54">{normal_label}</span><span>{right_label}</span>'
+        '</div>'
+        '</div>'
+    )
+
+
+def item_definition_card_html(it: dict) -> str:
+    """선택한 검진 항목의 쉬운 정의 카드."""
+    s = STATUS[it["status"]]
+    accent = s["color"]
+    definition = _definition_for_item(it.get("name", ""), it.get("cat", ""))
+    return (
+        f'<div class="gg-card" style="border-color:#E2E8F2;border-left:5px solid {accent}">'
+        f'<div class="gg-pad" style="padding:18px 20px">'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">'
+        f'<div>'
+        f'<div style="font-size:12px;font-weight:800;color:#64748B;letter-spacing:.4px;text-transform:uppercase;margin-bottom:7px;line-height:1.25">항목 정의</div>'
+        f'<div style="font-size:23px;font-weight:850;color:#111827;letter-spacing:-.5px;line-height:1.25;word-break:keep-all">{definition_question(it["name"])}</div>'
+        f'</div>'
+        f'<span class="gg-pill" style="color:{s["color"]};background:{s["bg"]};border:1px solid {s["border"]};'
+        f'font-size:12px;padding:5px 10px;line-height:1.15">'
+        f'<span class="gg-dot" style="background:{s["color"]}"></span>{it["status"]}</span>'
+        f'</div>'
+        f'<div style="font-size:16px;line-height:1.85;color:#2F3A4A;background:#F8FAFC;'
+        f'border:1px solid #E5EAF2;border-radius:16px;padding:15px 16px;word-break:keep-all">{definition}</div>'
+        f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:13px">'
+        f'<div style="border:1px solid #E5EAF2;border-radius:14px;padding:13px 14px;background:#FFFFFF">'
+        f'<div style="font-size:12px;color:#64748B;font-weight:750;margin-bottom:7px;line-height:1.25">현재 결과</div>'
+        f'<div style="font-size:25px;font-weight:850;color:{accent};line-height:1.1">{_val_label(it)}'
+        f'<span style="font-size:13px;color:#94A3B8;font-weight:650;margin-left:5px">{it["unit"]}</span></div>'
+        f'</div>'
+        f'<div style="border:1px solid #E5EAF2;border-radius:14px;padding:13px 14px;background:#FFFFFF">'
+        f'<div style="font-size:12px;color:#64748B;font-weight:750;margin-bottom:7px;line-height:1.25">참고 범위</div>'
+        f'<div style="font-size:15px;font-weight:750;color:#334155;line-height:1.35;word-break:keep-all">{_safe_range_text(it)}</div>'
+        f'</div>'
+        f'</div>'
+        f'{result_comparison_html(it)}'
+        f'<div style="font-size:12px;line-height:1.75;color:#7A8494;margin-top:13px;word-break:keep-all">'
+        f'이 설명은 항목의 의미를 이해하기 위한 기본 안내입니다. 결과 해석과 관리 방향은 오른쪽 종합 가이드라인과 의료진 상담을 함께 참고하세요.</div>'
+        f'</div>'
+        f'</div>'
     )
 
 
@@ -344,18 +569,33 @@ def emergency_banner_html(it) -> str:
 
 
 def summary_pills_html(normal, caution, abnormal) -> str:
-    def pill(n, label, color, bg, border):
+    total = normal + caution + abnormal
+
+    def pill(n, label, color, tint, caption):
+        pct = round(n / total * 100) if total else 0
         return (
-            f'<div style="text-align:center;min-width:72px;background:{bg};border:1px solid {border};'
-            f'border-radius:14px;padding:10px 14px">'
-            f'<div style="font-size:26px;font-weight:800;color:{color};line-height:1">{n}</div>'
-            f'<div style="font-size:13px;color:{color};margin-top:5px;font-weight:700">{label}</div></div>'
+            f'<div style="position:relative;min-width:158px;flex:1;background:#FFFFFF;border:1px solid #DDE5F0;'
+            f'border-radius:16px;padding:13px 15px 12px;box-shadow:0 10px 26px rgba(15,23,42,.045);overflow:hidden">'
+            f'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:{color}"></div>'
+            f'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
+            f'<div style="font-size:13px;font-weight:850;color:#334155;letter-spacing:-.1px;line-height:1.2">{label}</div>'
+            f'<span style="width:9px;height:9px;border-radius:50%;background:{color};box-shadow:0 0 0 4px {tint};flex:none"></span>'
+            f'</div>'
+            f'<div style="display:flex;align-items:flex-end;gap:6px;margin-top:9px">'
+            f'<span style="font-size:24px;font-weight:850;color:#111827;letter-spacing:-.5px;line-height:.95">{n}</span>'
+            f'<span style="font-size:11px;font-weight:750;color:#64748B;margin-bottom:3px">개</span>'
+            f'</div>'
+            f'<div style="height:4px;background:#EEF2F7;border-radius:999px;margin-top:10px;overflow:hidden">'
+            f'<div style="height:4px;width:{pct}%;background:{color};border-radius:999px"></div>'
+            f'</div>'
+            f'<div style="font-size:10px;font-weight:650;color:#64748B;line-height:1.35;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{caption}</div>'
+            f'</div>'
         )
     return (
-        '<div style="display:flex;gap:10px;justify-content:flex-end">'
-        + pill(normal, "정상", "#1F8A5B", "#E7F5EE", "#CDEBDB")
-        + pill(caution, "주의", "#B26A00", "#FBF1E0", "#F2DFB8")
-        + pill(abnormal, "이상", "#C0392B", "#FBEAE8", "#F3CFCB")
+        '<div style="display:flex;gap:14px;justify-content:flex-end;align-items:stretch;flex-wrap:wrap">'
+        + pill(normal, "정상", "#2F7D55", "#E6F3EC", "기준 범위 내 항목")
+        + pill(caution, "주의", "#A66A16", "#F8ECD7", "추적 확인 필요")
+        + pill(abnormal, "이상", "#A9473A", "#F6E6E2", "재확인 권장")
         + '</div>'
     )
 
@@ -368,6 +608,34 @@ def summary_block_html(summary: str) -> str:
         '<div style="display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;color:#15448A">'
         '<span style="font-size:18px">🩺</span>AI 종합 요약</div>'
         f'<div style="font-size:15.5px;line-height:1.9;color:#2B3545;margin-top:12px">{summary}</div>'
+        '</div>'
+    )
+
+
+def overall_guideline_html(summary: str) -> str:
+    """PDF 분석 오른쪽 패널에 표시하는 LLM 종합 가이드라인."""
+    body = summary or (
+        "분석된 항목을 바탕으로 종합 가이드라인을 생성하지 못했습니다. "
+        "수치별 의미는 왼쪽 표의 항목명을 눌러 확인해 주세요."
+    )
+    return (
+        '<div class="gg-card" style="border:1px solid #D8E1EE;box-shadow:0 14px 32px rgba(15,23,42,.07)">'
+        '<div class="gg-pad" style="padding:18px 20px">'
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">'
+        '<div>'
+        '<div style="font-size:12px;font-weight:800;color:#64748B;letter-spacing:.4px;text-transform:uppercase;margin-bottom:7px;line-height:1.25">'
+        'Comprehensive Guide</div>'
+        '<div style="font-size:22px;font-weight:850;color:#111827;letter-spacing:-.45px;line-height:1.25">AI 종합 가이드라인</div>'
+        '</div>'
+        '<span style="display:inline-flex;align-items:center;border:1px solid #C7D6EA;background:#F3F7FC;'
+        'border-radius:999px;padding:5px 10px;font-size:12px;font-weight:750;color:#27446B;white-space:nowrap;line-height:1.15">전체 항목 기준</span>'
+        '</div>'
+        f'<div style="font-size:15.5px;line-height:1.85;color:#2F3A4A;background:#F8FAFC;'
+        f'border:1px solid #E5EAF2;border-radius:16px;padding:15px 16px;word-break:keep-all">{body}</div>'
+        '<div style="font-size:12px;line-height:1.75;color:#7A8494;margin-top:13px;word-break:keep-all">'
+        '이 가이드라인은 업로드된 검진 항목 전체를 함께 고려한 참고용 안내입니다. 진단이나 처방을 대신하지 않으며, 증상이 있거나 수치가 크게 벗어난 경우 의료진과 상담하세요.'
+        '</div>'
+        '</div>'
         '</div>'
     )
 

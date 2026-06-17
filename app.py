@@ -43,6 +43,7 @@ from gogodoc.infrastructure.pdf import (
     validate_digital_pdf,
 )
 from gogodoc.domain.models import UserProfile, Sex, Flag
+from gogodoc.domain.reference import reference_dict
 
 # ── 카테고리 매핑 ─────────────────────────────────────────
 _CAT_MAP = {
@@ -61,9 +62,6 @@ def _get_cat(name: str) -> str:
     return "기타"
 
 
-# 생활습관으로 개선하기 어려운 항목 키워드 (토글 상세 해석 제외 대상)
-_NON_CHANGEABLE = {"신장", "시력"}
-
 # Korean status → English flag (hospital_service 호환)
 _STATUS_TO_FLAG = {
     "정상": "normal",
@@ -71,10 +69,6 @@ _STATUS_TO_FLAG = {
     "이상": "abnormal",
     "응급": "emergency",
 }
-
-
-def _is_changeable(name: str) -> bool:
-    return not any(kw in name for kw in _NON_CHANGEABLE)
 
 
 # ── 어댑터 ───────────────────────────────────────────────
@@ -91,9 +85,14 @@ _FLAG_STATUS = {
 def _report_to_result(report, filename: str = "") -> dict:
     """FinalReport → session_state.result 형식 변환"""
     items = []
+    sex = st.session_state.get("gender", "male")
+    age = int(st.session_state.get("age", 40) or 40)
     for item in report.items:
         status = _FLAG_STATUS.get(item.flag, "주의")
         val = item.value
+        entry = reference_dict.lookup(item.canonical_name)
+        selected_range = reference_dict.select_range(entry, sex, age) if entry else None
+        low, high = selected_range if selected_range else (None, None)
         items.append({
             "id": item.canonical_name,
             "cat": _get_cat(item.canonical_name),
@@ -101,8 +100,8 @@ def _report_to_result(report, filename: str = "") -> dict:
             "value": val if val is not None else 0,
             "value_text": str(val) if val is not None else "-",
             "unit": item.unit or "",
-            "low": None,
-            "high": None,
+            "low": low,
+            "high": high,
             "status": status,
             "flag": _STATUS_TO_FLAG.get(status, "normal"),
             "explain": item.explanation or "",
@@ -133,6 +132,20 @@ def _report_to_result(report, filename: str = "") -> dict:
             for g in report.lifestyle_guide
         ],
     }
+
+
+def _fill_reference_ranges_for_ui(items: list[dict]) -> list[dict]:
+    """화면 표시 전 성별·나이 기준 정상범위 보강."""
+    sex = st.session_state.get("gender", "male")
+    age = int(st.session_state.get("age", 40) or 40)
+    for item in items:
+        if item.get("low") is not None or item.get("high") is not None:
+            continue
+        entry = reference_dict.lookup(item.get("name", ""))
+        selected_range = reference_dict.select_range(entry, sex, age) if entry else None
+        if selected_range:
+            item["low"], item["high"] = selected_range
+    return items
 
 
 st.set_page_config(page_title="GoGoDoc — 검진 결과 AI 해석", page_icon="🫆", layout="wide")
@@ -1567,17 +1580,12 @@ def _render_result():
     analyzed_at = res.get("analyzed_at", "")
     filename = res.get("filename", "종합검진_결과지.pdf")
 
-    head, pills = st.columns([2, 1])
+    head, pills = st.columns([1.55, 1.15])
     with head:
-        sub = ("응급 이상치가 포함되어 있어요. 아래 안내에 따라 즉시 의료기관에 내원하세요."
-               if res["emergency"] else
-               "정상 범위를 벗어난 항목이 있어요. 추적 관찰을 권장합니다."
-               if counts["이상"] or counts["주의"] else "모든 항목이 정상 범위 안에 있어요.")
-        st.markdown(f'<h2 style="font-size:23px;font-weight:800;margin:0">검진 결과 해석'
-                    f'<span style="font-size:12px;font-weight:600;color:#5B6678;background:#F0F3F8;'
-                    f'border:1px solid #E4E9F0;border-radius:8px;padding:4px 10px;margin-left:10px">'
-                    f'📄 {filename}</span></h2>'
-                    f'<div style="font-size:13.5px;color:#5B6678;margin-top:7px">{sub}</div>',
+        st.markdown(f'<h2 style="font-size:41px;font-weight:850;margin:0;line-height:1.25;letter-spacing:-.6px">검진 결과 해석'
+                    f'<span style="font-size:22px;font-weight:650;color:#5B6678;background:#F0F3F8;'
+                    f'border:1px solid #E4E9F0;border-radius:10px;padding:7px 14px;margin-left:14px;vertical-align:middle">'
+                    f'📄 {filename}</span></h2>',
                     unsafe_allow_html=True)
     with pills:
         st.markdown(ui.summary_pills_html(counts["정상"], counts["주의"], counts["이상"]),
@@ -1586,8 +1594,32 @@ def _render_result():
     if res["emergency"]:
         st.markdown(ui.emergency_banner_html(res["emergency"]), unsafe_allow_html=True)
 
-    if res.get("summary"):
-        st.markdown(ui.summary_block_html(res["summary"]), unsafe_allow_html=True)
+    st.markdown(
+        """
+        <style>
+        section.main .stButton > button {
+            font-size: 15px !important;
+            line-height: 1.25 !important;
+            height: 56px !important;
+            min-height: 56px !important;
+            padding: 0 0.9rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            word-break: keep-all !important;
+        }
+        section.main [data-testid="stRadio"] label,
+        section.main [data-testid="stToggle"] label {
+            font-size: 22px !important;
+            line-height: 1.35 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     f1, f2, f3 = st.columns([1.4, 1, 1])
     with f1:
@@ -1604,15 +1636,12 @@ def _render_result():
 
     st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
 
-    items = res["items"]
-    shown = items if st.session_state.item_filter == "전체 항목" else [
-        it for it in items if it["status"] != "정상"]
-
-    left, right = st.columns([0.92, 1.08], gap="medium")
+    items = _fill_reference_ranges_for_ui(res["items"])
+    left, right = st.columns([1.12, 1], gap="medium")
 
     # ── 왼쪽: 원본 검진 결과지 ──────────────────────────────
     with left:
-        st.markdown('<div style="font-size:12.5px;font-weight:700;color:#9099A8;margin-bottom:9px">'
+        st.markdown('<div style="font-size:23px;font-weight:750;color:#9099A8;margin-bottom:16px;line-height:1.3">'
                     '📄 원본 검진 결과지</div>', unsafe_allow_html=True)
         with st.container(border=True):
             st.markdown(
@@ -1622,58 +1651,36 @@ def _render_result():
             )
             for it in items:
                 selected = st.session_state.selected_item_id == it["id"]
-                if _is_changeable(it["name"]):
-                    c_row, c_btn = st.columns([10, 1])
-                    with c_row:
-                        st.markdown(ui.report_row_html(it, selected), unsafe_allow_html=True)
-                    with c_btn:
-                        btn_label = "✕" if selected else "›"
-                        if st.button(btn_label, key=f"sel_{it['id']}"):
-                            st.session_state.selected_item_id = None if selected else it["id"]
-                            st.rerun()
-                else:
-                    st.markdown(ui.report_row_html(it, False), unsafe_allow_html=True)
+                c_name, c_value, c_range = st.columns([1.45, 1.05, 1.15], gap="small")
+                with c_name:
+                    btn_label = f"✓ {it['name']}" if selected else it["name"]
+                    if st.button(btn_label, key=f"sel_{it['id']}", use_container_width=True):
+                        st.session_state.selected_item_id = None if selected else it["id"]
+                        st.rerun()
+                with c_value:
+                    st.markdown(ui.report_value_cell_html(it), unsafe_allow_html=True)
+                with c_range:
+                    st.markdown(ui.report_range_cell_html(it), unsafe_allow_html=True)
             st.markdown(ui.report_table_note_html(), unsafe_allow_html=True)
 
     # ── 오른쪽: AI 해석 ──────────────────────────────────────
     with right:
-        st.markdown('<div style="font-size:12.5px;font-weight:700;color:#15448A;margin-bottom:9px">'
+        st.markdown('<div style="font-size:23px;font-weight:750;color:#15448A;margin-bottom:16px;line-height:1.3">'
                     '💡 AI 해석</div>', unsafe_allow_html=True)
 
         selected_id = st.session_state.get("selected_item_id")
         if selected_id:
             sel_item = next((it for it in items if it["id"] == selected_id), None)
             if sel_item:
-                sel_guide = next(
-                    (g for g in (res.get("lifestyle_guide") or [])
-                     if g["category"] == sel_item["cat"]),
-                    None,
-                )
-                st.markdown(ui.result_card_detail_html(sel_item, sel_guide), unsafe_allow_html=True)
-                st.markdown('<div style="font-size:11.5px;color:#8590A1;text-align:center;margin-top:8px">'
-                            '왼쪽 표에서 다른 항목을 선택하거나 아래 버튼으로 전체 보기로 돌아갈 수 있어요</div>',
+                st.markdown(ui.item_definition_card_html(sel_item), unsafe_allow_html=True)
+                st.markdown('<div style="font-size:12px;color:#8590A1;text-align:center;margin-top:8px;line-height:1.6;word-break:keep-all">'
+                            '왼쪽 표에서 다른 항목을 선택하거나 아래 버튼으로 종합 가이드라인으로 돌아갈 수 있어요</div>',
                             unsafe_allow_html=True)
-                if st.button("← 전체 항목 보기", use_container_width=True, key="back_to_all"):
+                if st.button("← 종합 가이드라인 보기", use_container_width=True, key="back_to_all"):
                     st.session_state.selected_item_id = None
                     st.rerun()
         else:
-            # 추적 권장 항목
-            chips = "".join(
-                f'<span style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);'
-                f'border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600">{t}</span>'
-                for t in res["tracked"])
-            st.markdown('<div style="background:#15448A;border-radius:14px;padding:18px 20px;color:#fff">'
-                        '<div style="font-size:14px;font-weight:800">📈 다음 검진 때 추적 권장 항목</div>'
-                        f'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:13px">{chips}</div>'
-                        '<div style="font-size:12px;opacity:.88;margin-top:13px;line-height:1.6">'
-                        '위 항목은 약 3개월 후 재검을 권장해요. 생활습관 관리만으로 충분히 개선될 수 있는 단계입니다.</div></div>',
-                        unsafe_allow_html=True)
-            if res.get("lifestyle_guide"):
-                st.markdown(ui.lifestyle_guide_html(res["lifestyle_guide"]), unsafe_allow_html=True)
-
-            st.markdown(ui.chatbot_hospital_prompt_html(st.session_state.get("location", "")),
-                        unsafe_allow_html=True)
-            st.markdown(ui.disclaimer_html(), unsafe_allow_html=True)
+            st.markdown(ui.overall_guideline_html(res.get("summary", "")), unsafe_allow_html=True)
 
 
 def _render_hospital_recommendation(res: dict):
