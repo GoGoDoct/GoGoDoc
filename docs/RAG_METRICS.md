@@ -282,12 +282,24 @@ streamlit run evaluation/dashboard.py
 
 → `DEFAULT_THRESHOLD`·`RETRIEVER_THRESHOLD` 기본값을 0.55 로 상향. 0.60+ 는 정답률이 더 오르나 오적중이 생겨 의료 안전상 비채택. `harness.build_retriever` 도 설정 임계값을 반영하도록 수정(기존엔 상수 무시).
 
+### 하이브리드 채택 (`RETRIEVER=hybrid`, 권장)
+
+pgvector 단독 전환은 회귀(정규화 후 dict 100% vs pgvector 71%)라 비채택. 대신 **하이브리드**(dict 정확매칭 우선 + miss 시 pgvector 의미검색 폴백, `hybrid_retriever.py`)를 채택한다.
+
+| 리트리버 | rag_golden 정답률 | 비고 |
+|----------|-------------------|------|
+| dict | 100% | 알려진 항목 정확, 사전 미등록 변형은 못 잡음 |
+| pgvector | 71% | 정규화 후엔 약함, 단독 비채택 |
+| **hybrid** | **100%** | dict 100% 유지 + 사전 미등록 변형·OOV 를 벡터로 구제, OOV 차단 유지 |
+
+하이브리드 동작 실측: `공복 혈당 수치`·`혈당검사`(사전 미등록 변형) → dict None, hybrid 가 벡터로 구제 / `아스파라거스`·잡담 → 둘 다 None(OOV 차단 유지). 정성 소견(요단백·내시경·초음파·B형간염)도 색인에 포함(13청크/5항목) - `지방간`→복부초음파(caution)·`위궤양`→위내시경(abnormal) 의미검색.
+
 ### 전환 전 체크리스트
 
-1. `docker compose up db` → `python -m scripts.index_reference` (변형 색인 적재)
-2. `RETRIEVER=pgvector python evaluation/eval_rag.py --direct` 로 검색 정답률·OOV 차단 실측
-3. 임계값(`RETRIEVER_THRESHOLD`) 튜닝 — OOV 차단 100% 유지하며 정답률 최대화 지점
-4. dict 대비 정답률이 충분히 높고 오적중 0 확인되면 `RETRIEVER=pgvector` 를 기본값으로 승격
+1. `docker compose up db` → `python -m scripts.index_reference` (수치 93표기 + 정성 소견 13청크 적재, **구 스키마면 DROP 후 재색인**)
+2. `RETRIEVER=hybrid python evaluation/eval_rag.py` 로 정답률 100%·오적중 0 확인
+3. 임계값(`RETRIEVER_THRESHOLD`, 기본 0.55) 유지 — OOV 차단 100% 보장
+4. `.env` 에 `RETRIEVER=hybrid` 설정해 전환 (코드 기본은 안전상 `dict` 유지)
 5. known_gap(γ-GTP·TG·SBP·Hb) 해소 여부 재확인 → 해소 시 `known_gap=false` 승격
 
-> 코드 기본값은 안전상 여전히 `dict` (DB 없는 로컬 보호). 위 실측 통과 후 `.env`/배포 설정에서 `RETRIEVER=pgvector` 로 전환.
+> 코드 기본값은 안전상 여전히 `dict` (DB 없는 로컬 보호). DB·색인 준비된 환경에서 `.env`/배포 설정에 `RETRIEVER=hybrid` 로 전환.

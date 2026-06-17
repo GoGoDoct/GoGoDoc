@@ -12,19 +12,28 @@ from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
 
 
 def build_retriever(settings: Settings):
-    """retriever 선택 - RETRIEVER=pgvector 면 벡터 검색, 기본은 dict"""
-    if settings.retriever == "pgvector" and settings.database_url:
+    """retriever 선택 - hybrid(dict 우선+벡터 폴백)/pgvector/dict, 기본 dict
+
+    hybrid: dict 정확매칭 100% 유지 + 사전 미등록 변형·OOV 를 벡터 의미검색으로 구제(권장)
+    pgvector: 벡터 단독 (정규화 후엔 dict보다 약함 - RAG_METRICS.md §7)
+    """
+    if settings.retriever in ("pgvector", "hybrid") and settings.database_url:
         # 무거운 의존성(psycopg)은 필요 시에만 import
         from gogodoc.infrastructure.retrieval.pgvector_retriever import PgvectorRetriever
         from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
 
         embedder = OpenAIEmbedder(settings.openai_api_key, settings.embed_model)
-        return PgvectorRetriever(
+        vector = PgvectorRetriever(
             settings.database_url,
             embedder,
             fallback=DictRetriever(),
             threshold=settings.retriever_threshold,
         )
+        if settings.retriever == "pgvector":
+            return vector
+        from gogodoc.infrastructure.retrieval.hybrid_retriever import HybridRetriever
+
+        return HybridRetriever(primary=DictRetriever(), fallback=vector)
     return DictRetriever()
 
 
