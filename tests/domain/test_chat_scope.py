@@ -192,6 +192,20 @@ def test_rule_routes_cost_as_unsupported_before_procedure():
     assert procedure.question_type == QuestionType.PROCEDURE_REQUEST
 
 
+def test_rule_routes_common_procedure_judgment_phrases():
+    cases = [
+        "수술하면 좋나요?",
+        "입원할 정도인가요?",
+        "주사 맞아도 돼요?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED
+        assert d.question_type == QuestionType.PROCEDURE_REQUEST
+
+
 def test_unsupported_routing_message_mentions_cost_and_trend_limits():
     message = chat_scope.routing_message(QuestionType.UNSUPPORTED)
 
