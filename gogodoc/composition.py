@@ -23,16 +23,18 @@ def build_retriever(settings: Settings):
         from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
 
         embedder = OpenAIEmbedder(settings.openai_api_key, settings.embed_model)
-        vector = PgvectorRetriever(
-            settings.database_url,
-            embedder,
-            fallback=DictRetriever(),
-            threshold=settings.retriever_threshold,
-        )
         if settings.retriever == "pgvector":
-            return vector
+            return PgvectorRetriever(
+                settings.database_url, embedder,
+                fallback=DictRetriever(), threshold=settings.retriever_threshold,
+            )
+        # 하이브리드 폴백은 dict-miss 모호 질의 대상 - 더 보수적 임계값으로 오구제 차단
         from gogodoc.infrastructure.retrieval.hybrid_retriever import HybridRetriever
 
+        vector = PgvectorRetriever(
+            settings.database_url, embedder,
+            fallback=DictRetriever(), threshold=settings.hybrid_fallback_threshold,
+        )
         return HybridRetriever(primary=DictRetriever(), fallback=vector)
     return DictRetriever()
 
