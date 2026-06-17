@@ -71,15 +71,51 @@ def _match_korean_item_spans(question: str) -> list[tuple[int, int, str]]:
     return sorted(selected, key=lambda x: x[0])
 
 
+def _extend_token_item_span(question: str, end: int, canon: str) -> int:
+    """영문 약어 뒤에 붙은 한글 카테고리 라벨까지 같은 항목 span으로 본다."""
+    category = category_guide.category_of(canon)
+    if not category:
+        return end
+
+    pos = end
+    while pos < len(question) and question[pos].isspace():
+        pos += 1
+
+    canonical_key = canon.replace(" ", "").lower()
+    for keyword, keyword_category in sorted(_CATEGORY_KEYWORDS.items(), key=lambda x: -len(x[0])):
+        keyword_key = keyword.replace(" ", "").lower()
+        if (
+            keyword_category == category
+            and keyword_key in canonical_key
+            and question.startswith(keyword, pos)
+        ):
+            return pos + len(keyword)
+    return end
+
+
+def _match_token_item_spans(question: str) -> list[tuple[int, int, str]]:
+    """영문·약어 토큰의 정확 매칭 span을 추출한다."""
+    spans: list[tuple[int, int, str]] = []
+    for match in re.finditer(r"[A-Za-z0-9\-]+", question):
+        tok = match.group()
+        if len(tok) < 2:
+            continue
+        canon, score, matched = canonicalize(tok)
+        if matched and score == 100 and canon in reference_dict.REFERENCE:
+            spans.append((
+                match.start(),
+                _extend_token_item_span(question, match.end(), canon),
+                canon,
+            ))
+    return spans
+
+
 def _match_items(question: str) -> list[str]:
     """질문에서 언급된 검진 항목 추출 - 영문은 정확 매칭, 한글은 표기 substring (순서 보존)"""
     found: list[str] = []
     # 영문·약어 토큰 - 정확 동의어 매칭만 (fuzzy 미사용, 'ALT가'는 영문/한글 분리로 'ALT' 추출)
-    for tok in re.findall(r"[A-Za-z0-9\-]+", question):
-        if len(tok) < 2:
-            continue
-        canon, score, matched = canonicalize(tok)
-        if matched and score == 100 and canon in reference_dict.REFERENCE and canon not in found:
+    for _, _, canon in _match_token_item_spans(question):
+        if canon not in found:
             found.append(canon)
     # 한글 표기 substring (조사 결합 대응: '혈색소가'에서 '혈색소' 매칭)
     for _, _, canon in _match_korean_item_spans(question):
@@ -202,7 +238,8 @@ class ChatRagService:
     def _retrieve(self, question: str, report, profile):
         """질문 관련 항목·카테고리 근거 수집 - (grounding, 참조항목명, 출처목록)"""
         item_names = _match_items(question)
-        item_spans = [(start, end) for start, end, _ in _match_korean_item_spans(question)]
+        matched_spans = [*_match_token_item_spans(question), *_match_korean_item_spans(question)]
+        item_spans = [(start, end) for start, end, _ in matched_spans]
         direct_categories = _match_category_keywords(question, blocked_spans=item_spans)
 
         # 내 검진결과에서 해당 항목 값·flag 매핑

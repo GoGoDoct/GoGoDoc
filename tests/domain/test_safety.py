@@ -33,10 +33,14 @@ def test_filters_paraphrased_assertions():
 
 
 def test_softens_predisease_label_assertions():
-    text = safety.sanitize_text("당화혈색소 수치가 5.8이면 당뇨 전단계에 해당합니다.")
-
-    assert "당뇨 전단계에 해당합니다" not in text
-    assert "주의가 필요한 범위입니다" in text
+    for text in [
+        "당화혈색소 수치가 5.8이면 당뇨 전단계에 해당합니다.",
+        "당화혈색소 수치가 5.8이면 당뇨 전단계에 해당됩니다.",
+        "혈압 수치가 높아 고혈압 전단계에 해당해요.",
+    ]:
+        sanitized = safety.sanitize_text(text)
+        assert "전단계에 해당" not in sanitized
+        assert "주의가 필요한 범위입니다" in sanitized
 
 
 def test_does_not_overfilter_legit_text():

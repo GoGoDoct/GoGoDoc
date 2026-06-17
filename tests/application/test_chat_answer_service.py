@@ -418,6 +418,26 @@ def test_specific_total_cholesterol_question_does_not_expand_to_lipid_items():
     assert "중성지방" not in answer_llm.calls[0]["user"]
 
 
+def test_abbreviation_with_attached_korean_label_does_not_expand_to_category_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("LDL 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("LDL콜레스테롤 145는 어떤 상태예요?", _rich_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["LDL 콜레스테롤"]
+    assert "LDL 콜레스테롤" in answer_llm.calls[0]["user"]
+    assert "총콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "HDL 콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "중성지방" not in answer_llm.calls[0]["user"]
+
+
 def test_lipid_category_question_uses_report_lipid_items():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
