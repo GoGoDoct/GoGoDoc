@@ -30,6 +30,19 @@ def test_reference_range_comparison_not_hard_blocked():
     assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") is None
 
 
+def test_lab_unit_mgdl_question_not_dosage_routed():
+    # mg/dL은 검사 단위이므로 약물 용량 질문으로 과차단하면 안 됨
+    assert chat_scope.classify_rule("LDL은 몇 mg/dL부터 높은 거예요?") is None
+
+
+def test_medication_context_mg_still_dosage_routed():
+    # 약물 문맥의 mg 질문은 용량 판단으로 하드 차단
+    d = chat_scope.classify_rule_detail("메트포민 몇 mg 먹어야 돼요?")
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.DOSAGE_REQUEST
+
+
 def test_past_result_comparison_still_unsupported():
     # 과거 결과와의 추세 비교는 최신 검진 1건 기준 범위를 벗어나므로 미지원 라우팅
     d = chat_scope.classify_rule_detail("작년보다 혈당이 오른 건가요?")
@@ -45,11 +58,30 @@ def test_waist_circumference_not_symptom_routed():
 
 def test_rule_routes_emergency_symptoms_before_llm():
     # 응급 가능 증상은 답변 생성 전에 즉시 라우팅
-    for q in ["가슴이 답답하고 숨이 차요", "한쪽 팔에 힘이 안 들어가고 말이 어눌해요", "갑자기 의식을 잃었어요"]:
+    for q in [
+        "가슴이 답답하고 숨이 차요",
+        "한쪽 팔에 힘이 안 들어가고 말이 어눌해요",
+        "갑자기 의식을 잃었어요",
+        "숨쉬기 힘들어요",
+        "숨 못 쉬겠어요",
+    ]:
         d = chat_scope.classify_rule_detail(q)
         assert d is not None
         assert d.scope == Scope.BLOCKED
         assert d.question_type == QuestionType.EMERGENCY_SYMPTOM
+
+
+def test_rule_routes_colloquial_diagnosis_and_med_recommendation_before_llm():
+    # 구어체 진단·약 추천도 LLM 변동성에 맡기지 않고 rule 단계에서 차단
+    diagnosis = chat_scope.classify_rule_detail("나 당뇨야?")
+    prescription = chat_scope.classify_rule_detail("고지혈증 약 추천해줘")
+
+    assert diagnosis is not None
+    assert diagnosis.scope == Scope.BLOCKED
+    assert diagnosis.question_type == QuestionType.DIAGNOSIS_REQUEST
+    assert prescription is not None
+    assert prescription.scope == Scope.BLOCKED
+    assert prescription.question_type == QuestionType.PRESCRIPTION_REQUEST
 
 
 def test_rule_routes_self_harm_crisis_before_llm():
@@ -73,8 +105,30 @@ def test_rule_routes_general_symptom_and_nonmedical_out_of_scope():
     assert out_of_scope.question_type == QuestionType.OUT_OF_SCOPE_NONMEDICAL
 
 
+def test_general_symptom_is_not_captured_by_summary_wording():
+    # 제일 신경 같은 표현이 있어도 증상 원인 질문이면 결과 요약으로 허용하지 않음
+    d = chat_scope.classify_rule_detail("제일 신경 쓰이는 건 허리가 아픈 건데 왜 이래요?")
+
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
 def test_empty_question_blocked():
     # 빈 질문은 보수적으로 차단
     assert chat_scope.classify_rule("") == Scope.BLOCKED
     assert chat_scope.classify_rule("   ") == Scope.BLOCKED
     assert chat_scope.classify_rule_detail("").question_type == QuestionType.UNKNOWN
+
+
+def test_pdf_or_result_words_do_not_hide_checkup_question():
+    # PDF 표현이 있어도 검진 항목 해석 의도면 앱 도움말로 과차단하지 않음
+    assert chat_scope.classify_rule("PDF에 나온 ALT 수치가 뭐예요?") is None
+
+
+def test_rule_routes_obvious_checkup_summary_question():
+    # 최신 결과에서 확인해야 할 항목을 묻는 질문은 앱 도움말이 아니라 결과 요약으로 고정
+    d = chat_scope.classify_rule_detail("검진 결과 확인해야 할 항목 알려줘")
+    assert d is not None
+    assert d.scope == Scope.ALLOWED
+    assert d.question_type == QuestionType.CHECKUP_SUMMARY
