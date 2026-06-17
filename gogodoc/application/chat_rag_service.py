@@ -53,34 +53,114 @@ _REPORT_FALLBACK_NOTICE = (
 )
 
 
+def _match_korean_item_spans(question: str) -> list[tuple[int, int, str]]:
+    """질문 안의 한글 항목명 span을 긴 용어 우선으로 겹치지 않게 선택한다."""
+    candidates: list[tuple[int, int, str]] = []
+    for term, canon in _KOREAN_TERMS.items():
+        for match in re.finditer(re.escape(term), question):
+            candidates.append((match.start(), match.end(), canon))
+
+    selected: list[tuple[int, int, str]] = []
+    occupied: list[tuple[int, int]] = []
+    for start, end, canon in sorted(candidates, key=lambda x: (-(x[1] - x[0]), x[0])):
+        if any(start < used_end and end > used_start for used_start, used_end in occupied):
+            continue
+        selected.append((start, end, canon))
+        occupied.append((start, end))
+
+    return sorted(selected, key=lambda x: x[0])
+
+
+def _extend_token_item_span(question: str, end: int, canon: str) -> int:
+    """영문 약어 뒤에 붙은 한글 카테고리 라벨까지 같은 항목 span으로 본다."""
+    category = category_guide.category_of(canon)
+    if not category:
+        return end
+
+    pos = end
+    while pos < len(question) and question[pos].isspace():
+        pos += 1
+
+    canonical_key = canon.replace(" ", "").lower()
+    for keyword, keyword_category in sorted(_CATEGORY_KEYWORDS.items(), key=lambda x: -len(x[0])):
+        keyword_key = keyword.replace(" ", "").lower()
+        if (
+            keyword_category == category
+            and keyword_key in canonical_key
+            and question.startswith(keyword, pos)
+        ):
+            return pos + len(keyword)
+    return end
+
+
+def _match_token_item_spans(question: str) -> list[tuple[int, int, str]]:
+    """영문·약어 토큰의 정확 매칭 span을 추출한다."""
+    spans: list[tuple[int, int, str]] = []
+    for match in re.finditer(r"[A-Za-z0-9\-]+", question):
+        tok = match.group()
+        if len(tok) < 2:
+            continue
+        canon, score, matched = canonicalize(tok)
+        if matched and score == 100 and canon in reference_dict.REFERENCE:
+            spans.append((
+                match.start(),
+                _extend_token_item_span(question, match.end(), canon),
+                canon,
+            ))
+    return spans
+
+
 def _match_items(question: str) -> list[str]:
     """질문에서 언급된 검진 항목 추출 - 영문은 정확 매칭, 한글은 표기 substring (순서 보존)"""
     found: list[str] = []
     # 영문·약어 토큰 - 정확 동의어 매칭만 (fuzzy 미사용, 'ALT가'는 영문/한글 분리로 'ALT' 추출)
-    for tok in re.findall(r"[A-Za-z0-9\-]+", question):
-        if len(tok) < 2:
-            continue
-        canon, score, matched = canonicalize(tok)
-        if matched and score == 100 and canon in reference_dict.REFERENCE and canon not in found:
+    for _, _, canon in _match_token_item_spans(question):
+        if canon not in found:
             found.append(canon)
     # 한글 표기 substring (조사 결합 대응: '혈색소가'에서 '혈색소' 매칭)
-    for term, canon in _KOREAN_TERMS.items():
-        if term in question and canon not in found:
+    for _, _, canon in _match_korean_item_spans(question):
+        if canon not in found:
             found.append(canon)
     return found
 
 
-def _match_categories(question: str, item_names: list[str]) -> list[str]:
-    """매칭된 항목의 카테고리 + 포괄 키워드 카테고리 (순서 보존·중복 제거)"""
+def _overlaps(span: tuple[int, int], blocked_spans: list[tuple[int, int]]) -> bool:
+    """두 span이 한 글자라도 겹치면 True."""
+    start, end = span
+    return any(start < blocked_end and end > blocked_start for blocked_start, blocked_end in blocked_spans)
+
+
+def _match_category_keywords(
+    question: str,
+    blocked_spans: list[tuple[int, int]] | None = None,
+) -> list[str]:
+    """특정 항목명이 아닌 포괄 카테고리 키워드만 추출."""
+    blocked_spans = blocked_spans or []
+    cats: list[str] = []
+    for kw, c in _CATEGORY_KEYWORDS.items():
+        for match in re.finditer(re.escape(kw), question):
+            if not _overlaps((match.start(), match.end()), blocked_spans) and c not in cats:
+                cats.append(c)
+                break
+    return cats
+
+
+def _merge_categories(item_names: list[str], direct_categories: list[str]) -> list[str]:
+    """매칭된 항목의 카테고리 + 직접 카테고리 키워드 (순서 보존·중복 제거)."""
     cats: list[str] = []
     for name in item_names:
         c = category_guide.category_of(name)
         if c and c not in cats:
             cats.append(c)
-    for kw, c in _CATEGORY_KEYWORDS.items():
-        if kw in question and c not in cats:
+    for c in direct_categories:
+        if c not in cats:
             cats.append(c)
     return cats
+
+
+def _match_categories(question: str, item_names: list[str]) -> list[str]:
+    """매칭된 항목의 카테고리 + 포괄 키워드 카테고리 (순서 보존·중복 제거)"""
+    return _merge_categories(item_names, _match_category_keywords(question))
 
 
 def _range_text(entry: dict, profile) -> str:
@@ -158,10 +238,20 @@ class ChatRagService:
     def _retrieve(self, question: str, report, profile):
         """질문 관련 항목·카테고리 근거 수집 - (grounding, 참조항목명, 출처목록)"""
         item_names = _match_items(question)
-        categories = _match_categories(question, item_names)
+        matched_spans = [*_match_token_item_spans(question), *_match_korean_item_spans(question)]
+        item_spans = [(start, end) for start, end, _ in matched_spans]
+        direct_categories = _match_category_keywords(question, blocked_spans=item_spans)
 
         # 내 검진결과에서 해당 항목 값·flag 매핑
         report_items = {it.canonical_name: it for it in (report.items if report else [])}
+        for name in report_items:
+            if (
+                category_guide.category_of(name) in direct_categories
+                and name not in item_names
+            ):
+                item_names.append(name)
+
+        categories = _merge_categories(item_names, direct_categories)
         report_categories = {
             c
             for c in (category_guide.category_of(name) for name in report_items)

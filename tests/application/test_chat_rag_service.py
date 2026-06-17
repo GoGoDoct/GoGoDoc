@@ -34,6 +34,7 @@ def _profile():
 def test_match_items_detects_checkup_terms():
     assert _match_items("ALT가 60인데 괜찮아요?") == ["ALT"]
     assert _match_items("혈색소 수치가 뭘 의미해요?") == ["헤모글로빈"]
+    assert _match_items("당화혈색소 5.8이면 괜찮나요?") == ["당화혈색소"]
     assert _match_items("BMI랑 요산도 봐줘") == ["BMI", "요산"]
     assert _match_items("오늘 날씨 어때?") == []
 

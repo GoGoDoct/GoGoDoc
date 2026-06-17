@@ -55,6 +55,96 @@ def _empty_latest_analysis() -> dict:
     }
 
 
+def _rich_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["수축기혈압", "이완기혈압", "당화혈색소"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "수축기혈압",
+                "value": 138,
+                "value_text": "138",
+                "unit": "mmHg",
+                "status": "주의",
+                "explain": "혈압 상태를 보는 수축기 지표입니다.",
+                "source": "대한고혈압학회 고혈압 진료지침",
+            },
+            {
+                "name": "이완기혈압",
+                "value": 86,
+                "value_text": "86",
+                "unit": "mmHg",
+                "status": "주의",
+                "explain": "혈압 상태를 보는 이완기 지표입니다.",
+                "source": "대한고혈압학회 고혈압 진료지침",
+            },
+            {
+                "name": "당화혈색소",
+                "value": 5.8,
+                "value_text": "5.8",
+                "unit": "%",
+                "status": "주의",
+                "explain": "최근 혈당 흐름을 보는 지표입니다.",
+                "source": "대한당뇨병학회 당뇨병 진료지침",
+            },
+            {
+                "name": "공복혈당",
+                "value": 92,
+                "value_text": "92",
+                "unit": "mg/dL",
+                "status": "정상",
+                "explain": "공복 상태의 혈당을 보는 지표입니다.",
+                "source": "대한당뇨병학회 당뇨병 진료지침",
+            },
+            {
+                "name": "총콜레스테롤",
+                "value": 225,
+                "value_text": "225",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈중 전체 콜레스테롤 양을 보는 지표입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "LDL 콜레스테롤",
+                "value": 145,
+                "value_text": "145",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈관에 쌓이기 쉬운 콜레스테롤입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "HDL 콜레스테롤",
+                "value": 42,
+                "value_text": "42",
+                "unit": "mg/dL",
+                "status": "정상",
+                "explain": "혈관 건강에 도움이 되는 콜레스테롤입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "중성지방",
+                "value": 180,
+                "value_text": "180",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈액 속 지방 성분입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "헤모글로빈",
+                "value": 13.8,
+                "value_text": "13.8",
+                "unit": "g/dL",
+                "status": "정상",
+                "explain": "빈혈 여부를 보는 혈액 지표입니다.",
+                "source": "서울아산병원 의료정보 일반혈액검사",
+            },
+        ],
+    }
+
+
 def test_blocked_question_returns_routing_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
@@ -246,3 +336,124 @@ def test_reference_only_answer_marks_item_missing_from_latest_result():
     assert "일반 정보" in msg.content
     assert len(answer_llm.calls) == 1
     assert "최신 검진 결과에 해당 항목 없음" in answer_llm.calls[0]["user"]
+
+
+def test_hba1c_question_does_not_pull_hemoglobin_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("당화혈색소 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("당화혈색소 5.8이면 뭘 조심해야 해요?", _rich_latest_analysis())
+
+    assert msg.routed is False
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["당화혈색소"]
+    assert len(answer_llm.calls) == 1
+    assert "당화혈색소" in answer_llm.calls[0]["user"]
+    assert "헤모글로빈" not in answer_llm.calls[0]["user"]
+
+
+def test_blood_pressure_category_question_uses_report_bp_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("혈압 생활습관 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("혈압 138에 86이면 생활습관을 어떻게 바꾸면 좋아요?", _rich_latest_analysis())
+
+    assert msg.routed is False
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["수축기혈압", "이완기혈압"]
+    assert len(answer_llm.calls) == 1
+    assert "수축기혈압" in answer_llm.calls[0]["user"]
+    assert "이완기혈압" in answer_llm.calls[0]["user"]
+    assert "내 수치 138.0 (caution)" in answer_llm.calls[0]["user"]
+    assert "내 수치 86.0 (caution)" in answer_llm.calls[0]["user"]
+
+
+def test_specific_blood_sugar_question_does_not_expand_to_category_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("공복혈당 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("공복혈당 92는 정상인가요?", _rich_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["공복혈당"]
+    assert "공복혈당" in answer_llm.calls[0]["user"]
+    assert "당화혈색소" not in answer_llm.calls[0]["user"]
+
+
+def test_specific_total_cholesterol_question_does_not_expand_to_lipid_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("총콜레스테롤 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("총콜레스테롤 225는 어떤 상태예요?", _rich_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["총콜레스테롤"]
+    assert "총콜레스테롤" in answer_llm.calls[0]["user"]
+    assert "LDL 콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "HDL 콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "중성지방" not in answer_llm.calls[0]["user"]
+
+
+def test_abbreviation_with_attached_korean_label_does_not_expand_to_category_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("LDL 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("LDL콜레스테롤 145는 어떤 상태예요?", _rich_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["LDL 콜레스테롤"]
+    assert "LDL 콜레스테롤" in answer_llm.calls[0]["user"]
+    assert "총콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "HDL 콜레스테롤" not in answer_llm.calls[0]["user"]
+    assert "중성지방" not in answer_llm.calls[0]["user"]
+
+
+def test_lipid_category_question_uses_report_lipid_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("지질 관리 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("콜레스테롤 관리는 어떻게 하면 좋아요?", _rich_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == [
+        "총콜레스테롤",
+        "LDL 콜레스테롤",
+        "HDL 콜레스테롤",
+        "중성지방",
+    ]
