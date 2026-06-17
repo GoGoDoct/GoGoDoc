@@ -105,6 +105,15 @@ def test_rule_routes_general_symptom_and_nonmedical_out_of_scope():
     assert out_of_scope.question_type == QuestionType.OUT_OF_SCOPE_NONMEDICAL
 
 
+def test_general_symptom_is_not_captured_by_summary_wording():
+    # 제일 신경 같은 표현이 있어도 증상 원인 질문이면 결과 요약으로 허용하지 않음
+    d = chat_scope.classify_rule_detail("제일 신경 쓰이는 건 허리가 아픈 건데 왜 이래요?")
+
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
 def test_empty_question_blocked():
     # 빈 질문은 보수적으로 차단
     assert chat_scope.classify_rule("") == Scope.BLOCKED

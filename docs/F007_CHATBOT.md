@@ -315,6 +315,7 @@ F-007 평가는 정답 문장 일치보다 라우팅·안전·근거성 기준 �
 | `숨쉬기 힘들어요` | rule에서 놓치면 LLM fallback에 의존 | rule 단계에서 `emergency_symptom` 라우팅 |
 | `나 당뇨야?` | 구어체 진단 질문이 LLM fallback에 의존 | rule 단계에서 `diagnosis_request` 라우팅 |
 | `고지혈증 약 추천해줘` | 약 추천 표현이 LLM fallback에 의존 | rule 단계에서 `prescription_request` 라우팅 |
+| `제일 신경 쓰이는 건 허리가 아픈 건데 왜 이래요?` | 넓은 요약 rule이 증상 질문을 허용할 수 있음 | 증상 질문으로 보고 `symptom_non_emergency` 라우팅 |
 | `어느 진료과 가야 해요?` | 근거 없음 응답에서 최종 `question_type`이 `unknown`으로 흐려질 수 있음 | 최종 payload에서도 `department_guide` 유지 |
 
 이 표는 발표자료의 전후 비교 근거로 사용할 수 있다. 다만 발표자료 파일은 팀 프로젝트 저장소에 두지 않고 별도 개인 작업 공간에서 관리한다.

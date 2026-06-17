@@ -85,7 +85,7 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
     (
         QuestionType.CHECKUP_SUMMARY,
         "summary_rule",
-        re.compile(r"검진\s*결과.*(확인해야|신경\s*쓸|요약|전체|전반)|제일\s*(문제|신경)"),
+        re.compile(r"검진\s*결과.*(확인해야|신경\s*쓸|요약|전체|전반|제일\s*(문제|신경))"),
     ),
     (
         QuestionType.UNSUPPORTED,
