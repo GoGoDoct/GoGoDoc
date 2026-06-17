@@ -13,7 +13,7 @@ from gogodoc.domain.services import safety
 from gogodoc.domain.services.normalization import canonicalize
 from gogodoc.domain.reference import reference_dict, category_guide
 from gogodoc.domain.reference.synonyms import SYNONYMS
-from gogodoc.domain.models import ChatMessage, QuestionType, Scope
+from gogodoc.domain.models import ChatMessage, Flag, QuestionType, Scope
 
 # 한글 표기(표준명·한글 동의어, 2자 이상) -> 표준명. 챗봇 질문에 substring 으로 안전 매칭
 # (fuzzy 는 1글자 조사 '이' 가 '중성지방'에 오매칭하는 등 챗봇엔 부적합 - 정확 매칭만)
@@ -42,6 +42,8 @@ _NO_GROUNDING = (
     "일반적인 건강 정보나 구체적인 판단은 전문의와 상담하시길 권장합니다. 본 답변은 참고용입니다."
 )
 _FALLBACK = "답변 생성에 실패했습니다. 잠시 후 다시 시도하시거나 전문의 상담을 권장합니다. 본 답변은 참고용입니다."
+
+_FLAG_PRIORITY = {Flag.EMERGENCY: 0, Flag.ABNORMAL: 1, Flag.CAUTION: 2}
 
 
 def _match_items(question: str) -> list[str]:
@@ -82,6 +84,50 @@ def _range_text(entry: dict, profile) -> str:
             return str(rng)
     rules = entry.get("ranges") or []
     return f"({rules[0]['low']}, {rules[0]['high']})" if rules else "-"
+
+
+def _report_fallback(report, profile):
+    """RAG 키워드 미매칭 시 보고서의 이상·주의 항목을 근거로 활용."""
+    if not report:
+        return {"items": [], "guides": []}, [], []
+
+    flagged = sorted(
+        [it for it in report.items if it.flag in _FLAG_PRIORITY],
+        key=lambda x: _FLAG_PRIORITY[x.flag],
+    )
+
+    items_grounding, item_names, sources = [], [], []
+    seen_cats: set[str] = set()
+    guides_grounding = []
+
+    for mine in flagged[:6]:
+        entry = reference_dict.lookup(mine.canonical_name)
+        if not entry:
+            continue
+        items_grounding.append({
+            "name": mine.canonical_name,
+            "explanation": entry["explanation"],
+            "caution": entry["caution"],
+            "range": _range_text(entry, profile),
+            "source": entry["source"],
+            "in_report": True,
+            "value": mine.value,
+            "flag": mine.flag.value,
+        })
+        item_names.append(mine.canonical_name)
+        if entry["source"] not in sources:
+            sources.append(entry["source"])
+
+        c = category_guide.category_of(mine.canonical_name)
+        if c and c not in seen_cats:
+            g = category_guide.guide_for(c)
+            if g:
+                guides_grounding.append({"category": c, **g})
+                if g["source"] not in sources:
+                    sources.append(g["source"])
+                seen_cats.add(c)
+
+    return {"items": items_grounding, "guides": guides_grounding}, item_names, sources
 
 
 class ChatRagService:
@@ -130,8 +176,11 @@ class ChatRagService:
         return {"items": items_grounding, "guides": guides_grounding}, item_names, sources
 
     def answer(self, question: str, report=None, profile=None) -> ChatMessage:
-        """허용 질문에 근거 기반 답변 생성 - 근거 없으면 상담 안내"""
+        """허용 질문에 근거 기반 답변 생성. 키워드 미매칭 시 보고서 이상·주의 항목으로 폴백."""
         grounding, item_names, sources = self._retrieve(question, report, profile)
+
+        if not grounding["items"] and not grounding["guides"]:
+            grounding, item_names, sources = _report_fallback(report, profile)
 
         if not grounding["items"] and not grounding["guides"]:
             return ChatMessage(

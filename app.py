@@ -6,6 +6,7 @@
 페이지 라우팅(session_state.page):
   login → signup → dashboard → analysis → records → track → settings
 """
+import re
 import time
 import tempfile
 import os
@@ -256,36 +257,222 @@ def _chat_context() -> dict:
     return {"title": "대시보드 컨텍스트", "body": "최근 검진 요약과 관리 필요 항목", "focus": "건강 요약"}
 
 
-def _render_ai_chat_panel():
+_OVERLAY_CHAT_KEY = "overlay_chat_messages"
+_HOSPITAL_RE = re.compile(r"병원|어디|진료과|어느\s*과|내원|어디로|우선|추천|위치")
+_MD_BOLD = re.compile(r"\*\*(.+?)\*\*")
+_MD_ITALIC = re.compile(r"\*(.+?)\*")
+
+
+def _md_to_html(text: str) -> str:
+    """마크다운 볼드·이탤릭을 HTML로 변환 후 개행 처리."""
+    import html as _html_mod
+    safe = _html_mod.escape(text)
+    safe = _MD_BOLD.sub(r"<strong>\1</strong>", safe)
+    safe = _MD_ITALIC.sub(r"<em>\1</em>", safe)
+    return safe.replace("\n", "<br>")
+
+
+def _maybe_add_hospitals(history: list, question: str, pool) -> list:
+    """병원 관련 질문이면 HIRA API 결과를 후속 메시지로 추가."""
+    if not _HOSPITAL_RE.search(question):
+        return history
+
+    result = st.session_state.get("result")
+    location = (st.session_state.get("location") or "").strip()
+
+    if not result:
+        updated = list(history)
+        updated.append({
+            "role": "assistant",
+            "content": "병원 추천을 위해 먼저 **검진 결과를 분석**하거나 기록에서 불러와 주세요.",
+            "payload": {},
+        })
+        return updated
+
+    if not location:
+        updated = list(history)
+        updated.append({
+            "role": "assistant",
+            "content": "병원 추천을 위해 **설정 페이지**에서 거주지를 먼저 입력해 주세요.",
+            "payload": {},
+        })
+        return updated
+
+    try:
+        from gogodoc.application.hospital_service import recommend_hospitals
+        from gogodoc.infrastructure.llm.openai_client import OpenAILLM
+        llm = OpenAILLM(settings)
+        hospitals = recommend_hospitals(result, location, llm, settings)
+    except Exception as e:
+        updated = list(history)
+        updated.append({
+            "role": "assistant",
+            "content": f"병원 정보를 가져오는 중 오류가 발생했습니다: {e}",
+            "payload": {},
+        })
+        return updated
+
+    if not hospitals:
+        updated = list(history)
+        updated.append({
+            "role": "assistant",
+            "content": f"**{location}** 근처에서 해당 진료과 병원을 찾지 못했습니다.",
+            "payload": {},
+        })
+        return updated
+
+    lines = [f"📍 **{location} 근처 추천 병원**\n"]
+    for h in hospitals:
+        name = h.get("name", "")
+        addr = h.get("address", "")
+        tel = h.get("tel", "")
+        depts = ", ".join(h.get("departments", [])[:3])
+        line = f"**{name}**"
+        if addr:
+            line += f"\n{addr}"
+        if tel:
+            line += f" | ☎ {tel}"
+        if depts:
+            line += f"\n진료과: {depts}"
+        lines.append(line)
+
+    updated = list(history)
+    updated.append({"role": "assistant", "content": "\n\n".join(lines), "payload": {}})
+    return updated
+
+
+_ECG_SVG = (
+    '<svg width="18" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M1 7h3l2-5 3 11 2.5-8L13 9.5H15" stroke="#15448A" stroke-width="1.7"'
+    ' stroke-linecap="round" stroke-linejoin="round"/>'
+    '<path d="M15 7h4" stroke="#15448A" stroke-width="1.7" stroke-linecap="round"/>'
+    '</svg>'
+)
+
+
+def _render_ai_chat_panel(pool):
+    """오버레이 AI 챗봇 패널 — HTML 프레임 + st.form으로 실제 LLM 연결."""
     if not st.session_state.get("chat_open", False):
         return
 
     ctx = _chat_context()
-    location = st.session_state.get("location") or "거주지 설정 필요"
-    html = (
+    st.session_state.setdefault(_OVERLAY_CHAT_KEY, [])
+    messages = st.session_state[_OVERLAY_CHAT_KEY]
+
+    # 채팅 히스토리 HTML
+    if messages:
+        thread_html = ""
+        for msg in messages:
+            content = _md_to_html(msg["content"])
+            if msg["role"] == "user":
+                thread_html += (
+                    '<div class="gg-ai-row user">'
+                    f'<div class="gg-ai-user-bubble">{content}</div></div>'
+                )
+            else:
+                thread_html += (
+                    f'<div class="gg-ai-row assistant">'
+                    f'<div class="gg-ai-avatar">{_ECG_SVG}</div>'
+                    f'<div class="gg-ai-bubble">{content}</div></div>'
+                )
+    else:
+        thread_html = (
+            f'<div class="gg-ai-row assistant">'
+            f'<div class="gg-ai-avatar">{_ECG_SVG}</div>'
+            '<div class="gg-ai-bubble">검진 결과에서 관리가 필요한 항목을 기준으로 '
+            '설명드릴게요. 궁금한 수치나 병원 추천을 물어보세요.</div></div>'
+        )
+
+    panel_html = (
         '<aside class="gg-ai-panel">'
+        # 헤더
         '<div class="gg-ai-head">'
-        '<div><div class="gg-ai-title">AI 챗봇</div>'
-        '<div class="gg-ai-sub">현재 화면을 참조해 답변합니다</div></div>'
-        '<div class="gg-ai-close">닫기는 사이드바 버튼</div></div>'
-        '<div class="gg-ai-context">'
-        f'<div class="gg-ai-context-label">{ctx["title"]}</div>'
-        f'<div class="gg-ai-context-body">{ctx["body"]}</div>'
-        f'<div class="gg-ai-context-focus">초점: {ctx["focus"]}</div></div>'
-        '<div class="gg-ai-thread">'
-        '<div class="gg-ai-row assistant"><div class="gg-ai-avatar">AI</div>'
-        '<div class="gg-ai-bubble">검진 결과에서 관리가 필요한 항목을 기준으로 설명드릴게요. 궁금한 수치나 병원 추천을 물어보세요.</div></div>'
-        '<div class="gg-ai-row user"><div class="gg-ai-user-bubble">LDL이 높으면 어디로 가야 하나요?</div></div>'
-        '<div class="gg-ai-row assistant"><div class="gg-ai-avatar">AI</div>'
-        '<div class="gg-ai-bubble"><b>추천 진료과</b><br>LDL 콜레스테롤 이상은 우선 내과 또는 가정의학과 상담이 적절합니다. 심혈관 위험 요인이 함께 있다면 심장내과 상담도 고려할 수 있습니다.'
-        '<div class="gg-ai-reco"><div><b>추천 기준</b><br>LDL 156 mg/dL · 이상</div>'
-        f'<div><b>지역</b><br>{location}</div></div>'
-        '<button class="gg-ai-card-btn">챗봇에서 근처 병원 추천받기</button></div></div>'
+        '<div>'
+        '<div class="gg-ai-title">AI 챗봇</div>'
+        '<div class="gg-ai-sub">현재 검진 결과를 참조해 답변합니다</div>'
         '</div>'
-        '<div class="gg-ai-input"><span>검진 결과에 대해 질문해 보세요</span><button>전송</button></div>'
+        '<span class="gg-ai-close">✕</span>'
+        '</div>'
+        # 컨텍스트 카드
+        '<div class="gg-ai-context">'
+        '<div class="gg-ai-context-label">현재 컨텍스트</div>'
+        f'<div class="gg-ai-context-body">{ctx["body"]}</div>'
+        f'<div class="gg-ai-context-focus">{ctx["focus"]}</div>'
+        f'<div style="font-size:11px;color:#8CA3BF;margin-top:6px">'
+        f'📍 거주지: {(st.session_state.get("location") or "미설정 — 설정 페이지에서 입력 필요")}'
+        f'</div>'
+        '</div>'
+        # 채팅 스레드
+        f'<div class="gg-ai-thread" id="gg-chat-thread">{thread_html}</div>'
         '</aside>'
+        # form을 패널 하단에 고정하는 CSS
+        '<style>'
+        '[data-testid="stForm"]{'
+        'position:fixed!important;left:21rem!important;bottom:0!important;'
+        'width:400px!important;padding:14px 20px 18px!important;'
+        'background:#fff!important;border-top:1px solid #E3E7EE!important;'
+        'z-index:1001!important;margin:0!important;box-shadow:none!important}'
+        '[data-testid="stForm"] [data-baseweb="input"] input{'
+        'border-radius:10px!important;font-size:13.5px!important;'
+        'border:1.5px solid #D7DEE8!important;padding:10px 14px!important}'
+        '[data-testid="stFormSubmitButton"]>button{'
+        'background:#15448A!important;color:#fff!important;'
+        'border-radius:10px!important;font-weight:700!important;'
+        'font-size:13px!important;padding:10px 16px!important;'
+        'border:none!important;white-space:nowrap!important}'
+        '#gg-chat-thread{padding-bottom:80px!important}'
+        '</style>'
     )
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(panel_html, unsafe_allow_html=True)
+
+    # 실제 입력 처리 — st.form 사용 (CSS로 패널 하단에 고정됨)
+    with st.form("gg_overlay_chat", clear_on_submit=True):
+        col_input, col_btn = st.columns([5, 1])
+        with col_input:
+            user_input = st.text_input(
+                "질문 입력",
+                placeholder="검진 결과에 대해 질문해 보세요",
+                label_visibility="collapsed",
+            )
+        with col_btn:
+            submitted = st.form_submit_button("전송")
+
+    if not (submitted and user_input and user_input.strip()):
+        return
+
+    user_id = int(st.session_state.get("user_id") or 0)
+    profile = profile_from_session(
+        st.session_state.get("gender"),
+        st.session_state.get("age"),
+    )
+    contract = _get_chat_ui_contract(settings)
+
+    with st.spinner("챗봇 답변을 생성하고 있어요"):
+        try:
+            payload = submit_latest_question(
+                contract=contract,
+                pool=pool,
+                user_id=user_id,
+                question=user_input.strip(),
+                profile=profile,
+                get_conn_fn=get_conn,
+                put_conn_fn=put_conn,
+            )
+        except Exception:
+            st.error("챗봇 답변 생성 중 오류가 발생했습니다.")
+            return
+
+    if payload is None:
+        return
+
+    history = append_chat_exchange(
+        st.session_state[_OVERLAY_CHAT_KEY],
+        user_input.strip(),
+        payload,
+    )
+    history = _maybe_add_hospitals(history, user_input.strip(), pool)
+    st.session_state[_OVERLAY_CHAT_KEY] = history
+    st.rerun()
 
 
 def _page_shell_css():
@@ -304,9 +491,9 @@ def _page_shell_css():
         )
 
 
-def _render_authenticated_sidebar(active: str):
+def _render_authenticated_sidebar(active: str, pool):
     _page_shell_css()
-    _render_ai_chat_panel()
+    _render_ai_chat_panel(pool)
     with st.sidebar:
         _sidebar_brand()
         st.markdown('<div style="height:16px"></div>', unsafe_allow_html=True)
@@ -686,7 +873,7 @@ def _confirm_delete_record_dialog(pool, user_id: int, record_id: int, title: str
 # ══════════════════════════════════════════════════════════
 def render_dashboard(pool):
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
-    _render_authenticated_sidebar("dashboard")
+    _render_authenticated_sidebar("dashboard", pool)
 
     user_id = st.session_state.get("user_id", 0)
     conn = get_conn(pool)
@@ -803,7 +990,7 @@ def render_records(pool):
         """,
         unsafe_allow_html=True,
     )
-    _render_authenticated_sidebar("records")
+    _render_authenticated_sidebar("records", pool)
 
     user_id = st.session_state.get("user_id", 0)
     conn = get_conn(pool)
@@ -871,7 +1058,7 @@ def render_records(pool):
 # ══════════════════════════════════════════════════════════
 def render_track(pool):
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
-    _render_authenticated_sidebar("track")
+    _render_authenticated_sidebar("track", pool)
 
     user_id = st.session_state.get("user_id", 0)
     conn = get_conn(pool)
@@ -952,7 +1139,7 @@ def render_track(pool):
 # ══════════════════════════════════════════════════════════
 def render_settings(pool):
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
-    _render_authenticated_sidebar("settings")
+    _render_authenticated_sidebar("settings", pool)
 
     user_id = st.session_state.get("user_id", 0)
     user_name = st.session_state.get("user_name", "")
@@ -1009,7 +1196,7 @@ def render_settings(pool):
 # ══════════════════════════════════════════════════════════
 def render_analysis(settings, pool):
     st.markdown("<style>.block-container{max-width:100%!important}</style>", unsafe_allow_html=True)
-    _render_authenticated_sidebar("analysis")
+    _render_authenticated_sidebar("analysis", pool)
 
     if not st.session_state.analyzed:
         _render_upload(settings, pool)
