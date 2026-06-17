@@ -35,6 +35,9 @@ CHAT_SCOPE_SYSTEM = (
     "'LDL이 높다는데 무슨 의미예요?'는 allowed/checkup_explanation, "
     "'내 검진 결과 전체적으로 설명해줘'는 allowed/checkup_summary, "
     "'어느 진료과 가야 해요?'는 allowed/department_guide, "
+    "'스타틴 먹어야 하나요?'는 blocked/prescription_request, "
+    "'아이 소변이 거의 없고 축 처져요'는 blocked/emergency_symptom, "
+    "'위내시경 용종 제거 비용이 얼마예요?'는 blocked/unsupported, "
     "'오늘 날씨 어때요?'는 blocked/out_of_scope_nonmedical이다. "
     "판단이 모호하거나 출력 형식을 지키기 어렵다면 scope는 'blocked', question_type은 'unknown'으로 둔다. "
     "출력은 한 줄 JSON만 허용한다. 예: "
@@ -63,7 +66,11 @@ def build_chat_answer_user(question: str, grounding: dict) -> str:
     if items:
         lines.append("[관련 검진 항목 근거]")
         for it in items:
-            mine = f" / 내 수치 {it['value']} ({it['flag']})" if it.get("in_report") else ""
+            mine = (
+                f" / 내 수치 {it['value']} ({it['flag']})"
+                if it.get("in_report")
+                else " / 최신 검진 결과에 해당 항목 없음"
+            )
             lines.append(
                 f"- {it['name']}: {it['explanation']} / 주의: {it['caution']} / 정상범위 {it['range']}"
                 f"{mine} (출처 {it['source']})"
@@ -72,8 +79,10 @@ def build_chat_answer_user(question: str, grounding: dict) -> str:
     if guides:
         lines.append("[생활 가이드 근거]")
         for g in guides:
+            report_note = " / 최신 검진 결과 관련 수치 있음" if g.get("in_report") else " / 최신 검진 결과 관련 수치 없음"
             lines.append(
-                f"- {g['category']}: {g['lifestyle']} / 추적: {g['tracking']} / 진료과: {g['department']} (출처 {g['source']})"
+                f"- {g['category']}: {g['lifestyle']} / 추적: {g['tracking']} / 진료과: {g['department']}"
+                f"{report_note} (출처 {g['source']})"
             )
     lines.append("위 근거만 사용해 질문에 쉽게 답하라. 근거가 부족하면 솔직히 말하고 전문의 상담을 권하라.")
     return "\n".join(lines)

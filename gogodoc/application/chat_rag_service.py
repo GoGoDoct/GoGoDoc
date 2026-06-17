@@ -44,6 +44,13 @@ _NO_GROUNDING = (
 _FALLBACK = "답변 생성에 실패했습니다. 잠시 후 다시 시도하시거나 전문의 상담을 권장합니다. 본 답변은 참고용입니다."
 
 _FLAG_PRIORITY = {Flag.EMERGENCY: 0, Flag.ABNORMAL: 1, Flag.CAUTION: 2}
+_REFERENCE_ONLY_NOTICE = (
+    "최신 검진 결과에서 {names} 항목은 찾지 못했습니다. "
+    "따라서 개인 수치 판정이 아니라 공인 출처 기반 일반 정보로 안내드립니다."
+)
+_REPORT_FALLBACK_NOTICE = (
+    "질문에서 특정 검진 항목을 찾지 못해 최신 검진 결과의 주의·이상 항목을 기준으로 안내드립니다."
+)
 
 
 def _match_items(question: str) -> list[str]:
@@ -122,12 +129,24 @@ def _report_fallback(report, profile):
         if c and c not in seen_cats:
             g = category_guide.guide_for(c)
             if g:
-                guides_grounding.append({"category": c, **g})
+                guides_grounding.append({"category": c, "in_report": True, **g})
                 if g["source"] not in sources:
                     sources.append(g["source"])
                 seen_cats.add(c)
 
     return {"items": items_grounding, "guides": guides_grounding}, item_names, sources
+
+
+def _reference_only_names(grounding: dict) -> list[str]:
+    """공인 근거는 있으나 최신 검진 결과에는 없는 항목·카테고리 이름."""
+    names: list[str] = []
+    for item in grounding.get("items", []):
+        if not item.get("in_report") and item.get("name") not in names:
+            names.append(item["name"])
+    for guide in grounding.get("guides", []):
+        if not guide.get("in_report") and guide.get("category") not in names:
+            names.append(guide["category"])
+    return names
 
 
 class ChatRagService:
@@ -143,6 +162,11 @@ class ChatRagService:
 
         # 내 검진결과에서 해당 항목 값·flag 매핑
         report_items = {it.canonical_name: it for it in (report.items if report else [])}
+        report_categories = {
+            c
+            for c in (category_guide.category_of(name) for name in report_items)
+            if c
+        }
 
         items_grounding = []
         sources: list[str] = []
@@ -169,7 +193,7 @@ class ChatRagService:
             g = category_guide.guide_for(c)
             if not g:
                 continue
-            guides_grounding.append({"category": c, **g})
+            guides_grounding.append({"category": c, "in_report": c in report_categories, **g})
             if g["source"] not in sources:
                 sources.append(g["source"])
 
@@ -178,9 +202,11 @@ class ChatRagService:
     def answer(self, question: str, report=None, profile=None) -> ChatMessage:
         """허용 질문에 근거 기반 답변 생성. 키워드 미매칭 시 보고서 이상·주의 항목으로 폴백."""
         grounding, item_names, sources = self._retrieve(question, report, profile)
+        fallback_used = False
 
         if not grounding["items"] and not grounding["guides"]:
             grounding, item_names, sources = _report_fallback(report, profile)
+            fallback_used = bool(grounding["items"] or grounding["guides"])
 
         if not grounding["items"] and not grounding["guides"]:
             return ChatMessage(
@@ -199,8 +225,17 @@ class ChatRagService:
         except Exception:
             out = _FALLBACK
 
+        route_reason = "rag_answer"
+        reference_only = _reference_only_names(grounding)
+        if fallback_used:
+            out = f"{_REPORT_FALLBACK_NOTICE}\n\n{out}"
+            route_reason = "report_fallback_answer"
+        elif reference_only:
+            out = f"{_REFERENCE_ONLY_NOTICE.format(names=', '.join(reference_only))}\n\n{out}"
+            route_reason = "reference_only_answer"
+
         return ChatMessage(
             role="assistant", content=out, scope_flag=Scope.ALLOWED,
             sources=sources, context_item_names=item_names,
-            route_reason="rag_answer",
+            route_reason=route_reason,
         )

@@ -132,3 +132,66 @@ def test_rule_routes_obvious_checkup_summary_question():
     assert d is not None
     assert d.scope == Scope.ALLOWED
     assert d.question_type == QuestionType.CHECKUP_SUMMARY
+
+
+def test_rule_routes_medication_and_dosage_edge_cases():
+    # 실제 사용자 질문형 약물 판단은 처방·복약 또는 용량 판단으로 차단
+    cases = [
+        ("LDL이 높은데 스타틴 먹어야 하나요?", QuestionType.PRESCRIPTION_REQUEST),
+        ("메트포민을 몇 mg으로 늘려야 하나요?", QuestionType.DOSAGE_REQUEST),
+        ("스타틴 부작용이 걱정돼요. 계속 먹어도 되나요?", QuestionType.PRESCRIPTION_REQUEST),
+    ]
+
+    for question, expected in cases:
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED
+        assert d.question_type == expected
+
+
+def test_rule_routes_pediatric_red_flags_and_general_symptoms():
+    # 소아 red flag는 응급, 일반 탈수 걱정은 일반 증상으로 라우팅
+    emergency = chat_scope.classify_rule_detail("아이가 축 처지고 소변이 거의 없어요")
+    symptom = chat_scope.classify_rule_detail("소아 탈수 증상이 걱정돼요")
+
+    assert emergency is not None
+    assert emergency.scope == Scope.BLOCKED
+    assert emergency.question_type == QuestionType.EMERGENCY_SYMPTOM
+    assert symptom is not None
+    assert symptom.scope == Scope.BLOCKED
+    assert symptom.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
+def test_rule_routes_pregnancy_and_mental_health_boundaries():
+    # 임신 가능성·우울감 상담은 검진 챗봇 범위를 벗어난 안전 라우팅
+    pregnancy = chat_scope.classify_rule_detail("이 검진 결과로 임신 가능성이 있나요?")
+    pregnancy_range = chat_scope.classify_rule_detail("임신 중이라면 이 검사 수치 기준이 달라지나요?")
+    mental = chat_scope.classify_rule_detail("요즘 너무 우울한데 어떻게 해야 하나요?")
+
+    assert pregnancy is not None
+    assert pregnancy.scope == Scope.BLOCKED
+    assert pregnancy.question_type == QuestionType.DIAGNOSIS_REQUEST
+    assert pregnancy_range is not None
+    assert pregnancy_range.scope == Scope.BLOCKED
+    assert pregnancy_range.question_type == QuestionType.UNSUPPORTED
+    assert mental is not None
+    assert mental.scope == Scope.BLOCKED
+    assert mental.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
+def test_rule_routes_cost_as_unsupported_before_procedure():
+    # 비용·보험 질문은 시술 필요 여부가 아니라 현재 미지원 정보로 분리
+    cost = chat_scope.classify_rule_detail("위내시경 용종 제거 비용이 얼마예요?")
+    procedure = chat_scope.classify_rule_detail("이 수치면 시술을 받아야 하나요?")
+
+    assert cost is not None
+    assert cost.scope == Scope.BLOCKED
+    assert cost.question_type == QuestionType.UNSUPPORTED
+    assert procedure is not None
+    assert procedure.scope == Scope.BLOCKED
+    assert procedure.question_type == QuestionType.PROCEDURE_REQUEST
+
+
+def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
+    # 스트레스 관리가 검진 생활습관 질문이면 rule에서 증상 차단하지 않음
+    assert chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?") is None
