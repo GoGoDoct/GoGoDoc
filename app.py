@@ -10,7 +10,7 @@ import re
 import time
 import tempfile
 import os
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 import streamlit as st
@@ -884,16 +884,17 @@ def render_dashboard(pool):
         put_conn(pool, conn)
 
     user_name = st.session_state.get("user_name", "사용자")
+    if latest:
+        date_str = latest["analyzed_at"].strftime("%Y-%m-%d")
+        days_elapsed = (date.today() - latest["analyzed_at"].date()).days
+        sub = f"최근 검진일 {date_str} 기준, 건강 요약을 정리했어요."
+    else:
+        days_elapsed = None
+        sub = "아직 검진 결과가 없어요. 검진 결과지를 업로드해 보세요."
+
     head, btn = st.columns([3, 1])
     with head:
-        if latest:
-            date_str = latest["analyzed_at"].strftime("%Y-%m-%d")
-            sub = f"최근 검진일 {date_str} 기준, 건강 요약을 정리했어요."
-        else:
-            sub = "아직 검진 결과가 없어요. 검진 결과지를 업로드해 보세요."
-        st.markdown(f'<h1 style="font-size:25px;font-weight:800;margin:0">안녕하세요, {user_name}님 👋</h1>'
-                    f'<p style="font-size:14px;color:#7B8597;margin:8px 0 0">{sub}</p>',
-                    unsafe_allow_html=True)
+        st.markdown(ui.dashboard_hero_html(user_name, sub, days_elapsed), unsafe_allow_html=True)
     with btn:
         st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
         if st.button("＋ 새 검진 해석하기", type="primary", use_container_width=True):
@@ -901,7 +902,7 @@ def render_dashboard(pool):
             go("analysis")
 
     if not latest:
-        st.info("검진 결과지 PDF를 업로드하면 AI 해석 결과가 여기에 표시됩니다.")
+        st.markdown(ui.dashboard_empty_html(), unsafe_allow_html=True)
         if _chat_test_ui_enabled():
             _render_chatbot_panel(settings, pool)
         return
@@ -930,20 +931,27 @@ def render_dashboard(pool):
         "&details=GoGoDoc+AI+%EC%B6%94%EC%B2%9C+%EC%9E%AC%EA%B2%80%EC%A7%84%EC%9D%BC"
     )
 
-    left, right = st.columns([1.4, 1], gap="medium")
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    left, right = st.columns([1.4, 1], gap="large")
     with left:
         if len(fbs_trend["values"]) >= 2:
-            st.markdown('<div class="gg-card" style="padding:22px 24px 8px">'
-                        '<div style="font-size:15px;font-weight:800;color:#1B2533">공복혈당 추이</div>'
-                        '<div style="font-size:12.5px;color:#8590A1;margin-top:4px">'
-                        f'최근 {len(fbs_trend["values"])}회 검진 · 단위 mg/dL</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                '<div class="gg-card" style="padding:22px 24px 8px">'
+                '<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;'
+                'text-transform:uppercase;margin-bottom:6px">공복혈당 추이</div>'
+                '<div style="font-size:22px;font-weight:800;color:#0D1117;letter-spacing:-.3px">'
+                f'혈당 변화 · {len(fbs_trend["values"])}회</div>'
+                '<div style="font-size:12px;color:#94A3B8;margin-top:3px">단위 mg/dL</div>',
+                unsafe_allow_html=True,
+            )
             st.markdown(ui.fbs_chart_svg_html(fbs_trend), unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+        if prev:
+            st.markdown(ui.dashboard_comparison_html(latest, prev), unsafe_allow_html=True)
     with right:
         if tracked:
             st.markdown(ui.tracked_html(tracked), unsafe_allow_html=True)
-            if st.button("추적 항목 전체 보기 →", use_container_width=True, key="view_tracked"):
+            if st.button("추적 항목 전체 보기", use_container_width=True, key="view_tracked"):
                 go("track")
         st.markdown(ui.next_checkup_html(next_date_label, gcal_url), unsafe_allow_html=True)
         st.markdown(ui.disclaimer_html(), unsafe_allow_html=True)

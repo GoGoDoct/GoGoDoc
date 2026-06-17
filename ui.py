@@ -204,14 +204,89 @@ def result_card_detail_html(it: dict, guide: dict | None = None) -> str:
     )
 
 
-def disclaimer_html() -> str:
+def dashboard_hero_html(user_name: str, sub: str, days_elapsed: int | None = None) -> str:
+    """대시보드 상단 인사말 + 검진 경과일 배지."""
+    badge = ""
+    if days_elapsed is not None:
+        if days_elapsed <= 30:
+            dot_color, badge_bg, text_color = "#059669", "#ECFDF5", "#065F46"
+        elif days_elapsed <= 60:
+            dot_color, badge_bg, text_color = "#D97706", "#FFFBEB", "#92400E"
+        else:
+            dot_color, badge_bg, text_color = "#DC2626", "#FEF2F2", "#991B1B"
+        label = f"검진 후 {days_elapsed}일" if days_elapsed <= 60 else f"검진 후 {days_elapsed}일 · 재검 권장"
+        badge = (
+            f'<span style="display:inline-flex;align-items:center;gap:6px;'
+            f'background:{badge_bg};color:{text_color};border:1px solid {badge_bg};'
+            f'font-size:11.5px;font-weight:700;letter-spacing:.1px;border-radius:6px;'
+            f'padding:3px 10px;margin-left:14px;vertical-align:middle">'
+            f'<span style="width:6px;height:6px;border-radius:50%;background:{dot_color};'
+            f'display:inline-block;flex:none"></span>{label}</span>'
+        )
     return (
-        '<div style="display:flex;gap:12px;background:#F6F9FD;border:1px solid #DCE8F5;'
-        'border-radius:14px;padding:16px 18px;margin-top:14px">'
-        '<span style="color:#8590A1;font-weight:700;font-size:17px">ⓘ</span>'
-        '<div style="font-size:13.5px;line-height:1.7;color:#7B8597">본 해석은 공인 의료 기준을 근거로 한 '
-        '<b style="color:#5B6678">참고용 정보이며 의료 진단이 아닙니다.</b> '
-        '정확한 진단과 치료는 반드시 의료진과 상담하시기 바랍니다.</div></div>'
+        f'<p style="font-size:11.5px;font-weight:700;color:#64748B;letter-spacing:.6px;'
+        f'text-transform:uppercase;margin:0 0 8px">대시보드</p>'
+        f'<h1 style="font-size:26px;font-weight:800;color:#0D1117;margin:0;letter-spacing:-.5px;line-height:1.3">'
+        f'{user_name}님의 건강 요약{badge}</h1>'
+        f'<p style="font-size:13.5px;color:#64748B;margin:8px 0 0;font-weight:500">{sub}</p>'
+    )
+
+
+def dashboard_empty_html() -> str:
+    """검진 기록이 없을 때 표시하는 빈 상태 카드."""
+    icon = (
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" '
+        'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+        '<path d="M14 2v6h6"/><line x1="12" y1="18" x2="12" y2="12"/>'
+        '<line x1="9" y1="15" x2="15" y2="15"/></svg>'
+    )
+    items = [
+        ("공인 의료 기준 근거로 항목별 자동 분류", "#059669"),
+        ("정상·주의·이상 수치를 한눈에 정리", "#0F3460"),
+        ("추적 관찰 항목 자동 선정 및 재검 일정 안내", "#0F3460"),
+    ]
+    checks = "".join(
+        f'<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;'
+        f'border-top:1px solid #F1F5F9">'
+        f'<span style="width:18px;height:18px;border-radius:50%;background:{c};'
+        f'display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px">'
+        f'<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" '
+        f'stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+        f'<span style="font-size:13.5px;color:#475569;line-height:1.5">{t}</span></div>'
+        for t, c in items
+    )
+    return (
+        '<div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;'
+        'padding:48px 40px;margin-top:24px;display:flex;gap:56px;align-items:center">'
+        '<div style="flex:none;width:72px;height:72px;border-radius:16px;background:#F8FAFC;'
+        f'border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center">'
+        f'{icon}</div>'
+        '<div style="flex:1">'
+        '<div style="font-size:17px;font-weight:800;color:#0D1117;letter-spacing:-.3px">'
+        '검진 결과지를 업로드하면 시작됩니다</div>'
+        '<div style="font-size:13.5px;color:#64748B;margin-top:6px;line-height:1.65">'
+        'PDF 한 장으로 항목별 해석과 생활 가이드를 즉시 확인할 수 있습니다.</div>'
+        f'<div style="margin-top:16px">{checks}</div>'
+        '</div></div>'
+    )
+
+
+def disclaimer_html() -> str:
+    info_icon = (
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px">'
+        '<circle cx="12" cy="12" r="10"/>'
+        '<line x1="12" y1="8" x2="12" y2="8" stroke-width="3"/>'
+        '<line x1="12" y1="12" x2="12" y2="16"/></svg>'
+    )
+    return (
+        f'<div style="display:flex;gap:10px;align-items:flex-start;background:#F8FAFC;'
+        f'border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;margin-top:12px">'
+        f'{info_icon}'
+        f'<div style="font-size:12.5px;line-height:1.65;color:#64748B">'
+        f'본 해석은 공인 의료 기준을 근거로 한 <b style="color:#475569">참고용 정보이며 의료 진단이 아닙니다.</b> '
+        f'정확한 진단과 치료는 반드시 의료진과 상담하시기 바랍니다.</div></div>'
     )
 
 
@@ -282,50 +357,59 @@ def lifestyle_guide_html(guides) -> str:
 
 # ── 대시보드 ──────────────────────────────────────────
 def kpi_cards_html(normal: int, caution: int, abnormal: int, emergency: int = 0) -> str:
-    manage = caution + abnormal + emergency
     total = normal + caution + abnormal
-    parts = []
-    if caution:
-        parts.append(f"주의 {caution}")
-    if abnormal:
-        parts.append(f"이상 {abnormal}")
-    if emergency:
-        parts.append(f"응급 {emergency}")
-    sub_text = (" · ".join(parts) + " — 생활습관 관리로 개선 가능한 단계예요."
-                if parts else "모든 항목이 정상 범위 안에 있어요.")
+    manage = caution + abnormal + emergency
+    score_pct = round(normal / total * 100) if total else 0
 
-    def small(label, val, sub, accent):
+    if score_pct >= 80:
+        score_label, score_color, score_bg = "양호", "#059669", "#ECFDF5"
+    elif score_pct >= 60:
+        score_label, score_color, score_bg = "주의 필요", "#D97706", "#FFFBEB"
+    else:
+        score_label, score_color, score_bg = "관리 필요", "#DC2626", "#FEF2F2"
+
+    def metric_card(label, val, desc, line_color, bar_color):
         pct = round(val / total * 100) if total else 0
-        bar = (
-            f'<div style="margin-top:12px;height:4px;background:#F0F4FA;border-radius:99px">'
-            f'<div style="width:{pct}%;height:100%;background:{accent};border-radius:99px"></div></div>'
-        )
         return (
-            f'<div style="flex:1;background:#fff;border:1px solid #E4E9F0;border-radius:18px;'
-            f'padding:20px 18px;border-top:3px solid {accent};position:relative;overflow:hidden">'
-            f'<div style="font-size:12.5px;color:#667085;font-weight:700;letter-spacing:.2px">{label}</div>'
-            f'<div style="font-size:36px;font-weight:800;color:#111827;margin-top:6px;line-height:1">{val}</div>'
-            f'<div style="font-size:12px;color:#667085;margin-top:5px">{sub}</div>'
-            f'{bar}</div>'
+            f'<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;'
+            f'padding:20px 20px 16px;border-left:3px solid {line_color}">'
+            f'<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;'
+            f'text-transform:uppercase">{label}</div>'
+            f'<div style="font-size:34px;font-weight:800;color:#0D1117;line-height:1;margin-top:8px">{val}</div>'
+            f'<div style="font-size:12px;color:#94A3B8;margin-top:5px;font-weight:500">{desc}</div>'
+            f'<div style="height:3px;background:#F1F5F9;border-radius:99px;margin-top:14px">'
+            f'<div style="width:{pct}%;height:100%;background:{bar_color};border-radius:99px;'
+            f'transition:width .3s ease"></div></div></div>'
         )
+
     big = (
-        '<div style="flex:1.6;background:#fff;border:1px solid #E4E9F0;color:#111827;'
-        'border-radius:18px;padding:22px 24px;box-shadow:0 7px 18px rgba(17,24,39,.06);position:relative;overflow:hidden">'
-        '<div style="position:relative;z-index:1">'
-        '<div style="font-size:11.5px;font-weight:800;color:#667085;letter-spacing:.5px;text-transform:uppercase">'
-        '관리가 필요한 항목</div>'
-        f'<div style="display:flex;align-items:baseline;gap:8px;margin-top:10px">'
-        f'<span style="font-size:50px;font-weight:800;line-height:1">{manage}</span>'
-        '<span style="font-size:17px;color:#667085;margin-bottom:4px">개</span></div>'
-        f'<div style="font-size:13px;color:#475467;margin-top:11px;line-height:1.65">{sub_text}</div>'
-        '</div></div>'
+        f'<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;'
+        f'padding:24px 24px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+        f'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
+        f'<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;'
+        f'text-transform:uppercase;padding-top:2px">관리 필요 항목</div>'
+        f'<div style="font-size:11.5px;font-weight:700;color:{score_color};background:{score_bg};'
+        f'border-radius:6px;padding:3px 10px;white-space:nowrap">{score_label} · 정상 {score_pct}%</div>'
+        f'</div>'
+        f'<div style="display:flex;align-items:baseline;gap:6px;margin-top:10px">'
+        f'<span style="font-size:52px;font-weight:800;color:#0D1117;line-height:1;letter-spacing:-2px">{manage}</span>'
+        f'<span style="font-size:16px;color:#94A3B8;font-weight:500">/ {total}개</span>'
+        f'</div>'
+        f'<div style="height:3px;background:#F1F5F9;border-radius:99px;margin-top:18px">'
+        f'<div style="width:{round(manage/total*100) if total else 0}%;height:100%;'
+        f'background:{"#DC2626" if score_pct < 60 else "#D97706" if score_pct < 80 else "#059669"};'
+        f'border-radius:99px"></div></div>'
+        f'<div style="font-size:12.5px;color:#64748B;margin-top:10px;line-height:1.6;font-weight:500">'
+        f'{"전체 항목이 정상 범위입니다." if manage == 0 else f"주의 {caution}개 · 이상 {abnormal}개" + (" · 응급 " + str(emergency) + "개" if emergency else "")}'
+        f'</div></div>'
     )
+
     return (
-        '<div style="display:flex;gap:14px;margin-top:22px">'
+        '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;margin-top:24px">'
         + big
-        + small("정상", normal, f"전체 {total}개 중", "#8391A5")
-        + small("주의", caution, "추적 권장", "#A8946B")
-        + small("이상", abnormal, "재검 필요", "#704B4B")
+        + metric_card("정상", normal, f"전체 {total}개 중", "#CBD5E1", "#94A3B8")
+        + metric_card("주의", caution, "추적 관찰 권장", "#FCD34D", "#D97706")
+        + metric_card("이상", abnormal, "재검 필요", "#FCA5A5", "#DC2626")
         + '</div>'
     )
 
@@ -363,6 +447,90 @@ def records_html(records) -> str:
         '<div class="gg-card" style="padding:22px 24px">'
         '<div style="font-size:15px;font-weight:800;color:#1B2533">검진 기록</div>'
         f'<div>{rows}</div></div>'
+    )
+
+
+def dashboard_comparison_html(latest: dict, prev: dict) -> str:
+    """전회 검진 대비 정상·주의·이상 변화 카드."""
+    prev_date = prev["analyzed_at"].strftime("%Y. %m. %d")
+
+    rows_data = [
+        ("정상", prev["normal_count"],  latest["normal_count"],  True),
+        ("주의", prev["caution_count"], latest["caution_count"], False),
+        ("이상", prev["abnormal_count"],latest["abnormal_count"],False),
+    ]
+
+    total_prev = prev["normal_count"] + prev["caution_count"] + prev["abnormal_count"]
+    total_curr = latest["normal_count"] + latest["caution_count"] + latest["abnormal_count"]
+    score_prev = round(prev["normal_count"] / total_prev * 100) if total_prev else 0
+    score_curr = round(latest["normal_count"] / total_curr * 100) if total_curr else 0
+    score_delta = score_curr - score_prev
+
+    if score_delta > 0:
+        trend_label, trend_color, trend_bg = "전반적 개선", "#059669", "#ECFDF5"
+    elif score_delta < 0:
+        trend_label, trend_color, trend_bg = "전반적 악화", "#DC2626", "#FEF2F2"
+    else:
+        trend_label, trend_color, trend_bg = "변화 없음", "#64748B", "#F8FAFC"
+
+    arrow_up = (
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+        '<polyline points="18 15 12 9 6 15"/></svg>'
+    )
+    arrow_down = (
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+        '<polyline points="6 9 12 15 18 9"/></svg>'
+    )
+    arrow_flat = (
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+        '<line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    )
+
+    def row(label, v_prev, v_curr, higher_is_better):
+        delta = v_curr - v_prev
+        if delta == 0:
+            icon, d_color = arrow_flat, "#94A3B8"
+        elif (delta > 0) == higher_is_better:
+            icon, d_color = arrow_up, "#059669"
+        else:
+            icon, d_color = arrow_down if delta < 0 else arrow_up, "#DC2626"
+
+        delta_str = f"+{delta}" if delta > 0 else str(delta)
+        return (
+            f'<div style="display:grid;grid-template-columns:56px 1fr auto auto;'
+            f'align-items:center;gap:12px;padding:11px 0;border-top:1px solid #F1F5F9">'
+            f'<div style="font-size:11.5px;font-weight:700;color:#94A3B8;letter-spacing:.2px">{label}</div>'
+            f'<div style="display:flex;align-items:center;gap:8px">'
+            f'<span style="font-size:20px;font-weight:800;color:#CBD5E1">{v_prev}</span>'
+            f'<span style="color:#CBD5E1;font-size:11px">→</span>'
+            f'<span style="font-size:20px;font-weight:800;color:#0D1117">{v_curr}</span>'
+            f'</div>'
+            f'<div style="display:flex;align-items:center;gap:4px;color:{d_color};font-size:12px;font-weight:700">'
+            f'{icon}{delta_str}</div>'
+            f'</div>'
+        )
+
+    rows_html = "".join(row(lb, vp, vc, hib) for lb, vp, vc, hib in rows_data)
+    score_delta_str = f"+{score_delta}p" if score_delta > 0 else f"{score_delta}p" if score_delta < 0 else "±0p"
+
+    return (
+        '<div class="gg-card" style="padding:20px 22px">'
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px">'
+        '<div>'
+        '<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;text-transform:uppercase">'
+        '전회 대비 변화</div>'
+        f'<div style="font-size:12px;color:#CBD5E1;margin-top:4px;font-weight:500">기준 {prev_date}</div>'
+        '</div>'
+        f'<div style="display:flex;align-items:center;gap:6px;background:{trend_bg};'
+        f'border-radius:6px;padding:4px 10px">'
+        f'<span style="font-size:11.5px;font-weight:700;color:{trend_color}">{trend_label}</span>'
+        f'<span style="font-size:11px;color:{trend_color};font-weight:600">{score_delta_str}</span>'
+        f'</div></div>'
+        f'{rows_html}'
+        '</div>'
     )
 
 
@@ -405,25 +573,33 @@ def tracked_html(tracked) -> str:
 
 
 def next_checkup_html(next_date_str: str = "3개월 후", gcal_url: str = "") -> str:
+    cal_icon = (
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<rect x="3" y="4" width="18" height="18" rx="2"/>'
+        '<line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>'
+        '<line x1="3" y1="10" x2="21" y2="10"/></svg>'
+    )
     cal_btn = ""
     if gcal_url:
         cal_btn = (
             f'<a href="{gcal_url}" target="_blank" style="display:flex;align-items:center;'
-            f'justify-content:center;gap:7px;margin-top:14px;background:#fff;'
-            f'border:1.5px solid #15448A;color:#15448A;font-weight:700;font-size:13.5px;'
-            f'border-radius:11px;padding:12px;text-decoration:none;transition:background .15s">'
-            f'📅 구글 캘린더에 추가</a>'
+            f'justify-content:center;gap:7px;margin-top:12px;background:#fff;'
+            f'border:1px solid #CBD5E1;color:#0F3460;font-weight:700;font-size:13px;'
+            f'border-radius:10px;padding:11px 16px;text-decoration:none">'
+            f'{cal_icon} 구글 캘린더에 추가</a>'
         )
     return (
-        '<div class="gg-card" style="padding:22px 24px">'
-        '<div style="font-size:15px;font-weight:800;color:#1B2533;margin-bottom:14px">📅 다음 검진 예정</div>'
-        '<div style="background:linear-gradient(135deg,#EDF4FF 0%,#E3EEFF 100%);'
-        'border:1px solid #C4D8F2;border-radius:14px;padding:16px 18px">'
-        '<div style="font-size:11px;font-weight:700;color:#7B8597;letter-spacing:.5px;'
-        'text-transform:uppercase;margin-bottom:8px">권장 재검 시기</div>'
-        f'<div style="font-size:21px;font-weight:800;color:#15448A;line-height:1.2">{next_date_str}</div>'
-        '<div style="font-size:12px;color:#7B8597;margin-top:8px;line-height:1.65">'
-        '주의·이상 항목의 변화를 확인하기 위한 권장 시점이에요.</div></div>'
+        '<div class="gg-card" style="padding:20px 22px">'
+        '<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;'
+        'text-transform:uppercase;margin-bottom:12px">다음 검진 예정</div>'
+        '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">'
+        '<div style="font-size:11px;font-weight:600;color:#94A3B8;letter-spacing:.3px;margin-bottom:6px">'
+        '권장 재검 시기</div>'
+        f'<div style="font-size:19px;font-weight:800;color:#0D1117;letter-spacing:-.3px;line-height:1.3">'
+        f'{next_date_str}</div>'
+        '<div style="font-size:12px;color:#94A3B8;margin-top:6px;line-height:1.6">'
+        '주의·이상 항목의 변화 확인을 위한 권장 시점입니다.</div></div>'
         f'{cal_btn}</div>'
     )
 
