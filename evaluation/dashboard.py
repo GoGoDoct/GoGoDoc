@@ -198,6 +198,7 @@ with tab_trend:
     clinical = [r for r in records if r.get("kind") == "clinical"]
     retrieval = [r for r in records if r.get("kind") == "retrieval"]
     generation = [r for r in records if r.get("kind") == "generation"]
+    variant = [r for r in records if r.get("kind") == "variant"]
 
     if not records:
         st.info("아직 기록이 없습니다. **골든 평가** 탭 또는 `chat_eval`/`chat_answer_eval`을 실행하세요.")
@@ -263,6 +264,21 @@ with tab_trend:
         }, pct=False)
         st.line_chart(gv.set_index("ts"), y_label="건수")
         st.caption("실제 해설 생성 후 LLM 심판 채점. 금지어 위반·응급톤 누락·환각은 0 목표(안전).")
+
+    # ── 하이브리드 변형 구제 (정밀도) ──────────────────
+    if variant:
+        st.subheader("하이브리드 변형 구제 추이")
+        vr = _chart(variant, "ts", {
+            "구제 정밀도": lambda r: r["metrics"].get("rescue_precision"),
+            "구제율": lambda r: r["metrics"].get("rescue_rate"),
+        })
+        st.line_chart(vr.set_index("ts"), y_label="비율 (%)")
+        vw = _chart(variant, "ts", {
+            "정확 구제": lambda r: r["metrics"].get("correct_rescue"),
+            "오구제": lambda r: r["metrics"].get("wrong_rescue"),
+        }, pct=False)
+        st.line_chart(vw.set_index("ts"), y_label="건수")
+        st.caption("사전 미등록 변형의 벡터 구제. 오구제(틀린 근거)는 0 목표 - 폴백 임계값 0.50.")
 
     # ── 팀 골든 임상 채점 (Clinical Correctness) ───────
     if clinical:
