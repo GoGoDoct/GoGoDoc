@@ -172,16 +172,12 @@ _NAV_ITEMS = [
 
 
 def _sidebar_brand():
-    logo = ('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" '
-            'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
-            '<path d="M3 12h4l2.5 7 4-14 2.5 7H21"/></svg>')
-    st.markdown('<div style="display:flex;align-items:center;gap:11px;padding:4px 0">'
-                '<div style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.10);'
-                'display:flex;align-items:center;'
-                f'justify-content:center">{logo}</div>'
-                '<div><div style="font-size:17px;font-weight:800;line-height:1;color:#fff">GoGoDoc</div>'
-                '<div style="font-size:11px;color:#B8C0CC;margin-top:4px">Health report interpreter</div></div></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div style="display:flex;align-items:center;padding:2px 0 4px">'
+        f'{ui.brand_lockup_html(icon_width=84, logo_width=224, gap=10)}'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _sidebar_nav(active: str):

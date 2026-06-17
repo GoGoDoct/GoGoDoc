@@ -7,15 +7,46 @@ Streamlit 마크다운은 들여쓰기 4칸을 코드블록으로 해석하므�
 import os as _os
 from sample_data import STATUS, range_text, bar_metrics
 
-def _load_logo_b64() -> str:
-    path = _os.path.join(_os.path.dirname(__file__), "assets", "logo_sm.b64")
+def _load_asset_b64(name: str) -> str:
+    path = _os.path.join(_os.path.dirname(__file__), "assets", name)
+    if name.endswith(".b64"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return ""
     try:
-        with open(path) as f:
-            return f.read().strip()
+        with open(path, "rb") as f:
+            import base64 as _base64
+            return _base64.b64encode(f.read()).decode("ascii")
     except FileNotFoundError:
         return ""
 
-_LOGO_B64 = _load_logo_b64()
+_ICON_B64 = _load_asset_b64("icon.png")
+_WORDMARK_B64 = _load_asset_b64("logo.png")
+
+
+def brand_lockup_html(icon_width: int = 72, logo_width: int = 150, gap: int = 14) -> str:
+    """아이콘과 워드마크를 한 줄로 배치한 브랜드 잠금형 로고."""
+    if _ICON_B64 and _WORDMARK_B64:
+        return (
+            f'<div style="display:flex;align-items:center;gap:{gap}px;max-width:100%">'
+            f'<img src="data:image/png;base64,{_ICON_B64}" '
+            f'style="width:{icon_width}px;height:auto;display:block;flex:none"/>'
+            f'<img src="data:image/png;base64,{_WORDMARK_B64}" '
+            f'style="width:{logo_width}px;height:auto;display:block;min-width:0"/>'
+            '</div>'
+        )
+
+    ecg = (
+        '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="M3 12h4l2.5 7 4-14 2.5 7H21"/></svg>'
+    )
+    return (
+        '<div style="width:96px;height:96px;border-radius:24px;background:rgba(255,255,255,.12);'
+        f'display:flex;align-items:center;justify-content:center">{ecg}</div>'
+    )
 
 
 def _val_label(it):
@@ -924,23 +955,7 @@ def feature_cards_html() -> str:
 
 def brand_panel_html() -> str:
     """로그인/회원가입 좌측 split-screen 패널 — 앱 로고 + 브랜드 카피."""
-    # 로고 이미지 (base64) 또는 SVG 폴백
-    if _LOGO_B64:
-        logo_el = (
-            f'<img src="data:image/png;base64,{_LOGO_B64}" '
-            f'style="width:96px;height:96px;border-radius:24px;'
-            f'box-shadow:0 12px 32px rgba(0,0,0,.35);display:block"/>'
-        )
-    else:
-        ecg = (
-            '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
-            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-            '<path d="M3 12h4l2.5 7 4-14 2.5 7H21"/></svg>'
-        )
-        logo_el = (
-            f'<div style="width:96px;height:96px;border-radius:24px;background:rgba(255,255,255,.12);'
-            f'display:flex;align-items:center;justify-content:center">{ecg}</div>'
-        )
+    logo_el = brand_lockup_html(icon_width=144, logo_width=300, gap=14)
 
     features = [
         ("공인 의료 기준 근거로 항목별 자동 해석", "#4ADE80"),
@@ -975,13 +990,9 @@ def brand_panel_html() -> str:
         '<div style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1">'
 
         # 로고 블록
-        f'<div style="display:flex;align-items:center;gap:16px">'
+        f'<div style="display:flex;align-items:center;max-width:100%">'
         f'{logo_el}'
-        f'<div>'
-        f'<div style="font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.3px">GoGoDoc</div>'
-        f'<div style="font-size:11.5px;color:#8CA3BF;margin-top:5px;font-weight:500;letter-spacing:.2px">'
-        f'Health Report Interpreter</div>'
-        f'</div></div>'
+        f'</div>'
 
         # 메인 카피
         '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'
