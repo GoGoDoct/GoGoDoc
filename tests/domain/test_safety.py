@@ -32,6 +32,13 @@ def test_filters_paraphrased_assertions():
         assert banned not in safety.sanitize_text(text), text
 
 
+def test_softens_predisease_label_assertions():
+    text = safety.sanitize_text("당화혈색소 수치가 5.8이면 당뇨 전단계에 해당합니다.")
+
+    assert "당뇨 전단계에 해당합니다" not in text
+    assert "주의가 필요한 범위입니다" in text
+
+
 def test_does_not_overfilter_legit_text():
     # 정상·헤지 표현은 그대로 (오차단 금지)
     for text in [
