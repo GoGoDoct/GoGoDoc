@@ -1,6 +1,6 @@
 """컴포지션 루트 조립 테스트."""
 
-from gogodoc.domain.models import ChatMessage, Scope
+from gogodoc.domain.models import ChatMessage, QuestionType, Scope, ScopeDecision
 from gogodoc.infrastructure.config import Settings
 
 
@@ -28,14 +28,24 @@ def test_build_chat_ui_contract_wires_latest_reader_and_answer_service(monkeypat
     import gogodoc.infrastructure.db.analysis_repository as analysis_repository
 
     class _FakeAnswerService:
-        def route(self, question):
+        def classify(self, question):
+            return ScopeDecision(
+                scope=Scope.ALLOWED,
+                routed=False,
+                reason="test",
+                question_type=QuestionType.CHECKUP_EXPLANATION,
+                route_reason="test",
+            )
+
+        def route_decision(self, decision):
             return None
 
-        def answer_allowed(self, question, latest_analysis, profile=None):
+        def answer_allowed(self, question, latest_analysis, profile=None, decision=None):
             return ChatMessage(
                 role="assistant",
                 content=f"{question}:{latest_analysis['filename']}",
                 scope_flag=Scope.ALLOWED,
+                question_type=decision.question_type if decision else None,
             )
 
     def fake_find_latest(conn, user_id):

@@ -81,12 +81,34 @@ class Scope(str, Enum):
     BLOCKED = "blocked"  # 비허용 (진단·처방·복약 - 전문의 상담 라우팅)
 
 
+class QuestionType(str, Enum):
+    """F-007 챗봇 질문 유형 - Scope 아래의 세부 라우팅 의도"""
+
+    CHECKUP_EXPLANATION = "checkup_explanation"
+    CHECKUP_SUMMARY = "checkup_summary"
+    LIFESTYLE_GENERAL = "lifestyle_general"
+    DEPARTMENT_GUIDE = "department_guide"
+    DIAGNOSIS_REQUEST = "diagnosis_request"
+    PRESCRIPTION_REQUEST = "prescription_request"
+    DOSAGE_REQUEST = "dosage_request"
+    PROCEDURE_REQUEST = "procedure_request"
+    EMERGENCY_SYMPTOM = "emergency_symptom"
+    SELF_HARM_CRISIS = "self_harm_crisis"
+    SYMPTOM_NON_EMERGENCY = "symptom_non_emergency"
+    OUT_OF_SCOPE_NONMEDICAL = "out_of_scope_nonmedical"
+    APP_HELP = "app_help"
+    UNSUPPORTED = "unsupported"
+    UNKNOWN = "unknown"
+
+
 class ScopeDecision(BaseModel):
     """F-007 질문분류 결과 - 스코프 판정 및 라우팅 여부"""
 
     scope: Scope
     routed: bool  # 전문의 상담으로 라우팅되었는지
     reason: str = ""  # 판정 근거 (rule | llm | llm_error)
+    question_type: QuestionType = QuestionType.UNKNOWN
+    route_reason: str = ""
 
 
 class ChatMessage(BaseModel):
@@ -98,6 +120,8 @@ class ChatMessage(BaseModel):
     routed: bool = False  # 전문의 상담 라우팅 여부
     sources: list[str] = Field(default_factory=list)  # 답변 근거 출처
     context_item_names: list[str] = Field(default_factory=list)  # 참조한 검진 항목
+    question_type: Optional[QuestionType] = None  # 질문 세부 유형
+    route_reason: str = ""  # 라우팅 또는 답변 경로 설명
 
 
 class FinalReport(BaseModel):

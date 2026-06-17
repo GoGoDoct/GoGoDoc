@@ -21,7 +21,7 @@ from gogodoc.application.chat_rag_service import ChatRagService
 from gogodoc.application.chat_service import ChatService
 from gogodoc.application.ports import LLMTask
 from gogodoc.composition import build_chat_answer_service
-from gogodoc.domain.models import ChatMessage
+from gogodoc.domain.models import ChatMessage, QuestionType
 from gogodoc.infrastructure.config import Settings, load_settings
 from gogodoc.infrastructure.db.analysis_repository import find_latest
 
@@ -46,10 +46,28 @@ class _CountingLLM:
         return self.response
 
 
+class _FakeClassifierLLM:
+    """질문별 구조화 라벨을 반환하는 스모크용 fake classifier."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    def complete(self, system: str, user: str, task: LLMTask) -> str:
+        self.calls.append({"system": system, "user": user, "task": task.value})
+        if any(token in user for token in ("요약", "전반적", "전체적", "제일 문제")):
+            return '{"scope":"allowed","question_type":"checkup_summary","route_reason":"fake_summary"}'
+        if any(token in user for token in ("음식", "식단", "운동", "술", "체중", "관리")):
+            return '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"fake_lifestyle"}'
+        if "과" in user or "상담" in user:
+            return '{"scope":"allowed","question_type":"department_guide","route_reason":"fake_department"}'
+        return '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"fake_explanation"}'
+
+
 def _message_to_result(
     message: ChatMessage,
     *,
     answer_llm_called: bool,
+    answer_llm_call_count: int,
     mode: str,
     preview_chars: int,
 ) -> dict[str, Any]:
@@ -58,16 +76,19 @@ def _message_to_result(
         "mode": mode,
         "scope_flag": message.scope_flag.value if message.scope_flag else None,
         "routed": message.routed,
+        "question_type": message.question_type.value if message.question_type else None,
+        "route_reason": message.route_reason,
         "context_item_names": message.context_item_names,
         "sources": message.sources,
         "answer_llm_called": answer_llm_called,
+        "answer_llm_call_count": answer_llm_call_count,
         "answer_preview": message.content[:preview_chars],
     }
 
 
 def _fake_service() -> tuple[ChatAnswerService, _CountingLLM]:
     """OpenAI 호출 없는 스모크용 서비스와 answer LLM counter를 만든다."""
-    classifier_llm = _CountingLLM("허용")
+    classifier_llm = _FakeClassifierLLM()
     answer_llm = _CountingLLM("스모크 확인용 답변입니다. 출처: 대한비만학회. 참고용입니다.")
     return (
         ChatAnswerService(
@@ -87,6 +108,8 @@ def _infer_real_answer_llm_called(message: ChatMessage) -> bool:
     """real 모드에서는 내부 LLM 호출을 계측하지 못하므로 근거 존재 여부로 추정한다."""
     if message.scope_flag and message.scope_flag.value == "blocked":
         return False
+    if message.question_type == QuestionType.CHECKUP_SUMMARY:
+        return False
     return bool(message.context_item_names or message.sources)
 
 
@@ -99,16 +122,29 @@ def run_smoke(
     settings: Settings | None = None,
 ) -> dict[str, Any]:
     """최신 분석 결과 1건으로 챗봇 답변 서비스를 실행하고 출력 dict를 반환한다."""
-    if latest_analysis is None:
-        raise NoAnalysisError("해당 user_id의 analysis_results 없음")
-
     if mode == "fake":
         service, answer_llm = _fake_service()
-        message = service.answer(question, latest_analysis)
-        answer_llm_called = bool(answer_llm.calls)
+        decision = service.classify(question)
+        routed = service.route_decision(decision)
+        if routed is not None:
+            message = routed
+        else:
+            if latest_analysis is None:
+                raise NoAnalysisError("해당 user_id의 analysis_results 없음")
+            message = service.answer_allowed(question, latest_analysis, decision=decision)
+        answer_llm_call_count = len(answer_llm.calls)
+        answer_llm_called = bool(answer_llm_call_count)
     elif mode == "real":
         service = _real_service(settings)
-        message = service.answer(question, latest_analysis)
+        decision = service.classify(question)
+        routed = service.route_decision(decision)
+        if routed is not None:
+            message = routed
+        else:
+            if latest_analysis is None:
+                raise NoAnalysisError("해당 user_id의 analysis_results 없음")
+            message = service.answer_allowed(question, latest_analysis, decision=decision)
+        answer_llm_call_count = 1 if _infer_real_answer_llm_called(message) else 0
         answer_llm_called = _infer_real_answer_llm_called(message)
     else:
         raise ValueError(f"지원하지 않는 mode: {mode}")
@@ -116,6 +152,7 @@ def run_smoke(
     return _message_to_result(
         message,
         answer_llm_called=answer_llm_called,
+        answer_llm_call_count=answer_llm_call_count,
         mode=mode,
         preview_chars=preview_chars,
     )

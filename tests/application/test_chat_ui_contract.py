@@ -5,7 +5,7 @@ from gogodoc.application.chat_rag_service import ChatRagService
 from gogodoc.application.chat_service import ChatService
 from gogodoc.application.chat_ui_contract import ChatUiContract
 from gogodoc.application.ports import LLMTask
-from gogodoc.domain.models import Scope
+from gogodoc.domain.models import QuestionType, Scope
 from gogodoc.domain.policy import DISCLAIMER
 
 
@@ -82,6 +82,8 @@ def test_allowed_question_returns_ui_payload_with_grounding_fields():
     assert payload["latest_analysis_checked"] is True
     assert payload["scope_flag"] == Scope.ALLOWED.value
     assert payload["routed"] is False
+    assert payload["question_type"] == QuestionType.UNKNOWN.value
+    assert payload["route_reason"]
     assert payload["context_item_names"] == ["BMI"]
     assert any("대한비만학회" in source for source in payload["sources"])
     assert DISCLAIMER in payload["content"]
@@ -106,6 +108,8 @@ def test_blocked_question_routes_before_latest_reader_and_answer_llm_call():
     assert payload["has_latest_analysis"] is None
     assert payload["scope_flag"] == Scope.BLOCKED.value
     assert payload["routed"] is True
+    assert payload["question_type"] == QuestionType.PRESCRIPTION_REQUEST.value
+    assert payload["route_reason"] == "prescription_rule"
     assert "전문의" in payload["content"]
     assert DISCLAIMER in payload["content"]
     assert payload["context_item_names"] == []
@@ -127,10 +131,34 @@ def test_missing_latest_analysis_returns_guidance_payload():
     assert payload["latest_analysis_checked"] is True
     assert payload["scope_flag"] == Scope.ALLOWED.value
     assert payload["routed"] is True
+    assert payload["question_type"] == QuestionType.UNKNOWN.value
+    assert payload["route_reason"] == "missing_latest_analysis"
     assert "최신 검진 결과" in payload["content"]
     assert DISCLAIMER in payload["content"]
     assert payload["context_item_names"] == []
     assert payload["sources"] == []
     assert payload["analysis_id"] is None
     assert payload["analysis_filename"] is None
+    assert answer_llm.calls == []
+
+
+def test_emergency_question_routes_before_latest_reader():
+    def fail_if_called(conn, user_id):
+        raise AssertionError("응급 질문에서는 최신 분석 결과를 조회하면 안 된다")
+
+    contract, classifier_llm, answer_llm = _contract_with_reader(fail_if_called)
+
+    payload = contract.answer_latest(
+        conn=object(),
+        user_id=1,
+        question="가슴이 답답하고 숨이 차요",
+    )
+
+    assert payload["latest_analysis_checked"] is False
+    assert payload["has_latest_analysis"] is None
+    assert payload["scope_flag"] == Scope.BLOCKED.value
+    assert payload["routed"] is True
+    assert payload["question_type"] == QuestionType.EMERGENCY_SYMPTOM.value
+    assert "119" in payload["content"]
+    assert classifier_llm.calls == []
     assert answer_llm.calls == []
