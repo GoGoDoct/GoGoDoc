@@ -4,7 +4,18 @@
 Streamlit 마크다운은 들여쓰기 4칸을 코드블록으로 해석하므로,
 여기서 만드는 HTML 문자열은 줄 앞 공백 없이 한 줄로 합쳐서 반환한다.
 """
+import os as _os
 from sample_data import STATUS, range_text, bar_metrics
+
+def _load_logo_b64() -> str:
+    path = _os.path.join(_os.path.dirname(__file__), "assets", "logo_sm.b64")
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return ""
+
+_LOGO_B64 = _load_logo_b64()
 
 
 def _val_label(it):
@@ -681,11 +692,21 @@ def chatbot_hospital_prompt_html(location: str = "") -> str:
 
 
 def fbs_chart_svg_html(trend) -> str:
-    """공복혈당 추이 커스텀 SVG 차트 (영역 + 라인 + 정상 상한 + 최신값)."""
-    years, vals, nmax = trend["years"], trend["values"], trend["normal_max"]
+    """주요 수치 추이 커스텀 SVG 차트 (영역 + 라인 + 정상 상한선 + 최신값)."""
+    years, vals = trend["years"], trend["values"]
+    nmax = trend.get("normal_max")
     W, H = 740, 300
     pad_l, pad_r, pad_t, pad_b = 28, 44, 44, 48
-    vmin, vmax = 90, 112
+    # 동적 Y축 범위 — 정상 상한이 있으면 포함
+    v_lo, v_hi = min(vals), max(vals)
+    margin = (v_hi - v_lo) * 0.3 if v_hi != v_lo else max(abs(v_hi) * 0.12, 5)
+    vmin = v_lo - margin
+    vmax = v_hi + margin
+    if nmax is not None:
+        vmin = min(vmin, nmax - margin * 0.6)
+        vmax = max(vmax, nmax + margin * 0.4)
+    if vmax == vmin:
+        vmax = vmin + 1
     n = len(vals)
 
     def cx(i):
@@ -700,23 +721,28 @@ def fbs_chart_svg_html(trend) -> str:
     area_d = (f"M{pts[0][0]:.1f} {base_y:.1f} "
               + " ".join(f"L{x:.1f} {y:.1f}" for x, y in pts)
               + f" L{pts[-1][0]:.1f} {base_y:.1f} Z")
-    y_n = cy(nmax)
     mid_pts = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="#fff" stroke="#15448A" stroke-width="3"/>'
                       for x, y in pts[:-1])
     lx, ly = pts[-1]
     year_labels = "".join(
         f'<text x="{cx(i):.1f}" y="{H - 14}" text-anchor="middle" font-size="15" font-weight="700" '
         f'fill="{"#B26A00" if i == n - 1 else "#9099A8"}">{years[i]}</text>' for i in range(n))
+    ref_line = ""
+    if nmax is not None:
+        y_n = cy(nmax)
+        ref_line = (
+            f'<line x1="{pad_l}" x2="{W - pad_r}" y1="{y_n:.1f}" y2="{y_n:.1f}" stroke="#E0982E" '
+            'stroke-width="1.6" stroke-dasharray="6 5"/>'
+            f'<text x="{W - pad_r}" y="{y_n - 9:.1f}" text-anchor="end" font-size="13.5" font-weight="700" '
+            f'fill="#B26A00">정상 상한 {nmax}</text>'
+        )
     return (
         f'<svg viewBox="0 0 {W} {H}" width="100%" style="display:block">'
         '<defs><linearGradient id="fbsg" x1="0" x2="0" y1="0" y2="1">'
         '<stop offset="0" stop-color="#15448A" stop-opacity="0.16"/>'
         '<stop offset="1" stop-color="#15448A" stop-opacity="0"/></linearGradient></defs>'
         f'<path d="{area_d}" fill="url(#fbsg)"/>'
-        f'<line x1="{pad_l}" x2="{W - pad_r}" y1="{y_n:.1f}" y2="{y_n:.1f}" stroke="#E0982E" '
-        'stroke-width="1.6" stroke-dasharray="6 5"/>'
-        f'<text x="{W - pad_r}" y="{y_n - 9:.1f}" text-anchor="end" font-size="13.5" font-weight="700" '
-        f'fill="#B26A00">정상 상한 {nmax}</text>'
+        f'{ref_line}'
         f'<path d="{line_d}" fill="none" stroke="#15448A" stroke-width="3" stroke-linecap="round" '
         'stroke-linejoin="round"/>'
         f'{mid_pts}'
@@ -724,6 +750,157 @@ def fbs_chart_svg_html(trend) -> str:
         f'<text x="{lx:.1f}" y="{ly - 18:.1f}" text-anchor="middle" font-size="27" font-weight="800" '
         f'fill="#15448A">{vals[-1]}</text>'
         f'{year_labels}</svg>'
+    )
+
+
+def _track_chart_svg(dates: list, values: list, color: str, idx: int = 0) -> str:
+    """추적 관찰 SVG 라인 차트 헬퍼 (area fill + dots + x-labels)."""
+    W, H = 600, 150
+    pad_l, pad_r, pad_t, pad_b = 8, 8, 18, 32
+    n = len(values)
+    grad_id = f"trkg{idx}"
+
+    v_lo, v_hi = min(values), max(values)
+    margin = (v_hi - v_lo) * 0.3 if v_hi != v_lo else max(abs(v_hi) * 0.15, 5)
+    vmin = v_lo - margin
+    vmax = v_hi + margin
+    if vmax == vmin:
+        vmax = vmin + 1
+
+    def cx(i):
+        return pad_l + (W - pad_l - pad_r) * (i / (n - 1))
+
+    def cy(v):
+        return pad_t + (H - pad_t - pad_b) * (1 - (v - vmin) / (vmax - vmin))
+
+    pts = [(cx(i), cy(v)) for i, v in enumerate(values)]
+    line_d = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts)
+    base_y = H - pad_b
+    area_d = (
+        f"M{pts[0][0]:.1f} {base_y:.1f} "
+        + " ".join(f"L{x:.1f} {y:.1f}" for x, y in pts)
+        + f" L{pts[-1][0]:.1f} {base_y:.1f} Z"
+    )
+    mid_dots = "".join(
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="#fff" stroke="{color}" stroke-width="2.2"/>'
+        for x, y in pts[:-1]
+    )
+    lx, ly = pts[-1]
+    year_labels = "".join(
+        f'<text x="{cx(i):.1f}" y="{H - 8}" text-anchor="middle" '
+        f'font-size="13" font-weight="{"700" if i == n - 1 else "500"}" '
+        f'fill="{"#475569" if i == n - 1 else "#CBD5E1"}">{dates[i]}</text>'
+        for i in range(n)
+    )
+    return (
+        f'<svg viewBox="0 0 {W} {H}" width="100%" style="display:block;overflow:visible">'
+        f'<defs><linearGradient id="{grad_id}" x1="0" x2="0" y1="0" y2="1">'
+        f'<stop offset="0" stop-color="{color}" stop-opacity="0.15"/>'
+        f'<stop offset="1" stop-color="{color}" stop-opacity="0"/>'
+        f'</linearGradient></defs>'
+        f'<path d="{area_d}" fill="url(#{grad_id})"/>'
+        f'<path d="{line_d}" fill="none" stroke="{color}" stroke-width="2.5" '
+        f'stroke-linecap="round" stroke-linejoin="round"/>'
+        f'{mid_dots}'
+        f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="7" fill="{color}"/>'
+        f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="3" fill="#fff"/>'
+        f'{year_labels}'
+        f'</svg>'
+    )
+
+
+def track_item_card_html(
+    item_name: str,
+    dates: list,
+    values: list,
+    unit: str = "",
+    status: str = "주의",
+    diff_str: str = "-",
+    idx: int = 0,
+) -> str:
+    """추적 관찰 항목 카드 — 상태별 테마 + SVG 라인 차트."""
+    _STATUS_THEME = {
+        "정상": ("#059669", "#ECFDF5"),
+        "주의": ("#D97706", "#FFFBEB"),
+        "이상": ("#DC2626", "#FEF2F2"),
+        "응급": ("#DC2626", "#FEF2F2"),
+    }
+    color, badge_bg = _STATUS_THEME.get(status, ("#15448A", "#EDF4FF"))
+
+    trend_icon = (
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" '
+        'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+        '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>'
+        '<polyline points="17 6 23 6 23 12"/></svg>'
+    )
+    header = (
+        f'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px">'
+        f'<div style="display:flex;align-items:center;gap:8px">'
+        f'{trend_icon}'
+        f'<div style="font-size:16px;font-weight:800;color:#0D1117;letter-spacing:-.2px">{item_name}</div>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:6px">'
+        f'<span style="font-size:10.5px;font-weight:700;color:{color};background:{badge_bg};'
+        f'border-radius:5px;padding:2px 8px;letter-spacing:.1px">{status}</span>'
+        f'<span style="font-size:11px;color:#94A3B8;font-weight:500">{unit}</span>'
+        f'</div></div>'
+    )
+
+    n = len(values)
+    if n >= 2:
+        chart_svg = _track_chart_svg(dates, values, color, idx)
+        _neutral = {"-", "0", "+0.0", "-0.0", "+0", "0.0"}
+        if diff_str not in _neutral:
+            is_up = diff_str.startswith("+")
+            d_color = "#D94F3A" if is_up else "#1F8A5B"
+            d_bg = "#FBEAE8" if is_up else "#E7F5EE"
+            arr_up = (
+                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'
+                '<polyline points="18 15 12 9 6 15"/></svg>'
+            )
+            arr_dn = (
+                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'
+                '<polyline points="6 9 12 15 18 9"/></svg>'
+            )
+            d_icon = arr_up if is_up else arr_dn
+            diff_html = (
+                f'<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;'
+                f'font-weight:700;color:{d_color};background:{d_bg};'
+                f'border-radius:6px;padding:3px 8px">'
+                f'{d_icon}{diff_str.lstrip("+")}</span>'
+            )
+        else:
+            diff_html = '<span style="font-size:11.5px;color:#CBD5E1;font-weight:500">전회 동일</span>'
+
+        footer = (
+            f'<div style="display:flex;align-items:baseline;gap:8px;margin-top:12px;'
+            f'padding-top:12px;border-top:1px solid #F1F5F9">'
+            f'<span style="font-size:28px;font-weight:800;color:{color};letter-spacing:-.5px;line-height:1">'
+            f'{values[-1]}</span>'
+            f'<span style="font-size:12px;color:#94A3B8;font-weight:500">{unit}</span>'
+            f'<span style="margin-left:auto">{diff_html}</span>'
+            f'</div>'
+        )
+        body = f'{chart_svg}{footer}'
+    elif n == 1:
+        body = (
+            f'<div style="padding:20px 0 8px">'
+            f'<div style="font-size:36px;font-weight:800;color:{color};letter-spacing:-.5px;line-height:1">'
+            f'{values[0]}'
+            f'<span style="font-size:14px;color:#94A3B8;font-weight:500;margin-left:6px">{unit}</span></div>'
+            f'<div style="font-size:12.5px;color:#94A3B8;margin-top:12px;line-height:1.6">'
+            f'2회 이상 검진 기록이 있어야 변화 추이를 확인할 수 있어요.</div>'
+            f'</div>'
+        )
+    else:
+        body = '<div style="font-size:13px;color:#CBD5E1;padding:20px 0">이 항목의 이력이 없어요.</div>'
+
+    return (
+        '<div class="gg-card" style="padding:20px 22px">'
+        f'{header}{body}'
+        '</div>'
     )
 
 
@@ -746,48 +923,79 @@ def feature_cards_html() -> str:
 
 
 def brand_panel_html() -> str:
-    """로그인/회원가입 좌측 딥블루 패널."""
-    points = [
-        "공인 의료 기준 근거 기반 해석",
-        "주의·이상 항목 자동 하이라이트",
-        "업로드 즉시 삭제 · 서버 미저장",
+    """로그인/회원가입 좌측 split-screen 패널 — 앱 로고 + 브랜드 카피."""
+    # 로고 이미지 (base64) 또는 SVG 폴백
+    if _LOGO_B64:
+        logo_el = (
+            f'<img src="data:image/png;base64,{_LOGO_B64}" '
+            f'style="width:96px;height:96px;border-radius:24px;'
+            f'box-shadow:0 12px 32px rgba(0,0,0,.35);display:block"/>'
+        )
+    else:
+        ecg = (
+            '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M3 12h4l2.5 7 4-14 2.5 7H21"/></svg>'
+        )
+        logo_el = (
+            f'<div style="width:96px;height:96px;border-radius:24px;background:rgba(255,255,255,.12);'
+            f'display:flex;align-items:center;justify-content:center">{ecg}</div>'
+        )
+
+    features = [
+        ("공인 의료 기준 근거로 항목별 자동 해석", "#4ADE80"),
+        ("주의·이상 수치를 한눈에 하이라이트", "#60A5FA"),
+        ("추적 항목 자동 선정 및 재검 일정 안내", "#FACC15"),
     ]
-    pts = "".join(
-        f'<div style="display:flex;align-items:center;gap:11px;font-size:14px;opacity:.92;margin-top:13px">'
-        f'<span style="width:22px;height:22px;flex:none;border-radius:50%;background:rgba(255,255,255,.16);'
-        f'display:flex;align-items:center;justify-content:center;font-size:12px">✓</span>{p}</div>'
-        for p in points
+    feat_rows = "".join(
+        f'<div style="display:flex;align-items:flex-start;gap:12px;margin-top:14px">'
+        f'<span style="width:5px;height:5px;border-radius:50%;background:{c};'
+        f'flex:none;margin-top:7px"></span>'
+        f'<span style="font-size:13.5px;color:#D4DBE6;line-height:1.6">{t}</span></div>'
+        for t, c in features
     )
-    # 로고 펄스(심전도) 아이콘
-    logo_icon = (
-        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" '
-        'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
-        '<path d="M3 12h4l2.5 7 4-14 2.5 7H21"/></svg>'
-    )
-    # 하단 배경 심전도 그래픽 (저채도)
+
+    # 배경 심전도 장식선
     deco = (
         '<svg viewBox="0 0 600 240" preserveAspectRatio="xMidYMax meet" '
-        'style="position:absolute;left:0;right:0;bottom:0;width:100%;height:46%;opacity:.13;pointer-events:none">'
-        '<circle cx="470" cy="150" r="118" fill="none" stroke="#fff" stroke-width="1.4"/>'
+        'style="position:absolute;left:0;right:0;bottom:0;width:100%;height:44%;'
+        'opacity:.10;pointer-events:none">'
         '<path d="M0 158 H210 l24 0 22 -86 26 150 22 -120 18 78 20 0 H600" '
-        'fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        'fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<circle cx="500" cy="140" r="130" fill="none" stroke="#fff" stroke-width="1.2"/>'
+        '</svg>'
     )
+
     return (
-        '<div class="gg-auth-brand-panel" style="position:fixed;top:0;left:0;bottom:0;width:26vw;z-index:5;overflow:hidden;'
-        'background:linear-gradient(180deg,#172335 0%,#111C2B 55%,#0E1724 100%);color:#fff;'
-        'padding:48px 44px;display:flex;flex-direction:column">'
+        '<div class="gg-auth-brand-panel" style="position:fixed;top:0;left:0;bottom:0;width:26vw;'
+        'z-index:5;overflow:hidden;'
+        'background:linear-gradient(160deg,#1A2E48 0%,#0F1E30 50%,#09141F 100%);'
+        'color:#fff;padding:52px 44px;display:flex;flex-direction:column">'
         f'{deco}'
-        '<div style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1;height:100%">'
-        '<div style="display:flex;align-items:center;gap:12px">'
-        '<div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.10);'
-        f'display:flex;align-items:center;justify-content:center">{logo_icon}</div>'
-        '<div><div style="font-size:21px;font-weight:800;line-height:1">GoGoDoc</div>'
-        '<div style="font-size:11px;color:#B8C0CC;margin-top:5px">Health report interpreter</div></div></div>'
+        '<div style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1">'
+
+        # 로고 블록
+        f'<div style="display:flex;align-items:center;gap:16px">'
+        f'{logo_el}'
+        f'<div>'
+        f'<div style="font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.3px">GoGoDoc</div>'
+        f'<div style="font-size:11.5px;color:#8CA3BF;margin-top:5px;font-weight:500;letter-spacing:.2px">'
+        f'Health Report Interpreter</div>'
+        f'</div></div>'
+
+        # 메인 카피
         '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">'
-        '<div style="font-size:12px;font-weight:700;letter-spacing:1.6px;color:#A8B3C7">AI HEALTH REPORT WORKSPACE</div>'
-        '<div style="font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.3;margin-top:16px">'
-        '검진 결과를 읽고,<br>다음 액션까지 이어집니다</div>'
-        '<div style="font-size:15px;line-height:1.78;color:#D4DBE6;margin-top:18px">'
-        '수치를 해석하는 데서 끝나지 않고 관리가 필요한 항목, 추적 변화, 병원 상담 흐름까지 한 화면에서 정리합니다.</div></div>'
-        f'<div>{pts}</div></div></div>'
+        '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#6B8AAA;'
+        'text-transform:uppercase;margin-bottom:16px">AI Health Report Workspace</div>'
+        '<div style="font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.35;'
+        'word-break:keep-all">'
+        '검진 결과를 읽고,<br>다음 액션까지<br>이어집니다</div>'
+        '<div style="font-size:13.5px;line-height:1.75;color:#8CA3BF;margin-top:18px;word-break:keep-all">'
+        '수치 해석에서 끝나지 않고, 관리 항목·추적 변화·병원 상담 흐름까지 한 화면에 정리합니다.'
+        '</div></div>'
+
+        # 기능 목록
+        f'<div style="border-top:1px solid rgba(255,255,255,.08);padding-top:22px">{feat_rows}</div>'
+
+        '</div></div>'
     )

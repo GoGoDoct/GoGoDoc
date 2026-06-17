@@ -510,46 +510,165 @@ def _render_authenticated_sidebar(active: str, pool):
 # ══════════════════════════════════════════════════════════
 def _auth_layout_css():
     st.markdown(
-        "<style>.block-container{max-width:100%!important;"
-        "padding:42px 56px 40px calc(26vw + 56px)!important}.stApp{background:#F5F7FB!important}"
-        "@media (max-width:900px){.block-container{padding:22px 18px 28px 18px!important}}</style>",
+        "<style>"
+        ".stApp{background:#EBF0F8!important}"
+        ".stApp>div,[data-testid='stAppViewContainer'],"
+        "section.main,.stMain,[data-testid='stMain']{"
+        "background:transparent!important;box-shadow:none!important}"
+        ".block-container{max-width:100%!important;background:transparent!important;"
+        "box-shadow:none!important;border:none!important;"
+        "padding:20vh 0 40px calc(26vw + 80px)!important}"
+        "[data-testid='stVerticalBlock'],[data-testid='stHorizontalBlock'],"
+        "[data-testid='column'],.stColumn,.element-container{"
+        "background:transparent!important;box-shadow:none!important;border:none!important}"
+        "@media (max-width:900px){.block-container{padding:10vh 24px 40px 24px!important}}"
+        "</style>",
         unsafe_allow_html=True,
     )
+
+
+_NOBG_LOGO_B64: str = ""
+
+
+def _load_nobg_logo() -> str:
+    global _NOBG_LOGO_B64
+    if not _NOBG_LOGO_B64:
+        try:
+            p = os.path.join(os.path.dirname(__file__), "assets", "logo_nobg.b64")
+            with open(p, "r") as f:
+                _NOBG_LOGO_B64 = f.read().strip()
+        except Exception:
+            _NOBG_LOGO_B64 = ""
+    return _NOBG_LOGO_B64
+
+
+_LOGIN_CSS = """
+<style>
+/* ── 로그인 폼 ── */
+
+/* 폼 전체 최대 너비 제한: 브랜드 패널(26vw) + 좌측 여백(80px) + 폼(440px) */
+.block-container {
+    max-width: calc(26vw + 520px) !important;
+}
+
+/* 입력 필드: 흰 배경 + 연한 테두리 */
+[data-testid="stTextInput"] input {
+    border-radius: 10px !important;
+    border: 1.5px solid #D8E0EE !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+    color: #2D3748 !important;
+    height: 50px !important;
+    transition: border-color .15s !important;
+}
+[data-testid="stTextInput"] input:focus {
+    border-color: #15448A !important;
+    box-shadow: 0 0 0 3px rgba(21,68,138,.10) !important;
+    outline: none !important;
+}
+[data-testid="stTextInput"] input::placeholder { color: #A0AEC0 !important; }
+
+/* 레이블 */
+[data-testid="stTextInput"] label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #4A5568 !important;
+    display: block !important;
+    margin-bottom: 6px !important;
+}
+
+/* 로그인 버튼 */
+[data-testid="stButton"]:has(button[kind="primary"]) button {
+    border-radius: 10px !important;
+    background: #1E3A78 !important;
+    color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    height: 52px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(30,58,120,.28) !important;
+    transition: background .15s, box-shadow .15s !important;
+}
+[data-testid="stButton"]:has(button[kind="primary"]) button:hover {
+    background: #15448A !important;
+    box-shadow: 0 6px 18px rgba(30,58,120,.35) !important;
+}
+
+/* 회원가입 버튼 → 링크 텍스트 */
+[data-testid="stButton"]:has(button[kind="secondary"]) button {
+    border: none !important;
+    background: transparent !important;
+    color: #15448A !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 4px 0 !important;
+    box-shadow: none !important;
+    text-decoration: underline !important;
+    height: auto !important;
+}
+
+/* 체크박스 */
+[data-testid="stCheckbox"] label {
+    font-size: 13px !important;
+    color: #4A5568 !important;
+}
+</style>
+"""
 
 
 def render_login(pool):
     _auth_layout_css()
     st.markdown(ui.brand_panel_html(), unsafe_allow_html=True)
-    _l, center, _r = st.columns([0.55, 0.9, 0.55], gap="large")
-    with center:
-        st.markdown('<div style="height:10vh"></div>', unsafe_allow_html=True)
-        with st.container(border=True):
-            st.markdown('<div class="gg-auth-eyebrow">GoGoDoc Workspace Access</div>'
-                        '<div class="gg-auth-title">로그인</div>'
-                        '<div class="gg-auth-desc">검진 기록과 해석 결과를 같은 기준으로 이어서 확인할 수 있도록 계정에 연결합니다.</div>'
-                        '<div class="gg-auth-divider"></div>', unsafe_allow_html=True)
-            st.text_input("이름", placeholder="홍길동", key="login_email")
-            st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
-            st.checkbox("로그인 상태 유지", value=True)
-            if st.button("로그인", type="primary", use_container_width=True):
-                name = st.session_state.get("login_email", "")
-                pw = st.session_state.get("login_pw", "")
-                if not name or not pw:
-                    st.warning("이름과 비밀번호를 입력하세요")
-                else:
-                    try:
-                        user = login(pool, name, pw)
-                        st.session_state.user_id = user["id"]
-                        st.session_state.user_name = user["name"]
-                        st.session_state.gender = user["sex"]
-                        st.session_state.age = user["age"]
-                        st.session_state.location = user.get("location", "")
-                        go("dashboard")
-                    except AuthError:
-                        st.error("이름 또는 비밀번호가 올바르지 않습니다")
-            st.markdown('<div class="gg-auth-footnote">계정이 없으신가요?</div>', unsafe_allow_html=True)
-            if st.button("회원가입", use_container_width=True):
-                go("signup")
+    st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
+
+    # 제목 + 부제목
+    st.markdown(
+        '<h1 style="font-size:32px;font-weight:800;color:#1A202C;margin:0 0 8px;letter-spacing:-.5px">로그인</h1>'
+        '<p style="font-size:14px;color:#718096;margin:0 0 24px">검진 기록과 해석 결과를 한곳에서 관리하세요.</p>',
+        unsafe_allow_html=True,
+    )
+
+    st.text_input("이름", placeholder="홍길동", key="login_email")
+    st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="login_pw")
+
+    # 체크박스 + 비밀번호 찾기 (폭 제어용 컬럼 — 배경 투명 처리됨)
+    chk_col, link_col = st.columns([1.2, 1])
+    with chk_col:
+        st.checkbox("로그인 상태 유지", value=False, key="login_remember")
+    with link_col:
+        st.markdown(
+            '<div style="text-align:right;padding-top:6px">'
+            '<span style="font-size:13px;color:#15448A;font-weight:600;cursor:pointer">비밀번호 찾기</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+    if st.button("로그인", type="primary", use_container_width=True):
+        name = st.session_state.get("login_email", "")
+        pw = st.session_state.get("login_pw", "")
+        if not name or not pw:
+            st.warning("이름과 비밀번호를 입력하세요")
+        else:
+            try:
+                user = login(pool, name, pw)
+                st.session_state.user_id = user["id"]
+                st.session_state.user_name = user["name"]
+                st.session_state.gender = user["sex"]
+                st.session_state.age = user["age"]
+                st.session_state.location = user.get("location", "")
+                go("dashboard")
+            except AuthError:
+                st.error("이름 또는 비밀번호가 올바르지 않습니다")
+
+    st.markdown(
+        '<div style="text-align:center;font-size:13px;color:#A0AEC0;margin-top:20px">계정이 없으신가요?</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("회원가입", use_container_width=True, key="to_signup"):
+        go("signup")
 
 
 def render_signup(pool):
@@ -618,18 +737,51 @@ def render_signup(pool):
 # ══════════════════════════════════════════════════════════
 # 대시보드 헬퍼
 # ══════════════════════════════════════════════════════════
-def _extract_fbs_trend(history: list[dict]) -> dict:
-    """이력에서 공복혈당 추이 추출 → fbs_chart_svg_html 포맷"""
+def _pick_trend_item(history: list[dict]) -> tuple[str, str, float | None]:
+    """이상·주의 항목 중 이력 데이터가 가장 많은 항목 선택.
+
+    반환: (item_name, unit, normal_max)
+    우선순위: 이상/응급 > 주의 > 정상, 동점이면 데이터 포인트 수 많은 쪽.
+    """
+    if not history:
+        return "", "", None
+
+    items = history[0].get("items_json") or []
+    abnormal = [it for it in items if it.get("status") in ("이상", "응급")]
+    caution  = [it for it in items if it.get("status") == "주의"]
+    candidates = abnormal + caution or items  # 전부 정상이면 전체 후보
+
+    best_name, best_unit, best_count = "", "", 0
+    for it in candidates:
+        name = it.get("name", "")
+        count = sum(
+            1 for rec in history
+            for h_it in (rec.get("items_json") or [])
+            if h_it.get("name") == name and h_it.get("value") and h_it.get("value") != 0
+        )
+        if count > best_count:
+            best_count = count
+            best_name = name
+            best_unit = it.get("unit", "")
+
+    best_item = next((it for it in items if it.get("name") == best_name), {})
+    normal_max = best_item.get("high")
+    return best_name, best_unit, normal_max
+
+
+def _extract_item_trend(history: list[dict], item_name: str,
+                        normal_max: float | None = None) -> dict:
+    """이력에서 특정 항목 추이 추출 → trend_chart_svg_html 포맷."""
     years, values = [], []
     for rec in reversed(history):
         for item in (rec.get("items_json") or []):
-            if "공복혈당" in item.get("name", ""):
+            if item.get("name") == item_name:
                 val = item.get("value")
                 if val and val != 0:
                     years.append(rec["analyzed_at"].strftime("%Y-%m"))
                     values.append(val)
                 break
-    return {"years": years, "values": values, "normal_max": 99}
+    return {"years": years, "values": values, "normal_max": normal_max}
 
 
 def _history_to_records(history: list[dict]) -> list[dict]:
@@ -915,7 +1067,8 @@ def render_dashboard(pool):
     st.markdown(ui.kpi_cards_html(normal, caution, abnormal, emergency), unsafe_allow_html=True)
     st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
 
-    fbs_trend = _extract_fbs_trend(history)
+    trend_name, trend_unit, trend_nmax = _pick_trend_item(history)
+    item_trend = _extract_item_trend(history, trend_name, trend_nmax) if trend_name else {"years": [], "values": [], "normal_max": None}
     prev = history[1] if len(history) >= 2 else None
     tracked = _latest_to_tracked(latest, prev)
 
@@ -934,17 +1087,17 @@ def render_dashboard(pool):
     st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
     left, right = st.columns([1.4, 1], gap="large")
     with left:
-        if len(fbs_trend["values"]) >= 2:
+        if len(item_trend["values"]) >= 2:
             st.markdown(
                 '<div class="gg-card" style="padding:22px 24px 8px">'
                 '<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px;'
-                'text-transform:uppercase;margin-bottom:6px">공복혈당 추이</div>'
+                'text-transform:uppercase;margin-bottom:6px">주요 수치 추이</div>'
                 '<div style="font-size:22px;font-weight:800;color:#0D1117;letter-spacing:-.3px">'
-                f'혈당 변화 · {len(fbs_trend["values"])}회</div>'
-                '<div style="font-size:12px;color:#94A3B8;margin-top:3px">단위 mg/dL</div>',
+                f'{trend_name} · {len(item_trend["values"])}회</div>'
+                f'<div style="font-size:12px;color:#94A3B8;margin-top:3px">단위 {trend_unit}</div>',
                 unsafe_allow_html=True,
             )
-            st.markdown(ui.fbs_chart_svg_html(fbs_trend), unsafe_allow_html=True)
+            st.markdown(ui.fbs_chart_svg_html(item_trend), unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         if prev:
             st.markdown(ui.dashboard_comparison_html(latest, prev), unsafe_allow_html=True)
@@ -968,17 +1121,6 @@ def render_records(pool):
         """
         <style>
         .block-container{max-width:100%!important}
-        .gg-record-status-row{
-            display:flex;gap:8px;align-items:center;justify-content:flex-end;padding-top:4px;
-        }
-        .gg-record-status{
-            display:inline-flex;align-items:center;gap:6px;
-            height:30px;padding:0 10px;border:1px solid #E3E8EF;border-radius:999px;
-            background:#FFFFFF;color:#475467;font-size:12px;font-weight:700;
-            box-shadow:0 1px 2px rgba(16,24,40,.04);
-        }
-        .gg-record-status b{color:#182230;font-size:12.5px;font-weight:800}
-        .gg-record-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
         div[data-testid="stHorizontalBlock"] > div:nth-child(4) .stButton > button{
             border-color:#F1B8B5!important;background:#FFF5F5!important;color:#B42318!important;
             font-weight:800!important;
@@ -1036,20 +1178,31 @@ def render_records(pool):
         abnormal = rec["abnormal_count"]
 
         with st.container(border=True):
-            c_info, c_pills, c_view, c_delete = st.columns([3, 2.3, 1, 0.8])
+            c_info, c_bar, c_view, c_delete = st.columns([2.2, 3.2, 1, 0.8])
             with c_info:
                 st.markdown(
-                    f'<div style="font-size:15px;font-weight:700;color:#1B2533">{title}</div>'
-                    f'<div style="font-size:12.5px;color:#8590A1;margin-top:3px">{date_str}</div>',
+                    f'<div style="font-size:15px;font-weight:700;color:#1B2533;line-height:1.3">{title}</div>'
+                    f'<div style="font-size:12px;color:#94A3B8;margin-top:4px;font-weight:500">{date_str}</div>',
                     unsafe_allow_html=True,
                 )
-            with c_pills:
+            with c_bar:
+                total = normal + caution + abnormal or 1
+                n_pct = round(normal  / total * 100)
+                c_pct = round(caution / total * 100)
+                a_pct = 100 - n_pct - c_pct
                 st.markdown(
-                    f'<div class="gg-record-status-row">'
-                    f'<span class="gg-record-status"><i class="gg-record-dot" style="background:#3E7C59"></i>정상 <b>{normal}</b></span>'
-                    f'<span class="gg-record-status"><i class="gg-record-dot" style="background:#B0893C"></i>주의 <b>{caution}</b></span>'
-                    f'<span class="gg-record-status"><i class="gg-record-dot" style="background:#A14B45"></i>이상 <b>{abnormal}</b></span>'
-                    f'</div>',
+                    f'<div style="padding:4px 0">'
+                    f'<div style="display:flex;height:7px;border-radius:99px;overflow:hidden;background:#F1F5F9;gap:2px">'
+                    f'<div style="width:{n_pct}%;background:#059669;transition:width .3s"></div>'
+                    f'<div style="width:{c_pct}%;background:#D97706;transition:width .3s"></div>'
+                    f'<div style="width:{a_pct}%;background:#DC2626;transition:width .3s"></div>'
+                    f'</div>'
+                    f'<div style="display:flex;gap:14px;margin-top:7px;font-size:12px;font-weight:700;align-items:center">'
+                    f'<span style="color:#059669">정상 {normal}</span>'
+                    f'<span style="color:#D97706">주의 {caution}</span>'
+                    f'<span style="color:#DC2626">이상 {abnormal}</span>'
+                    f'<span style="color:#CBD5E1;font-size:11px;font-weight:500;margin-left:auto">전체 {total}항목</span>'
+                    f'</div></div>',
                     unsafe_allow_html=True,
                 )
             with c_view:
@@ -1075,23 +1228,40 @@ def render_track(pool):
     finally:
         put_conn(pool, conn)
 
-    st.markdown('<h1 style="font-size:25px;font-weight:800;margin:0">추적 관찰</h1>'
-                '<p style="font-size:14px;color:#7B8597;margin:8px 0 20px">'
-                '주요 수치의 검진별 변화를 추적합니다.</p>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<p style="font-size:11.5px;font-weight:700;color:#64748B;letter-spacing:.6px;'
+        'text-transform:uppercase;margin:0 0 8px">추적 관찰</p>'
+        '<h1 style="font-size:26px;font-weight:800;color:#0D1117;margin:0;letter-spacing:-.5px">'
+        '주요 수치 변화 추적</h1>'
+        '<p style="font-size:13.5px;color:#64748B;margin:8px 0 24px;font-weight:500">'
+        '검진별 주요 수치를 추적하고 다음 재검 시점을 확인합니다.</p>',
+        unsafe_allow_html=True,
+    )
 
     if not history:
-        st.info("아직 검진 기록이 없어요. 검진 결과지를 업로드해 보세요.")
+        st.markdown(
+            '<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;'
+            'padding:40px 32px;text-align:center;color:#94A3B8;font-size:14px;margin-top:8px">'
+            '아직 검진 기록이 없어요. 검진 결과지를 업로드해 보세요.</div>',
+            unsafe_allow_html=True,
+        )
         return
 
     latest = history[0]
     tracking_names = latest.get("tracking_items") or []
 
     if not tracking_names:
-        st.info("추적 관찰 항목이 없어요. 검진 결과를 업로드하면 추적 항목이 자동으로 선택됩니다.")
+        st.markdown(
+            '<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;'
+            'padding:40px 32px;text-align:center;color:#94A3B8;font-size:14px;margin-top:8px">'
+            '추적 관찰 항목이 없어요. 검진 결과를 업로드하면 추적 항목이 자동으로 선택됩니다.</div>',
+            unsafe_allow_html=True,
+        )
         return
 
-    cols = st.columns(2)
+    latest_items_map = {it.get("name"): it for it in (latest.get("items_json") or [])}
+
+    cols = st.columns(2, gap="medium")
     for idx, item_name in enumerate(tracking_names):
         dates, values, unit_str = [], [], ""
         for rec in reversed(history):
@@ -1104,42 +1274,19 @@ def render_track(pool):
                         unit_str = it.get("unit", "")
                     break
 
+        status = latest_items_map.get(item_name, {}).get("status", "주의")
+
+        diff_str = "-"
+        if len(values) >= 2:
+            diff = values[-1] - values[-2]
+            diff_str = f"+{diff:.1f}" if diff >= 0 else f"{diff:.1f}"
+
         with cols[idx % 2]:
-            with st.container(border=True):
-                st.markdown(
-                    f'<div style="font-size:14px;font-weight:800;color:#15448A;margin-bottom:4px">'
-                    f'📈 {item_name}'
-                    f'<span style="font-size:12px;color:#9099A8;font-weight:500;margin-left:8px">'
-                    f'{unit_str}</span></div>',
-                    unsafe_allow_html=True,
-                )
-                if len(values) >= 2:
-                    chart_data = dict(zip(dates, values))
-                    st.line_chart(chart_data, height=160)
-                    latest_val = values[-1]
-                    prev_val = values[-2]
-                    diff = latest_val - prev_val
-                    diff_str = f"+{diff:.1f}" if diff >= 0 else f"{diff:.1f}"
-                    diff_color = "#C0392B" if diff > 0 else "#1F8A5B"
-                    st.markdown(
-                        f'<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">'
-                        f'<span style="font-size:22px;font-weight:800;color:#1B2533">{latest_val}</span>'
-                        f'<span style="font-size:12px;color:#9099A8">{unit_str}</span>'
-                        f'<span style="font-size:13px;font-weight:700;color:{diff_color};margin-left:auto">'
-                        f'{diff_str}</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                elif len(values) == 1:
-                    st.markdown(
-                        f'<div style="font-size:22px;font-weight:800;color:#1B2533">{values[0]}'
-                        f'<span style="font-size:12px;color:#9099A8;margin-left:4px">{unit_str}</span></div>'
-                        f'<div style="font-size:12px;color:#A4ACBA;margin-top:6px">'
-                        f'2회 이상 검진 기록이 있어야 추이를 확인할 수 있어요.</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown('<div style="font-size:13px;color:#A4ACBA">이 항목의 이력이 없어요.</div>',
-                                unsafe_allow_html=True)
+            st.markdown(
+                ui.track_item_card_html(item_name, dates, values, unit_str, status, diff_str, idx),
+                unsafe_allow_html=True,
+            )
+            st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════
