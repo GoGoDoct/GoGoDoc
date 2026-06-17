@@ -1,0 +1,126 @@
+<svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>GoGoDoc 로그인 화면 목업</title>
+  <defs>
+    <linearGradient id="panelGrad" x1="0" y1="900" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#060F26"/>
+      <stop offset="55%" stop-color="#0D2B60"/>
+      <stop offset="100%" stop-color="#1A5296"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ══ Background ══ -->
+  <rect id="bg-right" width="1440" height="900" fill="#EBF0F8"/>
+
+  <!-- ══ Brand Panel ══ -->
+  <g id="brand-panel">
+    <rect width="400" height="900" fill="url(#panelGrad)"/>
+
+    <!-- Logo box -->
+    <g id="logo">
+      <rect x="162" y="110" width="76" height="76" rx="20" fill="white" fill-opacity="0.10"/>
+      <rect x="166" y="114" width="68" height="68" rx="16" fill="white" fill-opacity="0.93"/>
+      <text x="200" y="160" text-anchor="middle"
+            fill="#15448A" font-size="28" font-weight="900"
+            font-family="'Arial Black', Arial, sans-serif">G</text>
+    </g>
+
+    <!-- App name -->
+    <text x="200" y="214" text-anchor="middle"
+          fill="#FFFFFF" font-size="21" font-weight="700"
+          font-family="Arial, sans-serif" letter-spacing="0.8">GoGoDoc</text>
+    <text x="200" y="234" text-anchor="middle"
+          fill="rgba(255,255,255,0.42)" font-size="11"
+          font-family="Arial, sans-serif" letter-spacing="3.5">WORKSPACE</text>
+
+    <!-- Divider -->
+    <line x1="64" y1="272" x2="336" y2="272"
+          stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+
+    <!-- Feature list -->
+    <g id="features" font-size="14" font-family="Arial, sans-serif" fill="rgba(255,255,255,0.85)">
+      <circle cx="80" cy="314" r="5" fill="#34D399"/>
+      <text x="98" y="319">검진 결과 AI 해석</text>
+
+      <circle cx="80" cy="352" r="5" fill="#60A5FA"/>
+      <text x="98" y="357">항목별 추적 관찰</text>
+
+      <circle cx="80" cy="390" r="5" fill="#FBBF24"/>
+      <text x="98" y="395">근처 병원 추천</text>
+    </g>
+
+    <!-- Copyright -->
+    <text x="200" y="856" text-anchor="middle"
+          fill="rgba(255,255,255,0.18)" font-size="11"
+          font-family="Arial, sans-serif">© 2025 GoGoDoc. All rights reserved.</text>
+  </g>
+
+  <!-- ══ Form Area ══ -->
+  <!-- Right area: x=400~1440, center x=920 / Form: x=700~1140 (width=440) -->
+  <g id="login-form">
+
+    <!-- Title -->
+    <text id="form-title" x="700" y="278"
+          fill="#1A202C" font-size="32" font-weight="800"
+          font-family="Arial, sans-serif" letter-spacing="-0.5">로그인</text>
+
+    <!-- Subtitle -->
+    <text id="form-subtitle" x="700" y="306"
+          fill="#718096" font-size="14"
+          font-family="Arial, sans-serif">검진 기록과 해석 결과를 한곳에서 관리하세요.</text>
+
+    <!-- ── 이름 field ── -->
+    <g id="field-name">
+      <text x="700" y="352"
+            fill="#4A5568" font-size="13" font-weight="600"
+            font-family="Arial, sans-serif">이름</text>
+      <rect x="700" y="362" width="440" height="50" rx="10"
+            fill="#FFFFFF" stroke="#D8E0EE" stroke-width="1.5"/>
+      <text x="718" y="393"
+            fill="#A0AEC0" font-size="14" font-family="Arial, sans-serif">홍길동</text>
+    </g>
+
+    <!-- ── 비밀번호 field ── -->
+    <g id="field-password">
+      <text x="700" y="440"
+            fill="#4A5568" font-size="13" font-weight="600"
+            font-family="Arial, sans-serif">비밀번호</text>
+      <rect x="700" y="450" width="440" height="50" rx="10"
+            fill="#FFFFFF" stroke="#D8E0EE" stroke-width="1.5"/>
+      <text x="718" y="482"
+            fill="#CBD5E0" font-size="20" font-family="Arial, sans-serif" letter-spacing="5">••••••••</text>
+    </g>
+
+    <!-- ── Checkbox row ── -->
+    <g id="row-extras">
+      <!-- Checkbox -->
+      <rect x="700" y="518" width="16" height="16" rx="3"
+            fill="#FFFFFF" stroke="#D8E0EE" stroke-width="1.5"/>
+      <text x="724" y="531"
+            fill="#4A5568" font-size="13" font-family="Arial, sans-serif">로그인 상태 유지</text>
+      <!-- 비밀번호 찾기 -->
+      <text x="1140" y="531" text-anchor="end"
+            fill="#15448A" font-size="13" font-weight="600"
+            font-family="Arial, sans-serif">비밀번호 찾기</text>
+    </g>
+
+    <!-- ── Login button ── -->
+    <g id="btn-login">
+      <rect x="700" y="548" width="440" height="52" rx="10" fill="#1E3A78"/>
+      <text x="920" y="581" text-anchor="middle"
+            fill="#FFFFFF" font-size="16" font-weight="700"
+            font-family="Arial, sans-serif" letter-spacing="1.5">로그인</text>
+    </g>
+
+    <!-- ── Sign up ── -->
+    <g id="signup-area">
+      <text x="920" y="632" text-anchor="middle"
+            fill="#A0AEC0" font-size="13" font-family="Arial, sans-serif">계정이 없으신가요?</text>
+      <text x="920" y="656" text-anchor="middle"
+            fill="#15448A" font-size="13" font-weight="600"
+            font-family="Arial, sans-serif">회원가입</text>
+      <line x1="876" y1="659" x2="964" y2="659"
+            stroke="#15448A" stroke-width="1"/>
+    </g>
+
+  </g>
+</svg>
