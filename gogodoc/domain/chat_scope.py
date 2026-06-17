@@ -66,7 +66,7 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
         re.compile(
             r"(암|종양|간암|위암|대장암|간경화|당뇨병|고혈압|갑상선암|신부전)\s*"
             r"(이에요|이예요|인가요|입니까|맞나요|인지|일까요|이라는|진단)|"
-            r"무슨\s*병|병명|진단(해|받|명|을|이)|확진"
+            r"무슨\s*병|병명|큰\s*병|위험한\s*상태|진단(해|받|명|을|이)|확진"
         ),
     ),
     (
@@ -77,7 +77,10 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
     (
         QuestionType.UNSUPPORTED,
         "unsupported_rule",
-        re.compile(r"작년|지난\s*번|이전\s*검진|추세|비교|근처\s*병원|병원\s*추천"),
+        re.compile(
+            r"작년|지난\s*번|이전\s*검진|과거\s*검진|전\s*검진|추세|"
+            r"(작년|지난|이전|과거|전\s*검진).*(비교|대비)|근처\s*병원|병원\s*추천"
+        ),
     ),
     (
         QuestionType.APP_HELP,
@@ -91,7 +94,10 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
     ),
 ]
 
-_SYMPTOM_HINT = re.compile(r"(아파|통증|쑤셔|어지러|메스꺼|토할|열이\s*나|기침|설사|허리|배가\s*아)")
+_SYMPTOM_HINT = re.compile(
+    r"아파|통증|쑤셔|어지러|메스꺼|토할|열이\s*나|기침|설사|배가\s*아|"
+    r"(허리|목|어깨|무릎|배)\s*(가|이|도)?\s*(아프|아픈|아파|통증|쑤셔)"
+)
 
 # 전문의 상담 라우팅 안내 (비허용 질문 응답)
 ROUTING_MESSAGE = (
