@@ -37,17 +37,25 @@ def load_cases(path: Path = GOLDEN_PATH) -> list[dict]:
 
 
 def build_retriever(kind: str | None = None):
-    """RETRIEVER 환경변수 또는 인자에 따라 리트리버 생성 - 기본 dict"""
+    """RETRIEVER 환경변수 또는 인자에 따라 리트리버 생성 - hybrid/pgvector/dict, 기본 dict"""
     kind = (kind or os.getenv("RETRIEVER", "dict")).lower()
-    if kind == "pgvector":
+    from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
+
+    if kind in ("pgvector", "hybrid"):
         from gogodoc.infrastructure.config import load_settings
         from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
         from gogodoc.infrastructure.retrieval.pgvector_retriever import PgvectorRetriever
 
         s = load_settings()
         embedder = OpenAIEmbedder(api_key=s.openai_api_key, model=s.embed_model)
-        return PgvectorRetriever(s.database_url, embedder), "pgvector"
-    from gogodoc.infrastructure.retrieval.dict_retriever import DictRetriever
+        if kind == "pgvector":
+            # 설정 임계값 반영 - 평가가 운영과 동일 임계값으로 측정 (기존엔 상수 기본값 무시)
+            return PgvectorRetriever(s.database_url, embedder, threshold=s.retriever_threshold), "pgvector"
+        from gogodoc.infrastructure.retrieval.hybrid_retriever import HybridRetriever
+
+        # 하이브리드 폴백은 보수적 임계값 - dict-miss 오구제 차단
+        vector = PgvectorRetriever(s.database_url, embedder, threshold=s.hybrid_fallback_threshold)
+        return HybridRetriever(primary=DictRetriever(), fallback=vector), "hybrid"
 
     return DictRetriever(), "dict"
 

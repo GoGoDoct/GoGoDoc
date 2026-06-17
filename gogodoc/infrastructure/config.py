@@ -26,6 +26,7 @@ class Settings:
     database_url: str  # pgvector Postgres 연결 (retriever=pgvector 시)
     embed_model: str  # 임베딩 모델
     retriever_threshold: float  # 벡터 코사인 거리 임계값 - 초과 시 미수록(OOV) 처리
+    hybrid_fallback_threshold: float  # 하이브리드 벡터 폴백 전용 임계값 - dict-miss 정밀도 우선(더 보수)
     hira_api_key: str  # HIRA API 키
 
 
@@ -44,6 +45,7 @@ def load_settings() -> Settings:
         retriever=os.getenv("RETRIEVER", "dict"),
         database_url=os.getenv("DATABASE_URL", ""),
         embed_model=os.getenv("EMBED_MODEL", "text-embedding-3-small"),
-        retriever_threshold=float(os.getenv("RETRIEVER_THRESHOLD", "0.45")),
+        retriever_threshold=float(os.getenv("RETRIEVER_THRESHOLD", "0.55")),  # 실측 캘리브레이션 - 0.45→0.55
+        hybrid_fallback_threshold=float(os.getenv("HYBRID_FALLBACK_THRESHOLD", "0.50")),  # 오구제 0 최대점
         hira_api_key=os.getenv("HIRA_API_KEY", ""),
     )

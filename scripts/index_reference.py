@@ -16,6 +16,7 @@ from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
 from gogodoc.infrastructure.retrieval.pgvector_retriever import TABLE, vector_literal
 from gogodoc.domain.reference.reference_dict import REFERENCE
 from gogodoc.domain.reference.synonyms import SYNONYMS
+from gogodoc.domain.reference.findings import FINDINGS
 
 # text-embedding-3-small 차원
 _DIM = 1536
@@ -47,23 +48,38 @@ def main() -> None:
             f"content text, entry jsonb, embedding vector({_DIM}))"
         )
 
+        def _upsert(term: str, canonical: str, content: str, entry: dict) -> None:
+            vector = embedder.embed(content)
+            conn.execute(
+                f"INSERT INTO {TABLE} (term, canonical_name, content, entry, embedding) "
+                "VALUES (%s, %s, %s, %s, %s::vector) "
+                "ON CONFLICT (term) DO UPDATE SET "
+                "canonical_name = EXCLUDED.canonical_name, content = EXCLUDED.content, "
+                "entry = EXCLUDED.entry, embedding = EXCLUDED.embedding",
+                (term, canonical, content, json.dumps(entry, ensure_ascii=False), vector_literal(vector)),
+            )
+
         count = 0
         for canonical, terms in _terms_by_canonical().items():
             entry = REFERENCE[canonical]
             for term in sorted(terms):
-                content = _content(term, canonical, entry)
-                vector = embedder.embed(content)
-                conn.execute(
-                    f"INSERT INTO {TABLE} (term, canonical_name, content, entry, embedding) "
-                    "VALUES (%s, %s, %s, %s, %s::vector) "
-                    "ON CONFLICT (term) DO UPDATE SET "
-                    "canonical_name = EXCLUDED.canonical_name, content = EXCLUDED.content, "
-                    "entry = EXCLUDED.entry, embedding = EXCLUDED.embedding",
-                    (term, canonical, content, json.dumps(entry, ensure_ascii=False), vector_literal(vector)),
-                )
+                _upsert(term, canonical, _content(term, canonical, entry), entry)
                 count += 1
+
+        # 정성 소견 색인 - 소견별 카드(해설·주의·출처·flag), 소견 텍스트로 의미검색
+        finding_count = 0
+        for item, spec in FINDINGS.items():
+            for keywords, flag, explanation, caution in spec["findings"]:
+                term = f"{item}:{keywords[0]}"  # 항목+대표 소견어 (term UNIQUE)
+                content = f"{item} {' '.join(keywords)} {explanation} {caution}"
+                entry = {"explanation": explanation, "caution": caution,
+                         "source": spec["source"], "flag": flag}
+                _upsert(term, item, content, entry)
+                finding_count += 1
+
         conn.commit()
-        print(f"색인 완료: {count}개 표기 ({len(REFERENCE)}개 표준명)")
+        print(f"색인 완료: {count}개 표기 ({len(REFERENCE)}개 표준명) "
+              f"+ {finding_count}개 정성 소견 ({len(FINDINGS)}개 항목)")
 
 
 if __name__ == "__main__":

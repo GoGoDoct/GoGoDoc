@@ -1,6 +1,6 @@
 """PgvectorRetriever 테스트 - 임계값·폴백 (실 DB 불필요, 커넥션 주입으로 검증)"""
 
-from gogodoc.infrastructure.retrieval.pgvector_retriever import PgvectorRetriever
+from gogodoc.infrastructure.retrieval.pgvector_retriever import PgvectorRetriever, DEFAULT_THRESHOLD
 from gogodoc.domain.reference import reference_dict
 
 
@@ -78,6 +78,19 @@ def test_far_match_rejected_as_oov():
         "postgresql://x", _OkEmbedder(), threshold=0.45, connect=_connect_returning((alt, 0.9))
     )
     assert r.retrieve("백혈구") is None
+
+
+# ── 캘리브레이션 기본 임계값 (실측 0.55) ──────────────────────────────────
+def test_calibrated_default_threshold():
+    # 실측 캘리브레이션으로 기본 임계값 0.55 - 0.45 는 정답을 OOV로 버림
+    assert DEFAULT_THRESHOLD == 0.55
+
+
+def test_default_accepts_mid_distance_match():
+    # 거리 0.5 정답 - 구 기본(0.45)은 버렸으나 신 기본(0.55)은 적중
+    alt = reference_dict.lookup("ALT")
+    r = PgvectorRetriever("postgresql://x", _OkEmbedder(), connect=_connect_returning((alt, 0.5)))
+    assert r.retrieve("ALT") == alt
 
 
 def test_empty_index_falls_back():

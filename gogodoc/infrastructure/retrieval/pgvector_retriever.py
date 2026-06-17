@@ -16,8 +16,10 @@ from gogodoc.infrastructure.retrieval.embedder import OpenAIEmbedder
 # 색인 테이블
 TABLE = "reference_chunks"
 
-# 코사인 거리(<=>) 기본 임계값 - 0(동일)~2(반대), 초과 시 미수록 처리. 실측으로 튜닝
-DEFAULT_THRESHOLD = 0.45
+# 코사인 거리(<=>) 기본 임계값 - 0(동일)~2(반대), 초과 시 미수록 처리
+# 실측 캘리브레이션(text-embedding-3-small, rag_golden 69·OOV 3): 0.45 는 정답 21%만 통과(과빡빡),
+# 0.55 가 오적중 0·OOV 차단 100% 유지하며 정답률 59% - 안전 무손실 최적점. 0.60+ 부터 오적중 발생
+DEFAULT_THRESHOLD = 0.55
 
 
 def vector_literal(vector: list[float]) -> str:

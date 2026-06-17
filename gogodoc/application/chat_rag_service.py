@@ -13,7 +13,7 @@ from gogodoc.domain.services import safety
 from gogodoc.domain.services.normalization import canonicalize
 from gogodoc.domain.reference import reference_dict, category_guide
 from gogodoc.domain.reference.synonyms import SYNONYMS
-from gogodoc.domain.models import ChatMessage, Flag, Scope
+from gogodoc.domain.models import ChatMessage, Flag, QuestionType, Scope
 
 # 한글 표기(표준명·한글 동의어, 2자 이상) -> 표준명. 챗봇 질문에 substring 으로 안전 매칭
 # (fuzzy 는 1글자 조사 '이' 가 '중성지방'에 오매칭하는 등 챗봇엔 부적합 - 정확 매칭만)
@@ -186,6 +186,7 @@ class ChatRagService:
             return ChatMessage(
                 role="assistant", content=_NO_GROUNDING, scope_flag=Scope.ALLOWED,
                 sources=[], context_item_names=[],
+                question_type=QuestionType.UNKNOWN, route_reason="no_grounding",
             )
 
         try:
@@ -201,4 +202,5 @@ class ChatRagService:
         return ChatMessage(
             role="assistant", content=out, scope_flag=Scope.ALLOWED,
             sources=sources, context_item_names=item_names,
+            route_reason="rag_answer",
         )

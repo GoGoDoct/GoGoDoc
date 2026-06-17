@@ -32,6 +32,8 @@ def test_fake_mode_allowed_question_reports_context_and_answer_llm_call():
 
     assert result["scope_flag"] == "allowed"
     assert result["routed"] is False
+    assert result["question_type"] == "lifestyle_general"
+    assert result["route_reason"]
     assert result["context_item_names"] == ["BMI"]
     assert any("대한비만학회" in source for source in result["sources"])
     assert result["answer_llm_called"] is True
@@ -47,8 +49,39 @@ def test_fake_mode_blocked_question_does_not_call_answer_llm():
 
     assert result["scope_flag"] == "blocked"
     assert result["routed"] is True
+    assert result["question_type"] == "prescription_request"
+    assert result["route_reason"] == "prescription_rule"
     assert result["answer_llm_called"] is False
+    assert result["answer_llm_call_count"] == 0
     assert result["context_item_names"] == []
+
+
+def test_fake_mode_emergency_question_routes_without_latest_analysis():
+    result = run_smoke(
+        question="가슴이 답답하고 숨이 차요",
+        latest_analysis=None,
+        mode="fake",
+    )
+
+    assert result["scope_flag"] == "blocked"
+    assert result["routed"] is True
+    assert result["question_type"] == "emergency_symptom"
+    assert result["answer_llm_called"] is False
+    assert "119" in result["answer_preview"]
+
+
+def test_fake_mode_out_of_scope_question_routes_without_answer_llm():
+    result = run_smoke(
+        question="나 지금 배고파",
+        latest_analysis=_latest_analysis(),
+        mode="fake",
+    )
+
+    assert result["scope_flag"] == "blocked"
+    assert result["routed"] is True
+    assert result["question_type"] == "out_of_scope_nonmedical"
+    assert result["answer_llm_called"] is False
+    assert "건강검진 결과 해석" in result["answer_preview"]
 
 
 def test_run_smoke_raises_when_latest_analysis_is_missing():
@@ -82,4 +115,6 @@ def test_main_prints_json_smoke_result(capsys):
     assert exit_code == 0
     assert payload["scope_flag"] == "allowed"
     assert payload["routed"] is False
+    assert payload["question_type"] == "lifestyle_general"
+    assert payload["route_reason"]
     assert "sources" in payload

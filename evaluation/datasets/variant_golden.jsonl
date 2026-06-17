@@ -1,0 +1,51 @@
+{"test_id": "VAR-001", "raw_name": "공복 혈당 수치", "expected_canonical": ["공복혈당", "당화혈색소"], "oov": false}
+{"test_id": "VAR-002", "raw_name": "혈당 검사", "expected_canonical": ["공복혈당", "당화혈색소"], "oov": false}
+{"test_id": "VAR-003", "raw_name": "혈당 농도", "expected_canonical": ["공복혈당", "당화혈색소"], "oov": false}
+{"test_id": "VAR-004", "raw_name": "당 검사", "expected_canonical": ["공복혈당", "당화혈색소"], "oov": false}
+{"test_id": "VAR-005", "raw_name": "평균 혈당", "expected_canonical": ["당화혈색소"], "oov": false}
+{"test_id": "VAR-006", "raw_name": "당화 혈색소 검사", "expected_canonical": ["당화혈색소"], "oov": false}
+{"test_id": "VAR-007", "raw_name": "간 기능 검사", "expected_canonical": ["AST", "ALT", "감마지티피"], "oov": false}
+{"test_id": "VAR-008", "raw_name": "간 효소 수치", "expected_canonical": ["AST", "ALT", "감마지티피"], "oov": false}
+{"test_id": "VAR-009", "raw_name": "간 효소", "expected_canonical": ["AST", "ALT", "감마지티피"], "oov": false}
+{"test_id": "VAR-010", "raw_name": "간세포 효소", "expected_canonical": ["AST", "ALT"], "oov": false}
+{"test_id": "VAR-011", "raw_name": "나쁜 콜레스테롤", "expected_canonical": ["LDL 콜레스테롤"], "oov": false}
+{"test_id": "VAR-012", "raw_name": "좋은 콜레스테롤", "expected_canonical": ["HDL 콜레스테롤"], "oov": false}
+{"test_id": "VAR-013", "raw_name": "콜레스테롤 검사", "expected_canonical": ["총콜레스테롤", "LDL 콜레스테롤", "HDL 콜레스테롤"], "oov": false}
+{"test_id": "VAR-014", "raw_name": "혈중 지질", "expected_canonical": ["총콜레스테롤", "중성지방"], "oov": false}
+{"test_id": "VAR-015", "raw_name": "중성 지방 수치", "expected_canonical": ["중성지방"], "oov": false}
+{"test_id": "VAR-016", "raw_name": "혈중 지방", "expected_canonical": ["중성지방"], "oov": false}
+{"test_id": "VAR-017", "raw_name": "신장 기능", "expected_canonical": ["eGFR", "크레아티닌"], "oov": false}
+{"test_id": "VAR-018", "raw_name": "콩팥 수치", "expected_canonical": ["eGFR", "크레아티닌"], "oov": false}
+{"test_id": "VAR-019", "raw_name": "신장 수치", "expected_canonical": ["eGFR", "크레아티닌"], "oov": false}
+{"test_id": "VAR-020", "raw_name": "신기능 검사", "expected_canonical": ["eGFR", "크레아티닌"], "oov": false}
+{"test_id": "VAR-021", "raw_name": "빈혈 수치", "expected_canonical": ["헤모글로빈"], "oov": false}
+{"test_id": "VAR-022", "raw_name": "적혈구 색소", "expected_canonical": ["헤모글로빈"], "oov": false}
+{"test_id": "VAR-023", "raw_name": "요산 농도", "expected_canonical": ["요산"], "oov": false}
+{"test_id": "VAR-024", "raw_name": "통풍 수치", "expected_canonical": ["요산"], "oov": false}
+{"test_id": "VAR-025", "raw_name": "갑상선 호르몬", "expected_canonical": ["TSH"], "oov": false}
+{"test_id": "VAR-026", "raw_name": "갑상선 수치", "expected_canonical": ["TSH"], "oov": false}
+{"test_id": "VAR-027", "raw_name": "갑상선 기능 검사", "expected_canonical": ["TSH"], "oov": false}
+{"test_id": "VAR-028", "raw_name": "전립선 수치", "expected_canonical": ["PSA"], "oov": false}
+{"test_id": "VAR-029", "raw_name": "전립선 암 표지자", "expected_canonical": ["PSA"], "oov": false}
+{"test_id": "VAR-030", "raw_name": "간암 표지자", "expected_canonical": ["AFP"], "oov": false}
+{"test_id": "VAR-031", "raw_name": "대장암 표지자", "expected_canonical": ["CEA"], "oov": false}
+{"test_id": "VAR-032", "raw_name": "췌장암 표지자", "expected_canonical": ["CA19-9"], "oov": false}
+{"test_id": "VAR-033", "raw_name": "혈압 수치", "expected_canonical": ["수축기혈압", "이완기혈압"], "oov": false}
+{"test_id": "VAR-034", "raw_name": "수축기 혈압 수치", "expected_canonical": ["수축기혈압"], "oov": false}
+{"test_id": "VAR-035", "raw_name": "체질량 지수", "expected_canonical": ["BMI"], "oov": false}
+{"test_id": "VAR-036", "raw_name": "비만도", "expected_canonical": ["BMI"], "oov": false}
+{"test_id": "VAR-037", "raw_name": "소변 단백 검사", "expected_canonical": ["요단백"], "oov": false}
+{"test_id": "VAR-038", "raw_name": "단백뇨", "expected_canonical": ["요단백"], "oov": false}
+{"test_id": "VAR-039", "raw_name": "위 내시경 소견", "expected_canonical": ["위내시경"], "oov": false}
+{"test_id": "VAR-040", "raw_name": "대장 내시경 검사", "expected_canonical": ["대장내시경"], "oov": false}
+{"test_id": "VAR-041", "raw_name": "간 초음파", "expected_canonical": ["복부초음파"], "oov": false}
+{"test_id": "VAR-042", "raw_name": "백혈구 수치", "expected_canonical": ["백혈구"], "oov": false}
+{"test_id": "VAR-043", "raw_name": "혈소판 수치", "expected_canonical": ["혈소판"], "oov": false}
+{"test_id": "VAR-044", "raw_name": "내가 좋아하는 초콜릿", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-045", "raw_name": "오늘 날씨", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-046", "raw_name": "아스파라거스", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-047", "raw_name": "주식 시세", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-048", "raw_name": "영화 추천", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-049", "raw_name": "강아지 산책", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-050", "raw_name": "점심 메뉴", "expected_canonical": [], "oov": true}
+{"test_id": "VAR-051", "raw_name": "축구 경기 결과", "expected_canonical": [], "oov": true}
