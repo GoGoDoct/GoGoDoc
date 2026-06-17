@@ -19,6 +19,7 @@ def _settings() -> Settings:
         database_url="",
         embed_model="embed-test",
         retriever_threshold=0.45,
+        hybrid_fallback_threshold=0.50,
         hira_api_key="",
     )
 
