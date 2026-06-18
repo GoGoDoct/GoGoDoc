@@ -277,6 +277,9 @@ def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
         "간수치 높으면 간경화?",
         "TSH 높으면 갑상선기능저하증?",
         "ALT 높으면 지방간?",
+        "ALT 높으면 지방간일까?",
+        "간수치 높으면 간염인가요?",
+        "TSH 높으면 갑상선기능저하증일까요?",
     ]
 
     for question in cases:
@@ -323,6 +326,10 @@ def test_rule_blocks_medication_questions_before_checkup_allow():
         "혈당 낮추는 주사 뭐야",
         "혈압 높으면 약 필요해?",
         "혈압 높으면 혈압약 필요해?",
+        "공복혈당 높으면 당뇨약?",
+        "혈압 높으면 혈압약?",
+        "LDL 높으면 고지혈증약?",
+        "혈압 높으면 약?",
     ]
 
     for question in cases:
@@ -379,6 +386,9 @@ def test_rule_blocks_diagnostic_test_decisions_before_checkup_allow():
         "간수치 높으면 정밀검사 받아야 하나요?",
         "LDL 높으면 CT 찍는 게 좋나요?",
         "간수치 높으면 추가 검사 필요할까요?",
+        "ALT 높으면 복부초음파?",
+        "간수치 높으면 초음파?",
+        "CEA 높으면 내시경?",
     ]
 
     for question in cases:
@@ -434,6 +444,8 @@ def test_rule_keeps_category_management_questions_allowed():
         ("혈압 관리에 좋은 운동 알려줘", QuestionType.LIFESTYLE_GENERAL),
         ("콜레스테롤 수치 봐줘", QuestionType.CHECKUP_EXPLANATION),
         ("공복혈당장애가 무슨 뜻인지 쉽게 설명해줘", QuestionType.CHECKUP_EXPLANATION),
+        ("LDL이 약간 높으면 관리 필요해?", QuestionType.LIFESTYLE_GENERAL),
+        ("혈당이 약간 높으면 운동해야 하나요?", QuestionType.LIFESTYLE_GENERAL),
     ]
 
     for question, expected_type in cases:
