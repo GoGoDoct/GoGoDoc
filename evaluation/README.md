@@ -97,6 +97,7 @@ F-007은 최신 검진 결과 1건을 근거로 수치 설명, 일반 생활습�
 | `chat_eval.py` | `chat_scope_golden.jsonl` 59건 | 질문 분류, 위험질문 차단율, 응급 라우팅 |
 | `chat_answer_eval.py` | `chat_answer_golden.jsonl` 10건 | 허용 질문의 RAG 답변 근거성, 출처, 환각 방지 |
 | `chat_answer_service_eval.py` | `chat_answer_service_golden.jsonl` 8건 | 최신 결과 연결, `question_type`·`route_reason`, answer LLM 호출 정책 |
+| `chat_item_match_eval.py` | `chat_item_match_golden.jsonl` 430건 | 띄어쓰기·오타·짧은 alias·혼합 질문 항목명 매칭, false positive 방지 |
 | `chat_answer_smoke.py` | 로컬 DB 최신 `analysis_results` | Streamlit 없이 실제 DB row와 답변 서비스 연결 확인 |
 
 ## 생성 충실도 채점 규칙
@@ -135,6 +136,9 @@ python evaluation/chat_answer_eval.py --no-log
 
 # F-007 최신 결과 연결·LLM 호출 정책
 python evaluation/chat_answer_service_eval.py --no-log
+
+# F-007 항목명 유사 입력 매칭
+python evaluation/chat_item_match_eval.py --no-log
 
 # F-007 로컬 DB 스모크
 python evaluation/chat_answer_smoke.py --user-id 1 --question "BMI가 높으면 어떻게 관리해요?" --mode fake

@@ -160,7 +160,17 @@ F-007 백엔드 현재 범위는 최신 `analysis_results` 1건 기반의 검진
 | 스코프 분류 | `chat_scope_golden.jsonl` 59건 | 분류 정확도 100%, 위험질문 차단율 100%, 응급 라우팅 100% | `python evaluation/chat_eval.py --no-log` |
 | 통합 정책 | `chat_answer_service_golden.jsonl` 8건 | 8/8 통과, 차단 질문 answer LLM 호출 0 | `python evaluation/chat_answer_service_eval.py --no-log` |
 
+### 2026-06-18 — F-007 챗봇 항목명 유사 입력 매칭
+
+사용자가 항목명을 띄어 쓰거나 일부 오타로 입력해도 최신 결과 항목에만 보수적으로 연결한다. 공식 동의어는 120개로 확장했고, 짧은 대화형 alias는 최신 결과에 대상 항목이 있을 때만 허용한다. `item_match_uncertain` 경로는 항목을 확정하지 못한 질문을 답변 생성 LLM으로 보내지 않는다. 혼합 질문, alias+증상, 긴 영문 공식명 경계 케이스를 함께 평가한다.
+
+| 평가 | 데이터셋 | 수치 | 재현 |
+|------|----------|------|------|
+| 항목명 유사 입력 | `chat_item_match_golden.jsonl` 430건 | item match accuracy 100%, false positive 0, uncertain routing 16, blocked answer LLM call 0 | `python evaluation/chat_item_match_eval.py --no-log` |
+
 현재 남은 과제는 기능 구현보다 실제 업로드 결과·사용자군·질문 표현을 늘리는 평가셋 확장이다.
+
+실제 LLM 100문항 탐색 실측에서는 런타임 오류와 차단/불확실 케이스의 answer LLM 호출 위반은 없었다. 다만 `AST 수치도 같이 봐줘`, `내 감마 지티피 어때`, `헤모글로빈 수치 봐줘`, `내 허리 어때`, `갑상선 수치 봐줘` 같은 짧은 구어체 표현 일부가 `unknown`으로 과차단되었고, `당화 헤모글로빈 수치가 뭐야`는 `당화혈색소`와 `헤모글로빈`이 함께 잡히는 중복 매칭 후보로 확인됐다. 이 탐색 결과는 골든셋 점수와 분리해 후속 평가셋 확장 후보로 관리한다.
 
 ### 2026-06-16 — F-004 단정 표현 필터 고도화 (결정적, 22건)
 
@@ -246,6 +256,7 @@ python evaluation/assertion_eval.py                # 단정 차단율·오차단
 python evaluation/chat_eval.py                     # 스코프 분류·차단율 + history 기록
 python evaluation/chat_answer_eval.py              # RAG 답변 충실도 + history 기록
 python evaluation/chat_answer_service_eval.py      # 최신 결과 연결·LLM 호출 정책 + history 기록
+python evaluation/chat_item_match_eval.py          # 항목명 유사 입력 매칭 + history 기록
 python evaluation/chat_answer_smoke.py --user-id 1 --question "BMI가 높으면 어떻게 관리해요?" --mode fake
 # 추이 대시보드 (주요 RAG·챗봇 평가 시계열)
 streamlit run evaluation/dashboard.py

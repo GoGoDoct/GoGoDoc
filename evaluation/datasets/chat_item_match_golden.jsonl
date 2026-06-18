@@ -1,0 +1,430 @@
+{"id":"IM_001","question":"내 ALT 어때","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_002","question":"ALT 수치 어때","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_003","question":"ALT 높으면 어떻게 관리해","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_004","question":"ALT 정상범위 알려줘","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_005","question":"검진 결과 ALT 설명해줘","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_006","question":"이번검진 ALT 확인해줘","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_007","question":"ALT만 봐줘","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_008","question":"alt 수치 어때","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_009","question":"gpt 수치 어때","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_010","question":"sgpt 수치 어때","report_items":["ALT"],"expected_items":["ALT"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_011","question":"감기 때문에 힘들어","report_items":["ALT"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_012","question":"운동은 언제 하면 돼","report_items":["ALT"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_013","question":"물을 얼마나 마셔야 해","report_items":["ALT"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_014","question":"어제 잠을 못 잤어","report_items":["ALT"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_015","question":"내 ALT 어때","report_items":["AST"],"expected_items":["ALT"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_016","question":"내 AST 어때","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_017","question":"AST 수치 어때","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_018","question":"AST 높으면 어떻게 관리해","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_019","question":"AST 정상범위 알려줘","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_020","question":"검진 결과 AST 설명해줘","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_021","question":"이번검진 AST 확인해줘","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_022","question":"AST만 봐줘","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_023","question":"ast 수치 어때","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_024","question":"got 수치 어때","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_025","question":"sgot 수치 어때","report_items":["AST"],"expected_items":["AST"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_026","question":"감기 때문에 힘들어","report_items":["AST"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_027","question":"운동은 언제 하면 돼","report_items":["AST"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_028","question":"물을 얼마나 마셔야 해","report_items":["AST"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_029","question":"어제 잠을 못 잤어","report_items":["AST"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_030","question":"내 AST 어때","report_items":["ALT"],"expected_items":["AST"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_031","question":"내 감마지티피 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_032","question":"내 감마 지티피 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_033","question":"내 감마지피티 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_034","question":"gamma gtp 수치 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_035","question":"내 감마 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_036","question":"감마지티피 수치 어때","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_037","question":"감마지티피 높으면 어떻게 관리해","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_038","question":"감마지티피 정상범위 알려줘","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_039","question":"검진 결과 감마지티피 설명해줘","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_040","question":"이번검진 감마지티피 확인해줘","report_items":["감마지티피"],"expected_items":["감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_041","question":"감마선이 뭐야","report_items":["감마지티피"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_042","question":"지피티가 뭐야","report_items":["감마지티피"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_043","question":"감기 때문에 힘들어","report_items":["감마지티피"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_044","question":"운동은 언제 하면 돼","report_items":["감마지티피"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_045","question":"내 감마 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_046","question":"내 공복혈당 어때","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_047","question":"공복혈당 수치 어때","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_048","question":"공복혈당 높으면 어떻게 관리해","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_049","question":"공복혈당 정상범위 알려줘","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_050","question":"검진 결과 공복혈당 설명해줘","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_051","question":"이번검진 공복혈당 확인해줘","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_052","question":"공복혈당만 봐줘","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_053","question":"공복 혈당 수치 어때","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_054","question":"fbs 수치 어때","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_055","question":"glucose 수치 어때","report_items":["공복혈당"],"expected_items":["공복혈당"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_056","question":"감기 때문에 힘들어","report_items":["공복혈당"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_057","question":"운동은 언제 하면 돼","report_items":["공복혈당"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_058","question":"물을 얼마나 마셔야 해","report_items":["공복혈당"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_059","question":"어제 잠을 못 잤어","report_items":["공복혈당"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_060","question":"내 공복혈당 어때","report_items":["ALT"],"expected_items":["공복혈당"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_061","question":"내 당화혈색소 어때","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_062","question":"당화혈색소 수치 어때","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_063","question":"당화혈색소 높으면 어떻게 관리해","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_064","question":"당화혈색소 정상범위 알려줘","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_065","question":"검진 결과 당화혈색소 설명해줘","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_066","question":"이번검진 당화혈색소 확인해줘","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_067","question":"당화혈색소만 봐줘","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_068","question":"당화 혈색소 수치 어때","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_069","question":"hba1c 수치 어때","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_070","question":"a1c 수치 어때","report_items":["당화혈색소"],"expected_items":["당화혈색소"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_071","question":"감기 때문에 힘들어","report_items":["당화혈색소"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_072","question":"운동은 언제 하면 돼","report_items":["당화혈색소"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_073","question":"물을 얼마나 마셔야 해","report_items":["당화혈색소"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_074","question":"어제 잠을 못 잤어","report_items":["당화혈색소"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_075","question":"내 당화 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_076","question":"내 총콜레스테롤 어때","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_077","question":"총콜레스테롤 수치 어때","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_078","question":"총콜레스테롤 높으면 어떻게 관리해","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_079","question":"총콜레스테롤 정상범위 알려줘","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_080","question":"검진 결과 총콜레스테롤 설명해줘","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_081","question":"이번검진 총콜레스테롤 확인해줘","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_082","question":"총콜레스테롤만 봐줘","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_083","question":"총 콜레스테롤 수치 어때","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_084","question":"total cholesterol 수치 어때","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_085","question":"total chol 수치 어때","report_items":["총콜레스테롤"],"expected_items":["총콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_086","question":"감기 때문에 힘들어","report_items":["총콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_087","question":"운동은 언제 하면 돼","report_items":["총콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_088","question":"물을 얼마나 마셔야 해","report_items":["총콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_089","question":"어제 잠을 못 잤어","report_items":["총콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_090","question":"내 총콜 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_091","question":"내 LDL 콜레스테롤 어때","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_092","question":"LDL 콜레스테롤 수치 어때","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_093","question":"LDL 콜레스테롤 높으면 어떻게 관리해","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_094","question":"LDL 콜레스테롤 정상범위 알려줘","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_095","question":"검진 결과 LDL 콜레스테롤 설명해줘","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_096","question":"이번검진 LDL 콜레스테롤 확인해줘","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_097","question":"LDL 콜레스테롤만 봐줘","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_098","question":"LDL콜레스테롤 수치 어때","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_099","question":"ldl 수치 어때","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_100","question":"ldl-c 수치 어때","report_items":["LDL 콜레스테롤"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_101","question":"감기 때문에 힘들어","report_items":["LDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_102","question":"운동은 언제 하면 돼","report_items":["LDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_103","question":"물을 얼마나 마셔야 해","report_items":["LDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_104","question":"어제 잠을 못 잤어","report_items":["LDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_105","question":"내 LDL 콜레스테롤 어때","report_items":["ALT"],"expected_items":["LDL 콜레스테롤"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_106","question":"내 HDL 콜레스테롤 어때","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_107","question":"HDL 콜레스테롤 수치 어때","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_108","question":"HDL 콜레스테롤 높으면 어떻게 관리해","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_109","question":"HDL 콜레스테롤 정상범위 알려줘","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_110","question":"검진 결과 HDL 콜레스테롤 설명해줘","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_111","question":"이번검진 HDL 콜레스테롤 확인해줘","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_112","question":"HDL 콜레스테롤만 봐줘","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_113","question":"HDL콜레스테롤 수치 어때","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_114","question":"hdl 수치 어때","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_115","question":"hdl-c 수치 어때","report_items":["HDL 콜레스테롤"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_116","question":"감기 때문에 힘들어","report_items":["HDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_117","question":"운동은 언제 하면 돼","report_items":["HDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_118","question":"물을 얼마나 마셔야 해","report_items":["HDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_119","question":"어제 잠을 못 잤어","report_items":["HDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_120","question":"내 HDL 콜레스테롤 어때","report_items":["ALT"],"expected_items":["HDL 콜레스테롤"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_121","question":"내 중성지방 어때","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_122","question":"중성지방 수치 어때","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_123","question":"중성지방 높으면 어떻게 관리해","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_124","question":"중성지방 정상범위 알려줘","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_125","question":"검진 결과 중성지방 설명해줘","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_126","question":"이번검진 중성지방 확인해줘","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_127","question":"중성지방만 봐줘","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_128","question":"중성 지방 수치 어때","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_129","question":"tg 수치 어때","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_130","question":"triglyceride 수치 어때","report_items":["중성지방"],"expected_items":["중성지방"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_131","question":"감기 때문에 힘들어","report_items":["중성지방"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_132","question":"운동은 언제 하면 돼","report_items":["중성지방"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_133","question":"물을 얼마나 마셔야 해","report_items":["중성지방"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_134","question":"어제 잠을 못 잤어","report_items":["중성지방"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_135","question":"내 중성 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_136","question":"내 BUN 어때","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_137","question":"BUN 수치 어때","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_138","question":"BUN 높으면 어떻게 관리해","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_139","question":"BUN 정상범위 알려줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_140","question":"검진 결과 BUN 설명해줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_141","question":"이번검진 BUN 확인해줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_142","question":"BUN만 봐줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_143","question":"bun 수치 어때","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_144","question":"BUN 결과 1번 설명해줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_145","question":"BUN 결과 2번 설명해줘","report_items":["BUN"],"expected_items":["BUN"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_146","question":"감기 때문에 힘들어","report_items":["BUN"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_147","question":"운동은 언제 하면 돼","report_items":["BUN"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_148","question":"물을 얼마나 마셔야 해","report_items":["BUN"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_149","question":"어제 잠을 못 잤어","report_items":["BUN"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_150","question":"내 BUN 어때","report_items":["ALT"],"expected_items":["BUN"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_151","question":"내 크레아티닌 어때","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_152","question":"크레아티닌 수치 어때","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_153","question":"크레아티닌 높으면 어떻게 관리해","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_154","question":"크레아티닌 정상범위 알려줘","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_155","question":"검진 결과 크레아티닌 설명해줘","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_156","question":"이번검진 크레아티닌 확인해줘","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_157","question":"크레아티닌만 봐줘","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_158","question":"크레아 티닌 수치 어때","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_159","question":"creatinine 수치 어때","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_160","question":"cr 수치 어때","report_items":["크레아티닌"],"expected_items":["크레아티닌"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_161","question":"감기 때문에 힘들어","report_items":["크레아티닌"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_162","question":"운동은 언제 하면 돼","report_items":["크레아티닌"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_163","question":"물을 얼마나 마셔야 해","report_items":["크레아티닌"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_164","question":"어제 잠을 못 잤어","report_items":["크레아티닌"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_165","question":"내 크레아 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_166","question":"내 eGFR 어때","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_167","question":"eGFR 수치 어때","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_168","question":"eGFR 높으면 어떻게 관리해","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_169","question":"eGFR 정상범위 알려줘","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_170","question":"검진 결과 eGFR 설명해줘","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_171","question":"이번검진 eGFR 확인해줘","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_172","question":"eGFR만 봐줘","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_173","question":"egfr 수치 어때","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_174","question":"gfr 수치 어때","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_175","question":"사구체여과율 수치 어때","report_items":["eGFR"],"expected_items":["eGFR"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_176","question":"감기 때문에 힘들어","report_items":["eGFR"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_177","question":"운동은 언제 하면 돼","report_items":["eGFR"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_178","question":"물을 얼마나 마셔야 해","report_items":["eGFR"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_179","question":"어제 잠을 못 잤어","report_items":["eGFR"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_180","question":"내 사구체 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_181","question":"내 수축기혈압 어때","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_182","question":"수축기혈압 수치 어때","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_183","question":"수축기혈압 높으면 어떻게 관리해","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_184","question":"수축기혈압 정상범위 알려줘","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_185","question":"검진 결과 수축기혈압 설명해줘","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_186","question":"이번검진 수축기혈압 확인해줘","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_187","question":"수축기혈압만 봐줘","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_188","question":"sbp 수치 어때","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_189","question":"수축기 수치 어때","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_190","question":"수축기혈압 결과 1번 설명해줘","report_items":["수축기혈압"],"expected_items":["수축기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_191","question":"감기 때문에 힘들어","report_items":["수축기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_192","question":"운동은 언제 하면 돼","report_items":["수축기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_193","question":"물을 얼마나 마셔야 해","report_items":["수축기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_194","question":"어제 잠을 못 잤어","report_items":["수축기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_195","question":"내 수축기혈압 어때","report_items":["ALT"],"expected_items":["수축기혈압"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_196","question":"내 이완기혈압 어때","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_197","question":"이완기혈압 수치 어때","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_198","question":"이완기혈압 높으면 어떻게 관리해","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_199","question":"이완기혈압 정상범위 알려줘","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_200","question":"검진 결과 이완기혈압 설명해줘","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_201","question":"이번검진 이완기혈압 확인해줘","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_202","question":"이완기혈압만 봐줘","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_203","question":"dbp 수치 어때","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_204","question":"이완기 수치 어때","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_205","question":"이완기혈압 결과 1번 설명해줘","report_items":["이완기혈압"],"expected_items":["이완기혈압"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_206","question":"감기 때문에 힘들어","report_items":["이완기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_207","question":"운동은 언제 하면 돼","report_items":["이완기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_208","question":"물을 얼마나 마셔야 해","report_items":["이완기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_209","question":"어제 잠을 못 잤어","report_items":["이완기혈압"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_210","question":"내 이완기혈압 어때","report_items":["ALT"],"expected_items":["이완기혈압"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_211","question":"내 헤모글로빈 어때","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_212","question":"헤모글로빈 수치 어때","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_213","question":"헤모글로빈 높으면 어떻게 관리해","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_214","question":"헤모글로빈 정상범위 알려줘","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_215","question":"검진 결과 헤모글로빈 설명해줘","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_216","question":"이번검진 헤모글로빈 확인해줘","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_217","question":"헤모글로빈만 봐줘","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_218","question":"혈색소 수치 어때","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_219","question":"hb 수치 어때","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_220","question":"hgb 수치 어때","report_items":["헤모글로빈"],"expected_items":["헤모글로빈"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_221","question":"감기 때문에 힘들어","report_items":["헤모글로빈"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_222","question":"운동은 언제 하면 돼","report_items":["헤모글로빈"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_223","question":"물을 얼마나 마셔야 해","report_items":["헤모글로빈"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_224","question":"어제 잠을 못 잤어","report_items":["헤모글로빈"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_225","question":"내 헤모글로빈 어때","report_items":["ALT"],"expected_items":["헤모글로빈"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_226","question":"내 나트륨 어때","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_227","question":"나트륨 수치 어때","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_228","question":"나트륨 높으면 어떻게 관리해","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_229","question":"나트륨 정상범위 알려줘","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_230","question":"검진 결과 나트륨 설명해줘","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_231","question":"이번검진 나트륨 확인해줘","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_232","question":"나트륨만 봐줘","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_233","question":"na 수치 어때","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_234","question":"sodium 수치 어때","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_235","question":"나트륨 결과 1번 설명해줘","report_items":["나트륨"],"expected_items":["나트륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_236","question":"감기 때문에 힘들어","report_items":["나트륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_237","question":"운동은 언제 하면 돼","report_items":["나트륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_238","question":"물을 얼마나 마셔야 해","report_items":["나트륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_239","question":"어제 잠을 못 잤어","report_items":["나트륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_240","question":"내 나트륨 어때","report_items":["ALT"],"expected_items":["나트륨"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_241","question":"내 칼륨 어때","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_242","question":"칼륨 수치 어때","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_243","question":"칼륨 높으면 어떻게 관리해","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_244","question":"칼륨 정상범위 알려줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_245","question":"검진 결과 칼륨 설명해줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_246","question":"이번검진 칼륨 확인해줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_247","question":"칼륨만 봐줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_248","question":"potassium 수치 어때","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_249","question":"칼륨 결과 1번 설명해줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_250","question":"칼륨 결과 2번 설명해줘","report_items":["칼륨"],"expected_items":["칼륨"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_251","question":"감기 때문에 힘들어","report_items":["칼륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_252","question":"운동은 언제 하면 돼","report_items":["칼륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_253","question":"물을 얼마나 마셔야 해","report_items":["칼륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_254","question":"어제 잠을 못 잤어","report_items":["칼륨"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_255","question":"내 칼륨 어때","report_items":["ALT"],"expected_items":["칼륨"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_256","question":"내 칼슘 어때","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_257","question":"칼슘 수치 어때","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_258","question":"칼슘 높으면 어떻게 관리해","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_259","question":"칼슘 정상범위 알려줘","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_260","question":"검진 결과 칼슘 설명해줘","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_261","question":"이번검진 칼슘 확인해줘","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_262","question":"칼슘만 봐줘","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_263","question":"ca 수치 어때","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_264","question":"calcium 수치 어때","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_265","question":"칼슘 결과 1번 설명해줘","report_items":["칼슘"],"expected_items":["칼슘"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_266","question":"감기 때문에 힘들어","report_items":["칼슘"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_267","question":"운동은 언제 하면 돼","report_items":["칼슘"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_268","question":"물을 얼마나 마셔야 해","report_items":["칼슘"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_269","question":"어제 잠을 못 잤어","report_items":["칼슘"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_270","question":"내 칼슘 어때","report_items":["ALT"],"expected_items":["칼슘"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_271","question":"내 요산 어때","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_272","question":"요산 수치 어때","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_273","question":"요산 높으면 어떻게 관리해","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_274","question":"요산 정상범위 알려줘","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_275","question":"검진 결과 요산 설명해줘","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_276","question":"이번검진 요산 확인해줘","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_277","question":"요산만 봐줘","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_278","question":"ua 수치 어때","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_279","question":"uric acid 수치 어때","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_280","question":"uric-acid 수치 어때","report_items":["요산"],"expected_items":["요산"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_281","question":"감기 때문에 힘들어","report_items":["요산"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_282","question":"운동은 언제 하면 돼","report_items":["요산"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_283","question":"물을 얼마나 마셔야 해","report_items":["요산"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_284","question":"어제 잠을 못 잤어","report_items":["요산"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_285","question":"내 요산 어때","report_items":["ALT"],"expected_items":["요산"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_286","question":"내 BMI 어때","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_287","question":"BMI 수치 어때","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_288","question":"BMI 높으면 어떻게 관리해","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_289","question":"BMI 정상범위 알려줘","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_290","question":"검진 결과 BMI 설명해줘","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_291","question":"이번검진 BMI 확인해줘","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_292","question":"BMI만 봐줘","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_293","question":"bmi 수치 어때","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_294","question":"체질량지수 수치 어때","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_295","question":"BMI 결과 1번 설명해줘","report_items":["BMI"],"expected_items":["BMI"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_296","question":"감기 때문에 힘들어","report_items":["BMI"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_297","question":"운동은 언제 하면 돼","report_items":["BMI"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_298","question":"물을 얼마나 마셔야 해","report_items":["BMI"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_299","question":"어제 잠을 못 잤어","report_items":["BMI"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_300","question":"내 BMI 어때","report_items":["ALT"],"expected_items":["BMI"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_301","question":"내 허리둘레 어때","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_302","question":"허리둘레 수치 어때","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_303","question":"허리둘레 높으면 어떻게 관리해","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_304","question":"허리둘레 정상범위 알려줘","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_305","question":"검진 결과 허리둘레 설명해줘","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_306","question":"이번검진 허리둘레 확인해줘","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_307","question":"허리둘레만 봐줘","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_308","question":"복부둘레 수치 어때","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_309","question":"내 복부 어때","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_310","question":"내 허리 어때","report_items":["허리둘레"],"expected_items":["허리둘레"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_311","question":"감기 때문에 힘들어","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_312","question":"운동은 언제 하면 돼","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_313","question":"물을 얼마나 마셔야 해","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_314","question":"어제 잠을 못 잤어","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_315","question":"내 허리 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_316","question":"내 TSH 어때","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_317","question":"TSH 수치 어때","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_318","question":"TSH 높으면 어떻게 관리해","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_319","question":"TSH 정상범위 알려줘","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_320","question":"검진 결과 TSH 설명해줘","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_321","question":"이번검진 TSH 확인해줘","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_322","question":"TSH만 봐줘","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_323","question":"tsh 수치 어때","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_324","question":"갑상선자극호르몬 수치 어때","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_325","question":"내 갑상선 어때","report_items":["TSH"],"expected_items":["TSH"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_326","question":"감기 때문에 힘들어","report_items":["TSH"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_327","question":"운동은 언제 하면 돼","report_items":["TSH"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_328","question":"물을 얼마나 마셔야 해","report_items":["TSH"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_329","question":"어제 잠을 못 잤어","report_items":["TSH"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_330","question":"내 갑상선 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_331","question":"내 백혈구 어때","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_332","question":"백혈구 수치 어때","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_333","question":"백혈구 높으면 어떻게 관리해","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_334","question":"백혈구 정상범위 알려줘","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_335","question":"검진 결과 백혈구 설명해줘","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_336","question":"이번검진 백혈구 확인해줘","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_337","question":"백혈구만 봐줘","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_338","question":"wbc 수치 어때","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_339","question":"white blood cell 수치 어때","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_340","question":"white blood cells 수치 어때","report_items":["백혈구"],"expected_items":["백혈구"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_341","question":"감기 때문에 힘들어","report_items":["백혈구"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_342","question":"운동은 언제 하면 돼","report_items":["백혈구"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_343","question":"물을 얼마나 마셔야 해","report_items":["백혈구"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_344","question":"어제 잠을 못 잤어","report_items":["백혈구"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_345","question":"내 백혈구 어때","report_items":["ALT"],"expected_items":["백혈구"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_346","question":"내 혈소판 어때","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_347","question":"혈소판 수치 어때","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_348","question":"혈소판 높으면 어떻게 관리해","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_349","question":"혈소판 정상범위 알려줘","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_350","question":"검진 결과 혈소판 설명해줘","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_351","question":"이번검진 혈소판 확인해줘","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_352","question":"혈소판만 봐줘","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_353","question":"plt 수치 어때","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_354","question":"platelet 수치 어때","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_355","question":"platelet count 수치 어때","report_items":["혈소판"],"expected_items":["혈소판"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_356","question":"감기 때문에 힘들어","report_items":["혈소판"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_357","question":"운동은 언제 하면 돼","report_items":["혈소판"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_358","question":"물을 얼마나 마셔야 해","report_items":["혈소판"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_359","question":"어제 잠을 못 잤어","report_items":["혈소판"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_360","question":"내 혈소판 어때","report_items":["ALT"],"expected_items":["혈소판"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_361","question":"내 CEA 어때","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_362","question":"CEA 수치 어때","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_363","question":"CEA 높으면 어떻게 관리해","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_364","question":"CEA 정상범위 알려줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_365","question":"검진 결과 CEA 설명해줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_366","question":"이번검진 CEA 확인해줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_367","question":"CEA만 봐줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_368","question":"cea 수치 어때","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_369","question":"CEA 결과 1번 설명해줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_370","question":"CEA 결과 2번 설명해줘","report_items":["CEA"],"expected_items":["CEA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_371","question":"감기 때문에 힘들어","report_items":["CEA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_372","question":"운동은 언제 하면 돼","report_items":["CEA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_373","question":"물을 얼마나 마셔야 해","report_items":["CEA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_374","question":"어제 잠을 못 잤어","report_items":["CEA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_375","question":"내 CEA 어때","report_items":["ALT"],"expected_items":["CEA"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_376","question":"내 AFP 어때","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_377","question":"AFP 수치 어때","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_378","question":"AFP 높으면 어떻게 관리해","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_379","question":"AFP 정상범위 알려줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_380","question":"검진 결과 AFP 설명해줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_381","question":"이번검진 AFP 확인해줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_382","question":"AFP만 봐줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_383","question":"afp 수치 어때","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_384","question":"AFP 결과 1번 설명해줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_385","question":"AFP 결과 2번 설명해줘","report_items":["AFP"],"expected_items":["AFP"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_386","question":"감기 때문에 힘들어","report_items":["AFP"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_387","question":"운동은 언제 하면 돼","report_items":["AFP"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_388","question":"물을 얼마나 마셔야 해","report_items":["AFP"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_389","question":"어제 잠을 못 잤어","report_items":["AFP"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_390","question":"내 AFP 어때","report_items":["ALT"],"expected_items":["AFP"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_391","question":"내 CA19-9 어때","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_392","question":"CA19-9 수치 어때","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_393","question":"CA19-9 높으면 어떻게 관리해","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_394","question":"CA19-9 정상범위 알려줘","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_395","question":"검진 결과 CA19-9 설명해줘","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_396","question":"이번검진 CA19-9 확인해줘","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_397","question":"CA19-9만 봐줘","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_398","question":"ca19-9 수치 어때","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_399","question":"ca199 수치 어때","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_400","question":"ca-19-9 수치 어때","report_items":["CA19-9"],"expected_items":["CA19-9"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_401","question":"감기 때문에 힘들어","report_items":["CA19-9"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_402","question":"운동은 언제 하면 돼","report_items":["CA19-9"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_403","question":"물을 얼마나 마셔야 해","report_items":["CA19-9"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_404","question":"어제 잠을 못 잤어","report_items":["CA19-9"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_405","question":"내 CA19-9 어때","report_items":["ALT"],"expected_items":["CA19-9"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"report_missing_official"}
+{"id":"IM_406","question":"내 PSA 어때","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_407","question":"PSA 수치 어때","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_408","question":"PSA 높으면 어떻게 관리해","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_409","question":"PSA 정상범위 알려줘","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_410","question":"검진 결과 PSA 설명해줘","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_411","question":"이번검진 PSA 확인해줘","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_412","question":"PSA만 봐줘","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_413","question":"psa 수치 어때","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_414","question":"전립선특이항원 수치 어때","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_415","question":"내 전립선 어때","report_items":["PSA"],"expected_items":["PSA"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"positive"}
+{"id":"IM_416","question":"감기 때문에 힘들어","report_items":["PSA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_417","question":"운동은 언제 하면 돼","report_items":["PSA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_418","question":"물을 얼마나 마셔야 해","report_items":["PSA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_419","question":"어제 잠을 못 잤어","report_items":["PSA"],"expected_items":[],"expected_route_reason":"no_grounding","expected_answer_llm_call_count":0,"case_type":"negative"}
+{"id":"IM_420","question":"내 전립선 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"report_missing_alias"}
+{"id":"IM_421","question":"내 ALT랑 감마 어때","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"mixed_missing_alias"}
+{"id":"IM_422","question":"내 ALT랑 감마 어때","report_items":["ALT","감마지티피"],"expected_items":["ALT","감마지티피"],"expected_route_reason":"rag_answer","expected_answer_llm_call_count":1,"case_type":"mixed_alias_present"}
+{"id":"IM_423","question":"ALT랑 갑상선 같이 봐줘","report_items":["ALT"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"mixed_missing_alias"}
+{"id":"IM_424","question":"내 BMI랑 전립선 어때","report_items":["BMI"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"mixed_missing_alias"}
+{"id":"IM_425","question":"cholesterol 수치 어때","report_items":["LDL 콜레스테롤","HDL 콜레스테롤"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"ambiguous_fuzzy"}
+{"id":"IM_426","question":"허리가 아파","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"symptom_rule","expected_answer_llm_call_count":0,"case_type":"alias_symptom_guard"}
+{"id":"IM_427","question":"갑상선 통증 있어","report_items":["TSH"],"expected_items":[],"expected_route_reason":"symptom_rule","expected_answer_llm_call_count":0,"case_type":"alias_symptom_guard"}
+{"id":"IM_428","question":"복부 통증 있어","report_items":["허리둘레"],"expected_items":[],"expected_route_reason":"symptom_rule","expected_answer_llm_call_count":0,"case_type":"alias_symptom_guard"}
+{"id":"IM_429","question":"estimated glomerular filtration rate 수치 어때","report_items":["ALT"],"expected_items":["eGFR"],"expected_route_reason":"reference_only_answer","expected_answer_llm_call_count":1,"case_type":"long_official_synonym"}
+{"id":"IM_430","question":"내 감마선이랑 ALT 어때","report_items":["ALT","감마지티피"],"expected_items":[],"expected_route_reason":"item_match_uncertain","expected_answer_llm_call_count":0,"case_type":"mixed_unrelated_alias"}
