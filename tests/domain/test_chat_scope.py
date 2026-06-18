@@ -45,10 +45,17 @@ def test_medication_context_mg_still_dosage_routed():
 
 def test_past_result_comparison_still_unsupported():
     # 과거 결과와의 추세 비교는 최신 검진 1건 기준 범위를 벗어나므로 미지원 라우팅
-    d = chat_scope.classify_rule_detail("작년보다 혈당이 오른 건가요?")
-    assert d is not None
-    assert d.scope == Scope.BLOCKED
-    assert d.question_type == QuestionType.UNSUPPORTED
+    cases = [
+        "작년보다 혈당이 오른 건가요?",
+        "저번 검사보다 혈당 높아졌나요?",
+        "지난 검사 대비 콜레스테롤 올랐나요?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.UNSUPPORTED, question
 
 
 def test_waist_circumference_not_symptom_routed():
@@ -152,6 +159,21 @@ def test_rule_routes_medication_and_dosage_edge_cases():
         assert d is not None, question
         assert d.scope == Scope.BLOCKED
         assert d.question_type == expected
+
+
+def test_rule_routes_medication_info_questions_as_unsupported():
+    # 약물 설명·부작용 질문은 검진 수치가 함께 있어도 F-007 답변 범위를 벗어난다.
+    cases = [
+        "LDL 높으면 스타틴 부작용 뭐야?",
+        "혈당 높으면 메트포민 효과 알려줘",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.UNSUPPORTED, question
 
 
 def test_rule_routes_pediatric_red_flags_and_general_symptoms():
@@ -285,6 +307,8 @@ def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
         "ALT 높으면 지방간일까?",
         "간수치 높으면 간염인가요?",
         "TSH 높으면 갑상선기능저하증일까요?",
+        "PSA 높으면 전립선암 아닌가요?",
+        "PSA 높으면 암이 아니야?",
     ]
 
     for question in cases:
@@ -394,6 +418,7 @@ def test_rule_blocks_diagnostic_test_decisions_before_checkup_allow():
         "ALT 높으면 복부초음파?",
         "간수치 높으면 초음파?",
         "CEA 높으면 내시경?",
+        "간수치 높으면 간염 검사해야 하나요?",
     ]
 
     for question in cases:
