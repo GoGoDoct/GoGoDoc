@@ -172,6 +172,69 @@ def _gamma_latest_analysis() -> dict:
     }
 
 
+def _waist_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["허리둘레"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "허리둘레",
+                "value": 94,
+                "value_text": "94",
+                "unit": "cm",
+                "status": "주의",
+                "explain": "복부비만 정도를 보는 지표입니다.",
+                "source": "대한비만학회 비만 진료지침",
+            },
+        ],
+    }
+
+
+def _blood_sugar_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["공복혈당"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "공복혈당",
+                "value": 108,
+                "value_text": "108",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "공복 상태의 혈당을 보는 지표입니다.",
+                "source": "대한당뇨병학회 당뇨병 진료지침",
+            },
+        ],
+    }
+
+
+def _lipid_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["LDL 콜레스테롤", "HDL 콜레스테롤"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "LDL 콜레스테롤",
+                "value": 145,
+                "value_text": "145",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈관에 쌓이기 쉬운 콜레스테롤입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "HDL 콜레스테롤",
+                "value": 42,
+                "value_text": "42",
+                "unit": "mg/dL",
+                "status": "정상",
+                "explain": "혈관 건강에 도움이 되는 콜레스테롤입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+        ],
+    }
+
+
 def test_blocked_question_returns_routing_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
@@ -187,6 +250,34 @@ def test_blocked_question_returns_routing_without_rag_llm_call():
     assert msg.question_type == QuestionType.PRESCRIPTION_REQUEST
     assert "전문의" in msg.content
     assert DISCLAIMER in msg.content
+    assert classifier_llm.calls == []
+    assert answer_llm.calls == []
+
+
+def test_unsafe_item_questions_return_routing_without_rag_llm_call():
+    classifier_llm = _CountingLLM("허용")
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    cases = [
+        ("LDL 낮추는 약 뭐 먹어?", QuestionType.PRESCRIPTION_REQUEST),
+        ("PSA 높으면 조직검사 해야 해?", QuestionType.PROCEDURE_REQUEST),
+        ("내 복부가 아픈데 수치랑 관련 있어?", QuestionType.SYMPTOM_NON_EMERGENCY),
+        ("ALT랑 감마 낮추는 약 알려줘", QuestionType.PRESCRIPTION_REQUEST),
+    ]
+
+    for question, expected_type in cases:
+        msg = service.answer(question, _latest_analysis())
+
+        assert msg.routed is True, question
+        assert msg.scope_flag == Scope.BLOCKED, question
+        assert msg.question_type == expected_type, question
+        assert msg.context_item_names == [], question
+        assert msg.sources == [], question
+
     assert classifier_llm.calls == []
     assert answer_llm.calls == []
 
@@ -690,6 +781,81 @@ def test_mixed_question_with_concatenated_missing_alias_does_not_answer_partial_
         msg = service.answer(question, _latest_analysis())
 
         assert msg.route_reason == "item_match_uncertain", question
+        assert msg.context_item_names == [], question
+        assert msg.sources == [], question
+
+    assert answer_llm.calls == []
+
+
+def test_category_question_with_missing_alias_does_not_answer_partial_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    for question in (
+        "혈당이랑감마 같이 봐줘",
+        "혈당감마 같이 봐줘",
+    ):
+        msg = service.answer(question, _rich_latest_analysis())
+
+        assert msg.route_reason == "item_match_uncertain", question
+        assert msg.context_item_names == [], question
+        assert msg.sources == [], question
+
+    assert answer_llm.calls == []
+
+
+def test_multi_category_question_blocks_partial_report_category_answer():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("일부 카테고리만 답하면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    cases = [
+        ("혈당이랑 혈압 같이 봐줘", _blood_sugar_latest_analysis()),
+        ("콜레스테롤이랑 혈당 같이 봐줘", _lipid_latest_analysis()),
+    ]
+
+    for question, latest_analysis in cases:
+        msg = service.answer(question, latest_analysis)
+
+        assert msg.route_reason == "item_match_uncertain", question
+        assert msg.context_item_names == [], question
+        assert msg.sources == [], question
+
+    assert answer_llm.calls == []
+
+
+def test_non_checkup_body_or_common_words_do_not_match_report_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    cases = [
+        ("신장이 몇 cm였지", _latest_analysis()),
+        ("체중계 수치 이상해", _latest_analysis()),
+        ("허리 운동 알려줘", _waist_latest_analysis()),
+        ("복부 운동 알려줘", _waist_latest_analysis()),
+    ]
+
+    for question, latest_analysis in cases:
+        msg = service.answer(question, latest_analysis)
+
+        assert msg.route_reason == "no_grounding", question
         assert msg.context_item_names == [], question
         assert msg.sources == [], question
 

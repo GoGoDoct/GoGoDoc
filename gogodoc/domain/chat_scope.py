@@ -47,6 +47,7 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
         "emergency_rule",
         re.compile(
             r"가슴.*(통증|아프|답답|조이|압박)|흉통|숨이?\s*(차|막히|안\s*쉬|가쁘)|호흡\s*곤란|"
+            r"가슴.*(뻐근|불편)|"
             r"숨\s*쉬기\s*(힘들|어렵)|숨\s*못\s*쉬|숨이\s*안\s*쉬|"
             r"한쪽.*(마비|힘이?\s*안|감각)|말이?\s*어눌|의식.*(잃|저하|없)|실신|경련|"
             r"심한\s*출혈|극심한\s*두통|갑자기.*두통|얼굴.*마비|팔.*마비|"
@@ -70,7 +71,11 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
             r"(스타틴|메트포민|혈압약|고지혈증약|당뇨약|아스피린|위고비|마운자로|졸피뎀|알닥톤|타이레놀|한약)"
             r".*(먹|복용|시작|끊|바꾸|추천|계속|같이|병용|중단)|"
             r"(낮추|높이|조절|관리).{0,20}(약|주사|치료제).{0,12}(뭐|무엇|알려|추천|필요)|"
-            r"(약|주사|치료제)\s*(이|가|은|는|을|를)?\s*(뭐|무엇|알려|추천)|"
+            r"(약|주사|치료제|철분제|인슐린|통풍약)\s*(이|가|은|는|을|를)?\s*(뭐|무엇|알려|추천)|"
+            r"(약|주사|치료제|혈압약|당뇨약|고지혈증약|철분제|인슐린|통풍약|약물치료)"
+            r".{0,16}(필요|해야|써야|먹어야|맞아야|되나|될까|될까요)|"
+            r"(필요|해야|써야|먹어야|맞아야).{0,16}"
+            r"(약|주사|치료제|혈압약|당뇨약|고지혈증약|철분제|인슐린|통풍약|약물치료)|"
             r"(먹|복용).{0,12}(되나요|될까요|괜찮|가능)|"
             r"약\s*추천|치료제\s*추천|추천.*(약|치료제)|처방|복용|투약|병용"
         ),
@@ -107,9 +112,11 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
             r"(받아야|해야|필요|시작|권하|할까요|하나요|하면\s*좋|해도\s*(되|돼)|할\s*정도)|"
             r"(받아야|해야|필요|하면\s*좋|해도\s*(되|돼)|할\s*정도).{0,16}(수술|시술|항암|입원)|"
             r"(복부초음파|초음파|CT|ct|MRI|mri|내시경|조직검사|조영술).{0,16}"
-            r"(받아야|해야|필요|찍어야|할까요|하나요|하면\s*좋|해도\s*(되|돼))|"
-            r"(받아야|해야|필요|찍어야|하면\s*좋|해도\s*(되|돼)).{0,16}"
-            r"(복부초음파|초음파|CT|ct|MRI|mri|내시경|조직검사|조영술)|"
+            r"(받아야|해야|필요|찍어야|찍는\s*게\s*좋|할까요|하나요|하면\s*좋|해도\s*(되|돼))|"
+            r"(정밀\s*검사|추가\s*검사|조직검사|추적\s*검사).{0,16}"
+            r"(받아야|해야|필요|할까요|하나요|하면\s*좋)|"
+            r"(받아야|해야|필요|찍어야|찍는\s*게\s*좋|하면\s*좋|해도\s*(되|돼)).{0,16}"
+            r"(복부초음파|초음파|CT|ct|MRI|mri|내시경|조직검사|조영술|정밀\s*검사|추가\s*검사)|"
             r"주사\s*(맞|놓).{0,12}(해야|되나|될까요|돼|되|필요|좋나|괜찮)"
         ),
     ),
@@ -136,8 +143,9 @@ _RULE_PATTERNS: list[tuple[QuestionType, str, re.Pattern[str]]] = [
 
 _SYMPTOM_HINT = re.compile(
     r"아파|통증|쑤셔|어지러|메스꺼|토할|열이\s*나|기침|설사|배가\s*아|"
-    r"탈수|우울|불안|저리|저린|저려|"
-    r"(허리|목|어깨|무릎|배)\s*(가|이|도)?\s*(아프|아픈|아파|통증|쑤셔|저리|저린|저려)"
+    r"탈수|우울|불안|저리|저린|저려|피곤|황달|목마르|목말라|갈증|소변.{0,8}피|혈뇨|"
+    r"(허리|목|어깨|무릎|배|복부|갑상선|전립선)\s*(가|이|도)?\s*"
+    r"(아프|아픈|아파|통증|쑤셔|저리|저린|저려|불편|붓|부었|부어|멍울|혹|만져|찌릿|뻐근)"
 )
 
 _TOKEN = re.compile(r"[A-Za-z0-9가-힣γ]+")
@@ -151,10 +159,28 @@ _DEPARTMENT_INTENT = re.compile(r"진료과|어느\s*과|어떤\s*과|무슨\s*�
 _SHORTHAND_DIAGNOSIS_DISEASES = (
     "당뇨", "당뇨병", "고혈압", "고지혈증", "암", "종양",
     "간암", "위암", "대장암", "갑상선암", "간경화", "신부전", "빈혈", "통풍",
+    "갑상선기능저하증", "갑상선기능항진증", "지방간", "간염", "담석", "요로결석",
+)
+_DISEASE_LIKE_SUFFIX = r"[가-힣A-Za-z0-9]{2,}(?:증|염|암|병|경화|혈증|부전|결석|장애)"
+_SHORTHAND_DIAGNOSIS_TARGET = (
+    rf"(?:{'|'.join(_SHORTHAND_DIAGNOSIS_DISEASES)}|{_DISEASE_LIKE_SUFFIX})"
 )
 _SHORTHAND_DIAGNOSIS = re.compile(
-    r"(높|낮|수치|검사|검진|결과|이면|라면|나오).{0,24}"
-    rf"({'|'.join(_SHORTHAND_DIAGNOSIS_DISEASES)})\s*\??$"
+    r"(높|낮|이상|초과|미만|수치|검사|검진|결과|이면|라면|나오).{0,28}"
+    rf"{_SHORTHAND_DIAGNOSIS_TARGET}\s*\??$"
+)
+_DIAGNOSIS_CONTEXT = re.compile(
+    rf"{_SHORTHAND_DIAGNOSIS_TARGET}.{{0,12}}"
+    r"(의심|소견|가능성|일\s*수|으로\s*봐야|걸린|걸렸|맞아|맞나요|진단|확정)|"
+    r"(의심|소견|가능성|진단|확정).{0,16}"
+    rf"{_SHORTHAND_DIAGNOSIS_TARGET}"
+)
+_DISEASE_ENCYCLOPEDIA = re.compile(
+    rf"^\s*{_SHORTHAND_DIAGNOSIS_TARGET}\s*(이|가|은|는)?\s*(뭐야|뭔가요|무엇인가요)\s*\??\s*$"
+)
+_DISEASE_EXPLAIN_REQUEST = re.compile(
+    rf"^\s*(?:{'|'.join(_SHORTHAND_DIAGNOSIS_DISEASES)})\s*(이|가|은|는|의)?\s*"
+    r"(무슨\s*)?(뜻|의미|설명|알려).*$"
 )
 _CHECKUP_SHORT_ALIASES = (
     "감마", "당화", "총콜", "중성", "크레아", "사구체", "허리", "복부", "갑상선", "전립선",
@@ -162,6 +188,10 @@ _CHECKUP_SHORT_ALIASES = (
 _CHECKUP_CATEGORY_TERMS = (
     "콜레스테롤", "혈당", "혈압", "간수치", "간기능", "빈혈", "신장", "콩팥",
     "통풍", "비만", "체중", "전해질", "공복혈당장애",
+)
+_CATEGORY_ALLOW_CONTEXT = re.compile(
+    r"수치|검사|검진|결과|정상|범위|높|낮|의미|뜻|설명|확인|봐줘|비교|관리|음식|식사|운동|"
+    r"생활습관|줄이면|낮추|좋은|조심|술|체중|진료과|어느\s*과|어떤\s*과|무슨\s*과|상담"
 )
 _JOSA_SUFFIXES = (
     "에서는", "에서", "으로", "하고", "에게", "까지", "부터", "처럼", "보다",
@@ -188,7 +218,6 @@ def _build_checkup_terms() -> set[str]:
     terms = set(reference_dict.REFERENCE)
     terms.update(SYNONYMS)
     terms.update(_CHECKUP_SHORT_ALIASES)
-    terms.update(_CHECKUP_CATEGORY_TERMS)
     compact_terms = {_compact_key(term) for term in terms}
     return {term for term in compact_terms if len(term) >= 2}
 
@@ -224,8 +253,6 @@ def _has_checkup_item_hint(question: str) -> bool:
         return True
     if any(key in _CHECKUP_SHORT_ALIAS_KEYS for key in windows):
         return True
-    if any(key in _CHECKUP_CATEGORY_KEYS for key in windows):
-        return True
 
     fuzzy_hits: set[str] = set()
     for key in windows:
@@ -241,8 +268,25 @@ def _has_checkup_item_hint(question: str) -> bool:
     return len(fuzzy_hits) == 1
 
 
+def _has_checkup_category_hint(question: str) -> bool:
+    windows = _normalized_windows(question)
+    return any(key in _CHECKUP_CATEGORY_KEYS for key in windows)
+
+
 def _shorthand_diagnosis_decision(question: str) -> ScopeDecision | None:
     if not _SHORTHAND_DIAGNOSIS.search(question):
+        return None
+    return ScopeDecision(
+        scope=Scope.BLOCKED,
+        routed=True,
+        reason="rule",
+        question_type=QuestionType.DIAGNOSIS_REQUEST,
+        route_reason="diagnosis_rule",
+    )
+
+
+def _diagnosis_context_decision(question: str) -> ScopeDecision | None:
+    if not _DIAGNOSIS_CONTEXT.search(question):
         return None
     return ScopeDecision(
         scope=Scope.BLOCKED,
@@ -257,7 +301,11 @@ def _allowed_checkup_decision(question: str) -> ScopeDecision | None:
     """실제 말투의 명확한 검진 항목 질문은 LLM 분류기 전 단계에서 허용한다."""
     if not _CHECKUP_INTENT.search(question):
         return None
-    if not _has_checkup_item_hint(question):
+    has_item_hint = _has_checkup_item_hint(question)
+    has_category_hint = _has_checkup_category_hint(question)
+    if not has_item_hint and not has_category_hint:
+        return None
+    if has_category_hint and not has_item_hint and not _CATEGORY_ALLOW_CONTEXT.search(question):
         return None
 
     question_type = QuestionType.CHECKUP_EXPLANATION
@@ -349,15 +397,20 @@ def classify_rule_detail(question: str) -> ScopeDecision | None:
             route_reason="empty_question",
         )
 
+    deferred_allow: ScopeDecision | None = None
     for question_type, route_reason, pattern in _RULE_PATTERNS:
         if pattern.search(text):
-            return ScopeDecision(
+            decision = ScopeDecision(
                 scope=scope_for_question_type(question_type),
                 routed=scope_for_question_type(question_type) == Scope.BLOCKED,
                 reason="rule",
                 question_type=question_type,
                 route_reason=route_reason,
             )
+            if decision.scope == Scope.ALLOWED:
+                deferred_allow = decision
+                continue
+            return decision
 
     if _SYMPTOM_HINT.search(text):
         return ScopeDecision(
@@ -371,6 +424,22 @@ def classify_rule_detail(question: str) -> ScopeDecision | None:
     diagnosis_decision = _shorthand_diagnosis_decision(text)
     if diagnosis_decision is not None:
         return diagnosis_decision
+
+    diagnosis_context_decision = _diagnosis_context_decision(text)
+    if diagnosis_context_decision is not None:
+        return diagnosis_context_decision
+
+    if _DISEASE_ENCYCLOPEDIA.search(text) or _DISEASE_EXPLAIN_REQUEST.search(text):
+        return ScopeDecision(
+            scope=Scope.BLOCKED,
+            routed=True,
+            reason="rule",
+            question_type=QuestionType.UNSUPPORTED,
+            route_reason="unsupported_rule",
+        )
+
+    if deferred_allow is not None:
+        return deferred_allow
 
     return _allowed_checkup_decision(text)
 
