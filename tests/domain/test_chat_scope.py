@@ -264,6 +264,8 @@ def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
         "공복혈당 높으면 당뇨?",
         "PSA 높으면 암?",
         "콜레스테롤 높으면 고지혈증?",
+        "혈압 높으면 고혈압?",
+        "간수치 높으면 간경화?",
     ]
 
     for question in cases:
@@ -282,3 +284,47 @@ def test_rule_keeps_non_diagnosis_management_question_allowed():
     assert d is not None
     assert d.scope == Scope.ALLOWED
     assert d.question_type == QuestionType.LIFESTYLE_GENERAL
+
+
+def test_rule_blocks_medication_questions_before_checkup_allow():
+    # 항목명과 낮추기 의도가 있어도 약물·주사 질문이면 답변 생성 전에 차단한다.
+    cases = [
+        "LDL 낮추는 약 뭐야",
+        "혈당 낮추는 주사 뭐야",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.PRESCRIPTION_REQUEST, question
+
+
+def test_rule_blocks_body_part_symptom_before_short_alias_allow():
+    # 허리·복부가 항목 alias여도 저림 같은 증상 문맥이면 허리둘레 해석으로 허용하지 않는다.
+    d = chat_scope.classify_rule_detail("내 허리가 저린데 어때")
+
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.routed is True
+    assert d.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
+def test_rule_blocks_diagnostic_test_decisions_before_checkup_allow():
+    # 검사·시술 필요 여부 판단은 검진 수치 설명이 아니라 의료진 상담 라우팅 대상이다.
+    cases = [
+        "ALT 높으면 복부초음파 해야 해?",
+        "CEA 높으면 내시경 받아야 해?",
+        "LDL 높으면 CT 찍어야 해?",
+        "간수치 높으면 MRI 받아야 해?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.PROCEDURE_REQUEST, question

@@ -122,13 +122,26 @@ def _strip_josa(text: str) -> str:
     return text
 
 
-def _alias_guard_fragments(key: str) -> list[tuple[str, bool]]:
+def _item_prefix_keys(item_names: list[str]) -> list[str]:
+    """이미 질문에서 매칭된 항목의 공식명·동의어 compact prefix 후보."""
+    prefixes = {
+        _compact_key(term)
+        for term, canon in _TERM_CANONS.items()
+        if canon in item_names and len(_compact_key(term)) >= 2
+    }
+    return sorted(prefixes, key=len, reverse=True)
+
+
+def _alias_guard_fragments(key: str, item_prefixes: list[str] | None = None) -> list[tuple[str, bool]]:
     """짧은 alias가 접속 조사 뒤에 붙어 있는 fragment까지 검사한다."""
     fragments = [(key, False)]
     for joiner in _JOINER_PARTICLES:
         parts = [part for part in key.split(joiner) if part]
         for part in parts[1:]:
             fragments.append((_strip_josa(part), True))
+    for prefix in item_prefixes or []:
+        if key.startswith(prefix) and len(key) > len(prefix):
+            fragments.append((_strip_josa(key[len(prefix):]), True))
     return fragments
 
 
@@ -340,11 +353,12 @@ def _match_report_gated_items(
 
     known_item_names = known_item_names or []
     category_keys = {_compact_key(keyword) for keyword in _CATEGORY_KEYWORDS}
+    item_prefixes = _item_prefix_keys([*matched, *known_item_names])
     for token in _TOKEN.finditer(question):
         key = _strip_josa(_compact_key(token.group()))
         if any(category_key and category_key in key for category_key in category_keys):
             continue
-        for fragment, after_joiner in _alias_guard_fragments(key):
+        for fragment, after_joiner in _alias_guard_fragments(key, item_prefixes):
             for alias, target in _SHORT_ALIASES.items():
                 if target in matched or target in known_item_names:
                     continue
