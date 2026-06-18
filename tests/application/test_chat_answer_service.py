@@ -251,7 +251,7 @@ def test_missing_latest_result_returns_guidance_without_rag_llm_call():
 
     assert msg.routed is True
     assert msg.scope_flag == Scope.ALLOWED
-    assert msg.question_type == QuestionType.UNKNOWN
+    assert msg.question_type == QuestionType.CHECKUP_EXPLANATION
     assert "최신 검진 결과" in msg.content
     assert DISCLAIMER in msg.content
     assert answer_llm.calls == []
@@ -419,7 +419,66 @@ def test_hba1c_question_does_not_pull_hemoglobin_context():
     assert msg.context_item_names == ["당화혈색소"]
     assert len(answer_llm.calls) == 1
     assert "당화혈색소" in answer_llm.calls[0]["user"]
-    assert "헤모글로빈" not in answer_llm.calls[0]["user"]
+    assert "- 헤모글로빈:" not in answer_llm.calls[0]["user"]
+
+
+def test_spaced_hba1c_synonym_does_not_pull_hemoglobin_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("당화혈색소 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("당화 헤모글로빈 수치가 뭐야", _rich_latest_analysis())
+
+    assert msg.routed is False
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["당화혈색소"]
+    assert len(answer_llm.calls) == 1
+    assert "당화혈색소" in answer_llm.calls[0]["user"]
+    assert "- 헤모글로빈:" not in answer_llm.calls[0]["user"]
+
+
+def test_blood_sugar_lifestyle_question_uses_category_items_instead_of_uncertain_match():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("혈당 생활습관 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("혈당 관리에 좋은 식사 원칙 알려줘", _rich_latest_analysis())
+
+    assert msg.routed is False
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["당화혈색소", "공복혈당"]
+    assert len(answer_llm.calls) == 1
+    assert "당화혈색소" in answer_llm.calls[0]["user"]
+    assert "공복혈당" in answer_llm.calls[0]["user"]
+
+
+def test_abdominal_obesity_lifestyle_question_uses_obesity_category_instead_of_short_alias_uncertain():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("비만 생활습관 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("복부비만이면 어떤 생활습관이 중요해?", _latest_analysis())
+
+    assert msg.routed is False
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["BMI"]
+    assert len(answer_llm.calls) == 1
+    assert "BMI" in answer_llm.calls[0]["user"]
 
 
 def test_blood_pressure_category_question_uses_report_bp_items():

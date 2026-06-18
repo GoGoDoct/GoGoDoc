@@ -19,20 +19,20 @@ def test_blocks_diagnosis_and_procedure():
 
 
 def test_allowed_questions_not_hard_blocked():
-    # 허용 질문은 규칙에서 차단 안 됨 (None -> LLM 위임)
+    # 허용 질문은 규칙에서 차단하면 안 됨. 명확한 검진 항목 질문은 rule 허용될 수 있다.
     for q in ["ALT가 60인데 무슨 의미예요?", "콜레스테롤 낮추려면 어떤 음식이 좋아요?",
               "혈압 관리에 좋은 운동 알려줘", "어느 진료과를 가야 하나요?"]:
-        assert chat_scope.classify_rule(q) is None, q
+        assert chat_scope.classify_rule(q) in (None, Scope.ALLOWED), q
 
 
 def test_reference_range_comparison_not_hard_blocked():
     # 정상범위와의 비교는 최신 검진 결과 설명 범위라 LLM/RAG 경로로 위임
-    assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") is None
+    assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") in (None, Scope.ALLOWED)
 
 
 def test_lab_unit_mgdl_question_not_dosage_routed():
     # mg/dL은 검사 단위이므로 약물 용량 질문으로 과차단하면 안 됨
-    assert chat_scope.classify_rule("LDL은 몇 mg/dL부터 높은 거예요?") is None
+    assert chat_scope.classify_rule("LDL은 몇 mg/dL부터 높은 거예요?") in (None, Scope.ALLOWED)
 
 
 def test_medication_context_mg_still_dosage_routed():
@@ -53,7 +53,7 @@ def test_past_result_comparison_still_unsupported():
 
 def test_waist_circumference_not_symptom_routed():
     # 허리둘레는 지원되는 검진 항목이므로 단독 '허리' 증상 힌트로 차단하면 안 됨
-    assert chat_scope.classify_rule("허리둘레가 95cm인데 무슨 의미예요?") is None
+    assert chat_scope.classify_rule("허리둘레가 95cm인데 무슨 의미예요?") in (None, Scope.ALLOWED)
 
 
 def test_rule_routes_emergency_symptoms_before_llm():
@@ -123,7 +123,7 @@ def test_empty_question_blocked():
 
 def test_pdf_or_result_words_do_not_hide_checkup_question():
     # PDF 표현이 있어도 검진 항목 해석 의도면 앱 도움말로 과차단하지 않음
-    assert chat_scope.classify_rule("PDF에 나온 ALT 수치가 뭐예요?") is None
+    assert chat_scope.classify_rule("PDF에 나온 ALT 수치가 뭐예요?") in (None, Scope.ALLOWED)
 
 
 def test_rule_routes_obvious_checkup_summary_question():
@@ -217,3 +217,38 @@ def test_unsupported_routing_message_mentions_cost_and_trend_limits():
 def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
     # 스트레스 관리가 검진 생활습관 질문이면 rule에서 증상 차단하지 않음
     assert chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?") is None
+
+
+def test_rule_allows_common_real_phrasing_checkup_item_questions_before_llm():
+    # 실제 말투의 짧은 항목 질문은 LLM 분류기 변동성에 맡기지 않고 rule 단계에서 허용
+    cases = [
+        "AST 수치도 같이 봐줘",
+        "내 감마 지티피 어때",
+        "내 감마지피티 어때",
+        "triglycerides 수치 봐줘",
+        "헤모글로빈 수치 봐줘",
+        "내 허리 어때",
+        "내 복부 어때",
+        "갑상선 수치 봐줘",
+        "전립선 수치 어때",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.routed is False, question
+        assert d.question_type == QuestionType.CHECKUP_EXPLANATION, question
+        assert d.route_reason == "checkup_item_rule", question
+
+
+def test_rule_does_not_allow_alias_when_question_is_symptom_or_nonmedical():
+    # 같은 짧은 단어라도 증상이나 비의료 문맥이면 기존 차단 규칙이 우선한다.
+    symptom = chat_scope.classify_rule_detail("나 지금 허리가 아픈데")
+    nonmedical = chat_scope.classify_rule_detail("지피티가 뭐야")
+
+    assert symptom is not None
+    assert symptom.scope == Scope.BLOCKED
+    assert symptom.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+    assert nonmedical is None

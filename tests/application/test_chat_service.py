@@ -31,7 +31,7 @@ def test_rule_block_overrides_llm():
 
 def test_llm_allowed():
     svc = ChatService(_FakeLLM('{"scope":"allowed","question_type":"checkup_explanation","route_reason":"항목 설명"}'))
-    d = svc.classify("ALT가 60인데 무슨 의미예요?")
+    d = svc.classify("검진에서 나온 항목을 쉽게 설명해줘")
     assert d.scope == Scope.ALLOWED and not d.routed and d.reason == "llm"
     assert d.question_type == QuestionType.CHECKUP_EXPLANATION
 
@@ -45,7 +45,7 @@ def test_llm_blocked():
 
 def test_legacy_label_allowed_still_supported():
     svc = ChatService(_FakeLLM("허용"))
-    d = svc.classify("ALT가 뭐예요?")
+    d = svc.classify("검진 결과를 쉽게 설명해줘")
     assert d.scope == Scope.ALLOWED
     assert d.question_type == QuestionType.UNKNOWN
 
@@ -86,3 +86,26 @@ def test_emergency_route_message_is_specific_and_skips_llm():
     assert msg.scope_flag == Scope.BLOCKED
     assert msg.question_type == QuestionType.EMERGENCY_SYMPTOM
     assert "119" in msg.content
+
+
+def test_common_real_checkup_item_phrases_skip_llm_classifier():
+    # 실제 사용자 말투의 검진 항목 질문은 LLM 분류기가 실패해도 rule 단계에서 허용한다.
+    svc = ChatService(_BoomLLM())
+
+    for question in [
+        "AST 수치도 같이 봐줘",
+        "내 감마 지티피 어때",
+        "내 감마지피티 어때",
+        "triglycerides 수치 봐줘",
+        "헤모글로빈 수치 봐줘",
+        "내 허리 어때",
+        "갑상선 수치 봐줘",
+        "전립선 수치 어때",
+    ]:
+        d = svc.classify(question)
+
+        assert d.scope == Scope.ALLOWED, question
+        assert d.routed is False, question
+        assert d.reason == "rule", question
+        assert d.question_type == QuestionType.CHECKUP_EXPLANATION, question
+        assert d.route_reason == "checkup_item_rule", question

@@ -11,7 +11,11 @@
 
 import re
 
+from rapidfuzz import fuzz
+
 from gogodoc.domain.models import QuestionType, Scope, ScopeDecision
+from gogodoc.domain.reference import reference_dict
+from gogodoc.domain.reference.synonyms import SYNONYMS
 
 _QUESTION_TYPE_SCOPE = {
     QuestionType.CHECKUP_EXPLANATION: Scope.ALLOWED,
@@ -130,6 +134,95 @@ _SYMPTOM_HINT = re.compile(
     r"(허리|목|어깨|무릎|배)\s*(가|이|도)?\s*(아프|아픈|아파|통증|쑤셔)"
 )
 
+_TOKEN = re.compile(r"[A-Za-z0-9가-힣γ]+")
+_COMPACT_REMOVE = re.compile(r"[\s\-_/.()]+")
+_CHECKUP_INTENT = re.compile(
+    r"수치|검사|검진|결과|정상|범위|높|낮|의미|뜻|뭐|어때|봐줘|확인|설명|비교|"
+    r"관리|음식|식사|운동|생활습관|줄이면|낮추|좋은|조심|상담|진료과|어느\s*과|어떤\s*과"
+)
+_LIFESTYLE_INTENT = re.compile(r"관리|음식|식사|운동|생활습관|줄이면|낮추|좋은|조심|술|체중")
+_DEPARTMENT_INTENT = re.compile(r"진료과|어느\s*과|어떤\s*과|무슨\s*과|상담")
+_CHECKUP_SHORT_ALIASES = (
+    "감마", "당화", "총콜", "중성", "크레아", "사구체", "허리", "복부", "갑상선", "전립선",
+)
+
+
+def _compact_key(text: str) -> str:
+    return _COMPACT_REMOVE.sub("", text).strip().lower()
+
+
+_CHECKUP_SHORT_ALIAS_KEYS = {_compact_key(alias) for alias in _CHECKUP_SHORT_ALIASES}
+
+
+def _build_checkup_terms() -> set[str]:
+    terms = set(reference_dict.REFERENCE)
+    terms.update(SYNONYMS)
+    terms.update(_CHECKUP_SHORT_ALIASES)
+    compact_terms = {_compact_key(term) for term in terms}
+    return {term for term in compact_terms if len(term) >= 2}
+
+
+_CHECKUP_TERMS = _build_checkup_terms()
+
+
+def _question_windows(question: str, max_tokens: int = 3) -> list[str]:
+    tokens = list(_TOKEN.finditer(question))
+    windows: list[str] = []
+    for i, start_token in enumerate(tokens):
+        for size in range(1, max_tokens + 1):
+            end_idx = i + size - 1
+            if end_idx >= len(tokens):
+                break
+            end_token = tokens[end_idx]
+            windows.append(_compact_key(question[start_token.start(): end_token.end()]))
+    return windows
+
+
+def _has_checkup_item_hint(question: str) -> bool:
+    compact_question = _compact_key(question)
+    for term in _CHECKUP_TERMS:
+        if len(term) >= 3 and term in compact_question:
+            return True
+
+    windows = _question_windows(question)
+    if any(key in _CHECKUP_SHORT_ALIAS_KEYS for key in windows):
+        return True
+
+    fuzzy_hits: set[str] = set()
+    for key in windows:
+        if len(key) < 4:
+            continue
+        for term in _CHECKUP_TERMS:
+            if len(term) < 4:
+                continue
+            if fuzz.ratio(key, term) >= 80:
+                fuzzy_hits.add(term)
+                if len(fuzzy_hits) > 1:
+                    return False
+    return len(fuzzy_hits) == 1
+
+
+def _allowed_checkup_decision(question: str) -> ScopeDecision | None:
+    """실제 말투의 명확한 검진 항목 질문은 LLM 분류기 전 단계에서 허용한다."""
+    if not _CHECKUP_INTENT.search(question):
+        return None
+    if not _has_checkup_item_hint(question):
+        return None
+
+    question_type = QuestionType.CHECKUP_EXPLANATION
+    if _DEPARTMENT_INTENT.search(question):
+        question_type = QuestionType.DEPARTMENT_GUIDE
+    elif _LIFESTYLE_INTENT.search(question):
+        question_type = QuestionType.LIFESTYLE_GENERAL
+
+    return ScopeDecision(
+        scope=Scope.ALLOWED,
+        routed=False,
+        reason="rule",
+        question_type=question_type,
+        route_reason="checkup_item_rule",
+    )
+
 # 전문의 상담 라우팅 안내 (비허용 질문 응답)
 ROUTING_MESSAGE = (
     "이 질문은 진단·처방·복약에 해당할 수 있어 정확한 답변을 드리기 어렵습니다. "
@@ -224,7 +317,7 @@ def classify_rule_detail(question: str) -> ScopeDecision | None:
             route_reason="symptom_rule",
         )
 
-    return None
+    return _allowed_checkup_decision(text)
 
 
 def classify_rule(question: str) -> Scope | None:

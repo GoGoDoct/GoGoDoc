@@ -283,6 +283,8 @@ def _match_report_gated_items(
 
     report_terms = _report_compact_terms(report_item_names)
     for start, end, _raw, key in exact_windows:
+        if _overlaps((start, end), covered_spans):
+            continue
         canon = report_terms.get(key)
         if canon:
             if canon not in matched:
@@ -325,13 +327,17 @@ def _match_report_gated_items(
     elif best_score >= 50.0:
         uncertain = True
 
-    compact_question = _compact_key(question)
     known_item_names = known_item_names or []
-    for alias, target in _SHORT_ALIASES.items():
-        if target in matched or target in known_item_names:
+    category_keys = {_compact_key(keyword) for keyword in _CATEGORY_KEYWORDS}
+    for token in _TOKEN.finditer(question):
+        key = _strip_josa(_compact_key(token.group()))
+        if any(category_key and category_key in key for category_key in category_keys):
             continue
-        if alias in compact_question:
-            uncertain = True
+        for alias, target in _SHORT_ALIASES.items():
+            if target in matched or target in known_item_names:
+                continue
+            if key.startswith(alias) and len(key) > len(alias):
+                uncertain = True
 
     return matched, uncertain
 
@@ -347,14 +353,26 @@ def _match_category_keywords(
     blocked_spans: list[tuple[int, int]] | None = None,
 ) -> list[str]:
     """특정 항목명이 아닌 포괄 카테고리 키워드만 추출."""
+    return [category for _, _, category in _match_category_keyword_spans(question, blocked_spans)]
+
+
+def _match_category_keyword_spans(
+    question: str,
+    blocked_spans: list[tuple[int, int]] | None = None,
+) -> list[tuple[int, int, str]]:
+    """포괄 카테고리 키워드와 span을 함께 추출한다."""
     blocked_spans = blocked_spans or []
+    matches: list[tuple[int, int, str]] = []
     cats: list[str] = []
     for kw, c in _CATEGORY_KEYWORDS.items():
         for match in re.finditer(re.escape(kw), question):
-            if not _overlaps((match.start(), match.end()), blocked_spans) and c not in cats:
+            if _overlaps((match.start(), match.end()), blocked_spans):
+                continue
+            if c not in cats:
                 cats.append(c)
-                break
-    return cats
+                matches.append((match.start(), match.end(), c))
+            break
+    return matches
 
 
 def _merge_categories(item_names: list[str], direct_categories: list[str]) -> list[str]:
@@ -461,14 +479,16 @@ class ChatRagService:
             *_match_compact_item_spans(question),
         ]
         item_spans = [(start, end) for start, end, _ in matched_spans]
-        direct_categories = _match_category_keywords(question, blocked_spans=item_spans)
+        category_matches = _match_category_keyword_spans(question, blocked_spans=item_spans)
+        category_spans = [(start, end) for start, end, _ in category_matches]
+        direct_categories = [category for _, _, category in category_matches]
 
         # 내 검진결과에서 해당 항목 값·flag 매핑
         report_items = {it.canonical_name: it for it in (report.items if report else [])}
         report_gated_items, uncertain = _match_report_gated_items(
             question,
             set(report_items),
-            known_spans=item_spans,
+            known_spans=[*item_spans, *category_spans],
             known_item_names=item_names,
         )
         for name in report_gated_items:

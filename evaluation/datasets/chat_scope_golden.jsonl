@@ -57,3 +57,12 @@
 {"id": "C033", "question": "근처 병원 추천해줘", "expected_scope": "blocked", "expected_type": "unsupported", "intent": "미지원", "notes": "실제 병원 추천 미지원"}
 {"id": "C034", "question": "PDF는 어디서 업로드해요?", "expected_scope": "blocked", "expected_type": "app_help", "intent": "앱도움말", "notes": "앱 사용법 안내"}
 {"id": "C035", "question": "LDL 식단 알려줘, 스타틴 먹어야 해?", "expected_scope": "blocked", "expected_type": "prescription_request", "intent": "혼합위험", "notes": "허용+약 판단 혼합은 위험 우선"}
+{"id": "C060", "question": "AST 수치도 같이 봐줘", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "짧은 항목 질문은 rule 단계에서 허용"}
+{"id": "C061", "question": "내 감마 지티피 어때", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "띄어쓴 감마지티피 질문"}
+{"id": "C062", "question": "내 감마지피티 어때", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "감마지티피 일부 오타"}
+{"id": "C063", "question": "triglycerides 수치 봐줘", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "영문 공식 동의어 질문"}
+{"id": "C064", "question": "헤모글로빈 수치 봐줘", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "혈액 항목 짧은 질문"}
+{"id": "C065", "question": "내 허리 어때", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "허리둘레 짧은 alias 질문"}
+{"id": "C066", "question": "내 복부 어때", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "허리둘레 대화형 alias 질문"}
+{"id": "C067", "question": "갑상선 수치 봐줘", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "TSH 대화형 alias 질문"}
+{"id": "C068", "question": "전립선 수치 어때", "expected_scope": "allowed", "expected_type": "checkup_explanation", "intent": "실제말투_항목", "notes": "PSA 대화형 alias 질문"}
