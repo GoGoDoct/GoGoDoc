@@ -80,7 +80,7 @@ _REPORT_FALLBACK_NOTICE = (
     "질문에서 특정 검진 항목을 찾지 못해 최신 검진 결과의 주의·이상 항목을 기준으로 안내드립니다."
 )
 _REPORT_FALLBACK_TRIGGERS = (
-    "어느 진료과", "무슨 과", "어떤 과", "진료과", "병원", "상담",
+    "어느 진료과", "어느 과", "무슨 과", "어떤 과", "진료과", "병원", "상담",
     "검진 결과", "전체", "전반", "확인해야 할 항목", "주의 항목", "이상 항목",
 )
 
@@ -212,9 +212,11 @@ def _match_compact_item_spans(question: str) -> list[tuple[int, int, str]]:
     """띄어쓰기·구분자만 다른 항목명을 compact exact로 매칭한다."""
     spans: list[tuple[int, int, str]] = []
     for start, end, _raw, key in _question_windows(question, max_tokens=5):
-        canon = _COMPACT_TERMS.get(key)
-        if canon:
-            spans.append((start, end, canon))
+        for lookup_key in (key, _strip_josa(key)):
+            canon = _COMPACT_TERMS.get(lookup_key)
+            if canon:
+                spans.append((start, end, canon))
+                break
 
     selected: list[tuple[int, int, str]] = []
     occupied: list[tuple[int, int]] = []
@@ -324,8 +326,11 @@ def _match_report_gated_items(
         uncertain = True
 
     compact_question = _compact_key(question)
+    known_item_names = known_item_names or []
     for alias, target in _SHORT_ALIASES.items():
-        if alias in compact_question and target not in matched:
+        if target in matched or target in known_item_names:
+            continue
+        if alias in compact_question:
             uncertain = True
 
     return matched, uncertain

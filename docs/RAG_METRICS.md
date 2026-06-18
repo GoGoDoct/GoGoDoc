@@ -166,9 +166,11 @@ F-007 백엔드 현재 범위는 최신 `analysis_results` 1건 기반의 검진
 
 | 평가 | 데이터셋 | 수치 | 재현 |
 |------|----------|------|------|
-| 항목명 유사 입력 | `chat_item_match_golden.jsonl` 430건 | item match accuracy 100%, false positive 0, blocked answer LLM call 0 | `python evaluation/chat_item_match_eval.py --no-log` |
+| 항목명 유사 입력 | `chat_item_match_golden.jsonl` 430건 | item match accuracy 100%, false positive 0, uncertain routing 16, blocked answer LLM call 0 | `python evaluation/chat_item_match_eval.py --no-log` |
 
 현재 남은 과제는 기능 구현보다 실제 업로드 결과·사용자군·질문 표현을 늘리는 평가셋 확장이다.
+
+실제 LLM 100문항 탐색 실측에서는 런타임 오류와 차단/불확실 케이스의 answer LLM 호출 위반은 없었다. 다만 `AST 수치도 같이 봐줘`, `내 감마 지티피 어때`, `헤모글로빈 수치 봐줘`, `내 허리 어때`, `갑상선 수치 봐줘` 같은 짧은 구어체 표현 일부가 `unknown`으로 과차단되었고, `당화 헤모글로빈 수치가 뭐야`는 `당화혈색소`와 `헤모글로빈`이 함께 잡히는 중복 매칭 후보로 확인됐다. 이 탐색 결과는 골든셋 점수와 분리해 후속 평가셋 확장 후보로 관리한다.
 
 ### 2026-06-16 — F-004 단정 표현 필터 고도화 (결정적, 22건)
 

@@ -320,6 +320,26 @@ def test_report_fallback_answer_preserves_classifier_question_type():
     assert "최신 검진 결과 관련 수치 있음" in answer_llm.calls[0]["user"]
 
 
+def test_report_fallback_accepts_short_department_phrase():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"department_guide","route_reason":"진료과 안내"}'
+    )
+    answer_llm = _CountingLLM("최신 결과의 주의 항목 기준으로 진료과 상담 방향을 안내합니다.")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("어느 과 가야 해요?", _latest_analysis())
+
+    assert msg.routed is False
+    assert msg.scope_flag == Scope.ALLOWED
+    assert msg.question_type == QuestionType.DEPARTMENT_GUIDE
+    assert msg.route_reason == "report_fallback_answer"
+    assert msg.context_item_names == ["BMI", "ALT"]
+    assert len(answer_llm.calls) == 1
+
+
 def test_no_grounding_answer_preserves_question_type_when_report_has_no_fallback_items():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"department_guide","route_reason":"진료과 안내"}'
@@ -363,6 +383,23 @@ def test_reference_only_answer_marks_item_missing_from_latest_result():
     assert "일반 정보" in msg.content
     assert len(answer_llm.calls) == 1
     assert "최신 검진 결과에 해당 항목 없음" in answer_llm.calls[0]["user"]
+
+
+def test_official_item_containing_short_alias_stays_reference_only_when_missing():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("감마지티피 일반 정보")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("감마지티피가 뭐야", _latest_analysis())
+
+    assert msg.route_reason == "reference_only_answer"
+    assert msg.context_item_names == ["감마지티피"]
+    assert len(answer_llm.calls) == 1
 
 
 def test_hba1c_question_does_not_pull_hemoglobin_context():
@@ -585,6 +622,29 @@ def test_long_official_synonym_can_be_reference_only_when_missing_from_report():
     assert msg.route_reason == "reference_only_answer"
     assert msg.context_item_names == ["eGFR"]
     assert len(answer_llm.calls) == 1
+
+
+def test_long_official_synonym_with_korean_particle_can_be_reference_only():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("일반 정보")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    cases = [
+        ("total cholesterol이 뭐야", "총콜레스테롤"),
+        ("estimated glomerular filtration rate가 뭐야", "eGFR"),
+    ]
+    for question, expected_item in cases:
+        before_calls = len(answer_llm.calls)
+        msg = service.answer(question, _latest_analysis())
+
+        assert msg.route_reason == "reference_only_answer"
+        assert msg.context_item_names == [expected_item]
+        assert len(answer_llm.calls) == before_calls + 1
 
 
 def test_gamma_like_unrelated_terms_do_not_match_or_fallback_to_report_items():
