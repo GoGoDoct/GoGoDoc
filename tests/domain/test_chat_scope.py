@@ -166,6 +166,8 @@ def test_rule_routes_medication_info_questions_as_unsupported():
     cases = [
         "LDL 높으면 스타틴 부작용 뭐야?",
         "혈당 높으면 메트포민 효과 알려줘",
+        "LDL 높으면 약 부작용 알려줘",
+        "빈혈 수치 낮으면 철분제 부작용 뭐야",
     ]
 
     for question in cases:
@@ -309,6 +311,8 @@ def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
         "TSH 높으면 갑상선기능저하증일까요?",
         "PSA 높으면 전립선암 아닌가요?",
         "PSA 높으면 암이 아니야?",
+        "ALT 높으면 지방간인지 봐줘",
+        "간수치 높으면 간염인지 확인해줘",
     ]
 
     for question in cases:
@@ -353,6 +357,8 @@ def test_rule_blocks_medication_questions_before_checkup_allow():
     cases = [
         "LDL 낮추는 약 뭐야",
         "혈당 낮추는 주사 뭐야",
+        "LDL 높으면 스타틴 필요해?",
+        "혈당 높으면 메트포민 필요해?",
         "혈압 높으면 약 필요해?",
         "혈압 높으면 혈압약 필요해?",
         "공복혈당 높으면 당뇨약?",
@@ -437,6 +443,7 @@ def test_rule_blocks_uncovered_symptom_phrases_before_checkup_allow():
         "혈당 높은데 자꾸 목말라요 뭐예요?",
         "간수치 높고 황달이 있어요 뭐죠?",
         "신장 수치 낮고 소변에 피가 보여요 뭐죠?",
+        "혈압 높은데 두통 있어요",
     ]
 
     for question in cases:

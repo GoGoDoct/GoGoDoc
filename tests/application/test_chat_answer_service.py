@@ -908,6 +908,24 @@ def test_non_checkup_body_or_common_words_do_not_match_report_context():
     assert answer_llm.calls == []
 
 
+def test_body_alias_lifestyle_question_with_salt_uses_checkup_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("허리둘레 생활습관 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("내 허리 관리하려면 염분 줄여야 해?", _waist_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["허리둘레"]
+    assert any("대한비만학회" in source for source in msg.sources)
+    assert len(answer_llm.calls) == 1
+
+
 def test_mixed_question_with_report_gated_alias_answers_all_matched_items():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'

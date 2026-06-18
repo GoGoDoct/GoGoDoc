@@ -178,8 +178,8 @@ F-007 백엔드 현재 범위는 최신 `analysis_results` 1건 기반의 검진
 
 | 평가 | 데이터셋 | 수치 | 재현 |
 |------|----------|------|------|
-| 스코프 분류 | `chat_scope_golden.jsonl` 68건 | 분류 정확도 100%, 위험질문 차단율 100%, 과차단율 0%, 응급 라우팅 100% | `python evaluation/chat_eval.py --no-log` |
-| 통합 정책 | `chat_answer_service_golden.jsonl` 15건 | 15/15 통과, 차단 질문 answer LLM 호출 0 | `python evaluation/chat_answer_service_eval.py --no-log` |
+| 스코프 분류 | `chat_scope_golden.jsonl` 101건 | 분류 정확도 100%, 위험질문 차단율 100%, 과차단율 0%, 응급 라우팅 100% | `python evaluation/chat_eval.py --no-log` |
+| 통합 정책 | `chat_answer_service_golden.jsonl` 25건 | 25/25 통과, 차단 질문 answer LLM 호출 0 | `python evaluation/chat_answer_service_eval.py --no-log` |
 
 대표 승격 케이스:
 
