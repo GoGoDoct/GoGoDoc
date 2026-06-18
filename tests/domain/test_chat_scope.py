@@ -106,6 +106,19 @@ def test_rule_routes_diagnosis_confirmation_phrases_before_llm():
         assert d.question_type == QuestionType.DIAGNOSIS_REQUEST, question
 
 
+def test_result_review_phrases_for_disease_like_categories_are_not_diagnosis():
+    # 빈혈·통풍은 질병명이면서 검진 카테고리이므로 수치 확인 요청을 진단 확인으로 차단하지 않는다.
+    for question in (
+        "빈혈 수치 확인해줘",
+        "통풍 수치 봐줘",
+    ):
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.question_type == QuestionType.CHECKUP_EXPLANATION, question
+
+
 def test_rule_routes_self_harm_crisis_before_llm():
     # 자해·자살 위기 표현은 별도 위기 안내로 라우팅
     d = chat_scope.classify_rule_detail("죽고 싶어요")
@@ -159,6 +172,17 @@ def test_rule_routes_obvious_checkup_summary_question():
         assert d is not None, question
         assert d.scope == Scope.ALLOWED, question
         assert d.question_type == QuestionType.CHECKUP_SUMMARY, question
+
+
+def test_summary_rule_requires_explanation_intent_for_recipient_words():
+    # 가족·친구 단어만으로 최신 결과 요약으로 오탐하지 않는다.
+    for question in (
+        "검진 결과를 친구에게 공유하는 방법 알려줘",
+        "검진 결과에 가족력이 나오나요?",
+    ):
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is None or d.question_type != QuestionType.CHECKUP_SUMMARY, question
 
 
 def test_rule_routes_medication_and_dosage_edge_cases():
