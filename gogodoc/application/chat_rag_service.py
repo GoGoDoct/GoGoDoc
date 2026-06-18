@@ -34,7 +34,9 @@ _JOSA_SUFFIXES = (
     "은", "는", "이", "가", "을", "를", "도", "만", "랑", "와", "과", "의", "에", "로",
 )
 _JOINER_PARTICLES = ("랑", "와", "과")
-_HEIGHT_CONTEXT = re.compile(r"(키|몇\s*cm|몇\s*센티|cm|센티)")
+_HEIGHT_KEYWORD_CONTEXT = re.compile(
+    r"^\s*(이|은|는|도)?\s*(몇|[0-9]+(?:\.[0-9]+)?\s*(cm|센티)?|cm|센티)"
+)
 _BODY_ALIAS_NON_CHECKUP_CONTEXT = re.compile(
     r"운동|스트레칭|통증|아프|아픈|아파|저리|저린|저려|불편|붓|부었|부어|멍울|혹|염|증상"
 )
@@ -413,6 +415,11 @@ def _overlaps(span: tuple[int, int], blocked_spans: list[tuple[int, int]]) -> bo
     return any(start < blocked_end and end > blocked_start for blocked_start, blocked_end in blocked_spans)
 
 
+def _is_height_context_for_keyword(question: str, end: int) -> bool:
+    """`신장`이 키/몸길이 의미로 쓰인 바로 뒤 문맥만 제외한다."""
+    return bool(_HEIGHT_KEYWORD_CONTEXT.search(question[end:end + 16]))
+
+
 def _match_category_keywords(
     question: str,
     blocked_spans: list[tuple[int, int]] | None = None,
@@ -431,7 +438,7 @@ def _match_category_keyword_spans(
     cats: list[str] = []
     for kw, c in _CATEGORY_KEYWORDS.items():
         for match in re.finditer(re.escape(kw), question):
-            if kw == "신장" and _HEIGHT_CONTEXT.search(question):
+            if kw == "신장" and _is_height_context_for_keyword(question, match.end()):
                 continue
             token = next(
                 (
@@ -586,9 +593,6 @@ class ChatRagService:
             for c in (category_guide.category_of(name) for name in report_items)
             if c
         }
-        if len(direct_categories) > 1 and any(c not in report_categories for c in direct_categories):
-            uncertain = True
-
         items_grounding = []
         sources: list[str] = []
         for name in item_names:

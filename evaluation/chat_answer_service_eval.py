@@ -208,6 +208,34 @@ def _waist_latest_analysis() -> dict[str, Any]:
     }
 
 
+def _kidney_latest_analysis() -> dict[str, Any]:
+    """실제 말투 평가용 신장 기능 fixture."""
+    return {
+        "tracking_items": ["크레아티닌", "eGFR"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "크레아티닌",
+                "value": 1.3,
+                "value_text": "1.3",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "신장 여과 기능을 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 크레아티닌",
+            },
+            {
+                "name": "eGFR",
+                "value": 75,
+                "value_text": "75",
+                "unit": "mL/min/1.73m2",
+                "status": "주의",
+                "explain": "신장 여과 기능을 종합적으로 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 신장기능검사",
+            },
+        ],
+    }
+
+
 def _latest_analysis(name: str) -> dict[str, Any] | None:
     """케이스 이름에 맞는 최신 분석 결과 fixture를 반환한다."""
     if name == "baseline":
@@ -218,6 +246,8 @@ def _latest_analysis(name: str) -> dict[str, Any] | None:
         return _rich_latest_analysis()
     if name == "waist":
         return _waist_latest_analysis()
+    if name == "kidney":
+        return _kidney_latest_analysis()
     if name == "empty":
         return {"tracking_items": [], "emergency_alerts": [], "items_json": []}
     if name == "none":

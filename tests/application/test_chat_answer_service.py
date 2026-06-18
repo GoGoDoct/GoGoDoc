@@ -235,6 +235,33 @@ def _lipid_latest_analysis() -> dict:
     }
 
 
+def _kidney_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["크레아티닌", "eGFR"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "크레아티닌",
+                "value": 1.3,
+                "value_text": "1.3",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "신장 여과 기능을 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 크레아티닌",
+            },
+            {
+                "name": "eGFR",
+                "value": 75,
+                "value_text": "75",
+                "unit": "mL/min/1.73m2",
+                "status": "주의",
+                "explain": "신장 여과 기능을 종합적으로 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 신장기능검사",
+            },
+        ],
+    }
+
+
 def test_blocked_question_returns_routing_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
@@ -810,11 +837,11 @@ def test_category_question_with_missing_alias_does_not_answer_partial_context():
     assert answer_llm.calls == []
 
 
-def test_multi_category_question_blocks_partial_report_category_answer():
+def test_multi_category_question_includes_reference_only_for_missing_clear_category():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
     )
-    answer_llm = _CountingLLM("일부 카테고리만 답하면 안 되는 답변")
+    answer_llm = _CountingLLM("명확한 카테고리 질문 답변")
     service = ChatAnswerService(
         router=ChatService(classifier_llm),
         rag=ChatRagService(answer_llm),
@@ -828,11 +855,30 @@ def test_multi_category_question_blocks_partial_report_category_answer():
     for question, latest_analysis in cases:
         msg = service.answer(question, latest_analysis)
 
-        assert msg.route_reason == "item_match_uncertain", question
-        assert msg.context_item_names == [], question
-        assert msg.sources == [], question
+        assert msg.route_reason == "reference_only_answer", question
+        assert msg.context_item_names, question
+        assert msg.sources, question
+        assert "최신 검진 결과에서" in msg.content, question
 
-    assert answer_llm.calls == []
+    assert len(answer_llm.calls) == len(cases)
+
+
+def test_kidney_category_is_kept_when_height_is_separate_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("신장 기능 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("키 170cm인데 신장 수치 봐줘", _kidney_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["크레아티닌", "eGFR"]
+    assert any("신장" in source or "크레아티닌" in source for source in msg.sources)
+    assert len(answer_llm.calls) == 1
 
 
 def test_non_checkup_body_or_common_words_do_not_match_report_context():

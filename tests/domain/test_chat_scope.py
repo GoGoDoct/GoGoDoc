@@ -128,10 +128,14 @@ def test_pdf_or_result_words_do_not_hide_checkup_question():
 
 def test_rule_routes_obvious_checkup_summary_question():
     # 최신 결과에서 확인해야 할 항목을 묻는 질문은 앱 도움말이 아니라 결과 요약으로 고정
-    d = chat_scope.classify_rule_detail("검진 결과 확인해야 할 항목 알려줘")
-    assert d is not None
-    assert d.scope == Scope.ALLOWED
-    assert d.question_type == QuestionType.CHECKUP_SUMMARY
+    for question in (
+        "검진 결과 확인해야 할 항목 알려줘",
+        "검진 결과 요약",
+    ):
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.question_type == QuestionType.CHECKUP_SUMMARY, question
 
 
 def test_rule_routes_medication_and_dosage_edge_cases():
@@ -140,6 +144,7 @@ def test_rule_routes_medication_and_dosage_edge_cases():
         ("LDL이 높은데 스타틴 먹어야 하나요?", QuestionType.PRESCRIPTION_REQUEST),
         ("메트포민을 몇 mg으로 늘려야 하나요?", QuestionType.DOSAGE_REQUEST),
         ("스타틴 부작용이 걱정돼요. 계속 먹어도 되나요?", QuestionType.PRESCRIPTION_REQUEST),
+        ("혈압 높으면 약?", QuestionType.PRESCRIPTION_REQUEST),
     ]
 
     for question, expected in cases:

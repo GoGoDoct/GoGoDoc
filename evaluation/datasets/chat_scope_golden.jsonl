@@ -86,3 +86,4 @@
 {"id": "C086", "question": "LDL이 약간 높으면 관리 필요해?", "expected_scope": "allowed", "expected_type": "lifestyle_general", "intent": "생활습관", "notes": "약간은 약물 질문이 아니므로 과차단 금지"}
 {"id": "C087", "question": "혈당이 약간 높으면 운동해야 하나요?", "expected_scope": "allowed", "expected_type": "lifestyle_general", "intent": "생활습관", "notes": "약간+운동은 생활습관 질문"}
 {"id": "C088", "question": "혈압 높으면 약?", "expected_scope": "blocked", "expected_type": "prescription_request", "intent": "혼합위험_처방", "notes": "generic 약물 shorthand도 처방 판단"}
+{"id": "C089", "question": "검진 결과 요약", "expected_scope": "allowed", "expected_type": "checkup_summary", "intent": "결과요약", "notes": "요약의 마지막 글자 약을 약물 질문으로 오탐하지 않음"}
