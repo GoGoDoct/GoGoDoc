@@ -292,6 +292,8 @@ def test_unsafe_item_questions_return_routing_without_rag_llm_call():
     cases = [
         ("LDL 낮추는 약 뭐 먹어?", QuestionType.PRESCRIPTION_REQUEST),
         ("PSA 높으면 조직검사 해야 해?", QuestionType.PROCEDURE_REQUEST),
+        ("PSA 높으면 암이지?", QuestionType.DIAGNOSIS_REQUEST),
+        ("ALT 높으면 간염 확인해줘", QuestionType.DIAGNOSIS_REQUEST),
         ("내 복부가 아픈데 수치랑 관련 있어?", QuestionType.SYMPTOM_NON_EMERGENCY),
         ("ALT랑 감마 낮추는 약 알려줘", QuestionType.PRESCRIPTION_REQUEST),
     ]
@@ -403,15 +405,19 @@ def test_checkup_summary_uses_latest_result_without_answer_llm_call():
         rag=ChatRagService(answer_llm),
     )
 
-    msg = service.answer("내 검진 결과 전체적으로 설명해줘", _latest_analysis())
+    for question in (
+        "내 검진 결과 전체적으로 설명해줘",
+        "내 결과를 가족에게 설명하듯 말해줘",
+    ):
+        msg = service.answer(question, _latest_analysis())
 
-    assert msg.routed is False
-    assert msg.scope_flag == Scope.ALLOWED
-    assert msg.question_type == QuestionType.CHECKUP_SUMMARY
-    assert "최신 검진 결과" in msg.content
-    assert "BMI" in msg.content
-    assert "ALT" in msg.content
-    assert DISCLAIMER in msg.content
+        assert msg.routed is False, question
+        assert msg.scope_flag == Scope.ALLOWED, question
+        assert msg.question_type == QuestionType.CHECKUP_SUMMARY, question
+        assert "최신 검진 결과" in msg.content, question
+        assert "BMI" in msg.content, question
+        assert "ALT" in msg.content, question
+        assert DISCLAIMER in msg.content, question
     assert answer_llm.calls == []
 
 
@@ -875,6 +881,7 @@ def test_kidney_category_is_kept_when_height_is_separate_context():
 
     cases = [
         "키 170cm인데 신장 수치 봐줘",
+        "키 말고 신장기능 수치",
         "신장 1.3이면 어때",
         "신장 75면 괜찮아?",
     ]

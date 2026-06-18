@@ -45,7 +45,7 @@ def test_llm_blocked():
 
 def test_legacy_label_allowed_still_supported():
     svc = ChatService(_FakeLLM("허용"))
-    d = svc.classify("검진 결과를 쉽게 설명해줘")
+    d = svc.classify("검진에서 나온 내용을 알려줘")
     assert d.scope == Scope.ALLOWED
     assert d.question_type == QuestionType.UNKNOWN
 

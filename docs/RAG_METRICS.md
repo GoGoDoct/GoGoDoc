@@ -187,6 +187,15 @@ F-007 백엔드 현재 범위는 최신 `analysis_results` 1건 기반의 검진
 - `당화 헤모글로빈 수치가 뭐야` → `당화혈색소`만 컨텍스트로 사용
 - `혈당 관리에 좋은 식사 원칙 알려줘`, `복부비만이면 어떤 생활습관이 중요해?` → 카테고리 기반 근거 사용, `item_match_uncertain` 미사용
 
+### 2026-06-18 — F-007 adversarial 100문항 회귀 고정
+
+적대적 질문 실측에서 발견한 진단성 질문 누수 2건과 명확한 결과 설명 요청 과차단 2건을 골든셋으로 승격했다. `질병명+이지/맞지` 구어체 진단 단정과 `질병명+확인해줘/봐줘` 진단 확인 요청은 rule 단계에서 `diagnosis_request`로 차단하고, 쉬운 말 요약 요청과 신장 기능 문맥은 최신 결과 해석 범위로 허용한다.
+
+| 평가 | 데이터셋 | 수치 | 재현 |
+|------|----------|------|------|
+| 스코프 분류 | `chat_scope_golden.jsonl` 108건 | 분류 정확도 100%, 위험질문 차단율 100%, 과차단율 0%, 응급 라우팅 100% | `python evaluation/chat_eval.py --no-log` |
+| 통합 정책 | `chat_answer_service_golden.jsonl` 32건 | 32/32 통과, 차단 질문 answer LLM 호출 0 | `python evaluation/chat_answer_service_eval.py --no-log` |
+
 ### 2026-06-16 — F-004 단정 표현 필터 고도화 (결정적, 22건)
 
 후처리 단정 필터(`safety.sanitize_text`)가 정형뿐 아니라 **패러프레이즈된 단정**(악성·환자입니다·확실·질환명 단정)도 중화하는지 적대적 골든으로 측정. 재현: `python evaluation/assertion_eval.py`
