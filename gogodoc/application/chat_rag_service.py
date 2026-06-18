@@ -35,10 +35,14 @@ _JOSA_SUFFIXES = (
 )
 _JOINER_PARTICLES = ("랑", "와", "과")
 _HEIGHT_KEYWORD_CONTEXT = re.compile(
-    r"^\s*(이|은|는|도)?\s*(몇|[0-9]+(?:\.[0-9]+)?\s*(cm|센티)?|cm|센티)"
+    r"^\s*(이|은|는|도)?\s*(몇|[0-9]+(?:\.[0-9]+)?\s*(cm|센티)|cm|센티|키|몸길이)"
 )
-_BODY_ALIAS_NON_CHECKUP_CONTEXT = re.compile(
-    r"운동|스트레칭|통증|아프|아픈|아파|저리|저린|저려|불편|붓|부었|부어|멍울|혹|염증|증상"
+_BODY_ALIAS_SYMPTOM_CONTEXT = re.compile(
+    r"통증|아프|아픈|아파|저리|저린|저려|불편|붓|부었|부어|멍울|혹|염증|증상|삐끗|다쳤|다친"
+)
+_BODY_ALIAS_EXERCISE_CONTEXT = re.compile(r"운동|스트레칭")
+_BODY_ALIAS_CHECKUP_MANAGEMENT_CONTEXT = re.compile(
+    r"관리|생활습관|비만|체중|둘레|검진|결과|수치|줄이|줄여|낮추"
 )
 
 # 짧은 대화형 표현은 공식 동의어가 아니라, 최신 결과에 대상 항목이 있을 때만 허용한다.
@@ -167,13 +171,20 @@ def _alias_guard_fragments(
 
 def _is_body_alias_non_checkup_context(question: str, alias_key: str) -> bool:
     """신체부위 alias가 운동·증상 문맥이면 검진 항목으로 확정하지 않는다."""
-    return alias_key in _BODY_PART_ALIASES and bool(_BODY_ALIAS_NON_CHECKUP_CONTEXT.search(question))
+    if alias_key not in _BODY_PART_ALIASES:
+        return False
+    if _BODY_ALIAS_SYMPTOM_CONTEXT.search(question):
+        return True
+    if _BODY_ALIAS_EXERCISE_CONTEXT.search(question):
+        return not _BODY_ALIAS_CHECKUP_MANAGEMENT_CONTEXT.search(question)
+    return False
 
 
 def _contains_body_alias_non_checkup_context(question: str, key: str) -> bool:
     """fuzzy 후보 안에 신체부위 alias가 있고 비검진 문맥이면 후보에서 제외한다."""
-    return bool(_BODY_ALIAS_NON_CHECKUP_CONTEXT.search(question)) and any(
-        alias in key for alias in _BODY_PART_ALIASES
+    return any(
+        alias in key and _is_body_alias_non_checkup_context(question, alias)
+        for alias in _BODY_PART_ALIASES
     )
 
 

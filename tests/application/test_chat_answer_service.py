@@ -873,12 +873,20 @@ def test_kidney_category_is_kept_when_height_is_separate_context():
         rag=ChatRagService(answer_llm),
     )
 
-    msg = service.answer("키 170cm인데 신장 수치 봐줘", _kidney_latest_analysis())
+    cases = [
+        "키 170cm인데 신장 수치 봐줘",
+        "신장 1.3이면 어때",
+        "신장 75면 괜찮아?",
+    ]
 
-    assert msg.route_reason == "rag_answer"
-    assert msg.context_item_names == ["크레아티닌", "eGFR"]
-    assert any("신장" in source or "크레아티닌" in source for source in msg.sources)
-    assert len(answer_llm.calls) == 1
+    for question in cases:
+        msg = service.answer(question, _kidney_latest_analysis())
+
+        assert msg.route_reason == "rag_answer", question
+        assert msg.context_item_names == ["크레아티닌", "eGFR"], question
+        assert any("신장" in source or "크레아티닌" in source for source in msg.sources), question
+
+    assert len(answer_llm.calls) == len(cases)
 
 
 def test_non_checkup_body_or_common_words_do_not_match_report_context():
@@ -919,6 +927,24 @@ def test_body_alias_lifestyle_question_with_salt_uses_checkup_context():
     )
 
     msg = service.answer("내 허리 관리하려면 염분 줄여야 해?", _waist_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["허리둘레"]
+    assert any("대한비만학회" in source for source in msg.sources)
+    assert len(answer_llm.calls) == 1
+
+
+def test_body_alias_exercise_management_uses_checkup_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"lifestyle_general","route_reason":"생활습관"}'
+    )
+    answer_llm = _CountingLLM("허리둘레 운동 관리 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("내 허리 관리하려면 운동은 뭐가 좋아?", _waist_latest_analysis())
 
     assert msg.route_reason == "rag_answer"
     assert msg.context_item_names == ["허리둘레"]

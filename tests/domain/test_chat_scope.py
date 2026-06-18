@@ -313,6 +313,7 @@ def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
         "PSA 높으면 암이 아니야?",
         "ALT 높으면 지방간인지 봐줘",
         "간수치 높으면 간염인지 확인해줘",
+        "혈당 높은데 당뇨 맞나 봐줘",
     ]
 
     for question in cases:
@@ -359,6 +360,7 @@ def test_rule_blocks_medication_questions_before_checkup_allow():
         "혈당 낮추는 주사 뭐야",
         "LDL 높으면 스타틴 필요해?",
         "혈당 높으면 메트포민 필요해?",
+        "LDL 높은데 스타틴 고려할지 봐줘",
         "혈압 높으면 약 필요해?",
         "혈압 높으면 혈압약 필요해?",
         "공복혈당 높으면 당뇨약?",
@@ -425,6 +427,7 @@ def test_rule_blocks_diagnostic_test_decisions_before_checkup_allow():
         "간수치 높으면 초음파?",
         "CEA 높으면 내시경?",
         "간수치 높으면 간염 검사해야 하나요?",
+        "간수치 높으면 초음파 고려할지 봐줘",
     ]
 
     for question in cases:
