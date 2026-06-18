@@ -649,6 +649,30 @@ def test_mixed_question_with_missing_alias_does_not_answer_partial_context():
     assert answer_llm.calls == []
 
 
+def test_mixed_question_with_joined_missing_alias_does_not_answer_partial_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    for question in (
+        "내 ALT랑감마 어때",
+        "ALT와갑상선 같이 봐줘",
+        "BMI랑전립선 어때",
+    ):
+        msg = service.answer(question, _latest_analysis())
+
+        assert msg.route_reason == "item_match_uncertain", question
+        assert msg.context_item_names == [], question
+        assert msg.sources == [], question
+
+    assert answer_llm.calls == []
+
+
 def test_mixed_question_with_report_gated_alias_answers_all_matched_items():
     classifier_llm = _CountingLLM(
         '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'

@@ -215,8 +215,10 @@ def test_unsupported_routing_message_mentions_cost_and_trend_limits():
 
 
 def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
-    # 스트레스 관리가 검진 생활습관 질문이면 rule에서 증상 차단하지 않음
-    assert chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?") is None
+    # 스트레스 관리가 검진 생활습관 질문이면 증상 차단하지 않음
+    d = chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?")
+
+    assert d is None or d.scope == Scope.ALLOWED
 
 
 def test_rule_allows_common_real_phrasing_checkup_item_questions_before_llm():
@@ -247,8 +249,36 @@ def test_rule_does_not_allow_alias_when_question_is_symptom_or_nonmedical():
     # 같은 짧은 단어라도 증상이나 비의료 문맥이면 기존 차단 규칙이 우선한다.
     symptom = chat_scope.classify_rule_detail("나 지금 허리가 아픈데")
     nonmedical = chat_scope.classify_rule_detail("지피티가 뭐야")
+    chatgpt = chat_scope.classify_rule_detail("ChatGPT 뭐야?")
 
     assert symptom is not None
     assert symptom.scope == Scope.BLOCKED
     assert symptom.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
     assert nonmedical is None
+    assert chatgpt is None
+
+
+def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
+    # 항목명과 해석 의도가 있어도 질병명 단정 질문이면 진단 요청으로 차단한다.
+    cases = [
+        "공복혈당 높으면 당뇨?",
+        "PSA 높으면 암?",
+        "콜레스테롤 높으면 고지혈증?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.DIAGNOSIS_REQUEST, question
+
+
+def test_rule_keeps_non_diagnosis_management_question_allowed():
+    # 같은 항목 표현이라도 관리 질문이면 진단 차단이 아니라 허용 질문으로 유지한다.
+    d = chat_scope.classify_rule_detail("공복혈당이 높으면 어떻게 관리해?")
+
+    assert d is not None
+    assert d.scope == Scope.ALLOWED
+    assert d.question_type == QuestionType.LIFESTYLE_GENERAL

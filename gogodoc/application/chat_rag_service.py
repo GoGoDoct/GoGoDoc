@@ -33,6 +33,7 @@ _JOSA_SUFFIXES = (
     "에서는", "에서", "으로", "하고", "에게", "까지", "부터", "처럼", "보다",
     "은", "는", "이", "가", "을", "를", "도", "만", "랑", "와", "과", "의", "에", "로",
 )
+_JOINER_PARTICLES = ("랑", "와", "과")
 
 # 짧은 대화형 표현은 공식 동의어가 아니라, 최신 결과에 대상 항목이 있을 때만 허용한다.
 _SHORT_ALIASES = {
@@ -119,6 +120,16 @@ def _strip_josa(text: str) -> str:
         if text.endswith(suffix) and len(text) > len(suffix):
             return text[: -len(suffix)]
     return text
+
+
+def _alias_guard_fragments(key: str) -> list[tuple[str, bool]]:
+    """짧은 alias가 접속 조사 뒤에 붙어 있는 fragment까지 검사한다."""
+    fragments = [(key, False)]
+    for joiner in _JOINER_PARTICLES:
+        parts = [part for part in key.split(joiner) if part]
+        for part in parts[1:]:
+            fragments.append((_strip_josa(part), True))
+    return fragments
 
 
 def _question_windows(question: str, max_tokens: int = 3) -> list[tuple[int, int, str, str]]:
@@ -333,11 +344,14 @@ def _match_report_gated_items(
         key = _strip_josa(_compact_key(token.group()))
         if any(category_key and category_key in key for category_key in category_keys):
             continue
-        for alias, target in _SHORT_ALIASES.items():
-            if target in matched or target in known_item_names:
-                continue
-            if key.startswith(alias) and len(key) > len(alias):
-                uncertain = True
+        for fragment, after_joiner in _alias_guard_fragments(key):
+            for alias, target in _SHORT_ALIASES.items():
+                if target in matched or target in known_item_names:
+                    continue
+                if not fragment.startswith(alias):
+                    continue
+                if after_joiner or len(fragment) > len(alias):
+                    uncertain = True
 
     return matched, uncertain
 

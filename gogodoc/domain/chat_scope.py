@@ -142,8 +142,20 @@ _CHECKUP_INTENT = re.compile(
 )
 _LIFESTYLE_INTENT = re.compile(r"관리|음식|식사|운동|생활습관|줄이면|낮추|좋은|조심|술|체중")
 _DEPARTMENT_INTENT = re.compile(r"진료과|어느\s*과|어떤\s*과|무슨\s*과|상담")
+_SHORTHAND_DIAGNOSIS = re.compile(
+    r"(높|낮|수치|검사|검진|결과|이면|라면|나오).{0,24}"
+    r"(당뇨|당뇨병|고지혈증|암|간암|위암|대장암|갑상선암|신부전)\s*\??$"
+)
 _CHECKUP_SHORT_ALIASES = (
     "감마", "당화", "총콜", "중성", "크레아", "사구체", "허리", "복부", "갑상선", "전립선",
+)
+_CHECKUP_CATEGORY_TERMS = (
+    "콜레스테롤", "혈당", "혈압", "간수치", "간기능", "빈혈", "신장", "콩팥",
+    "통풍", "비만", "체중", "전해질", "공복혈당장애",
+)
+_JOSA_SUFFIXES = (
+    "에서는", "에서", "으로", "하고", "에게", "까지", "부터", "처럼", "보다",
+    "은", "는", "이", "가", "을", "를", "도", "만", "랑", "와", "과", "의", "에", "로",
 )
 
 
@@ -152,12 +164,21 @@ def _compact_key(text: str) -> str:
 
 
 _CHECKUP_SHORT_ALIAS_KEYS = {_compact_key(alias) for alias in _CHECKUP_SHORT_ALIASES}
+_CHECKUP_CATEGORY_KEYS = {_compact_key(term) for term in _CHECKUP_CATEGORY_TERMS}
+
+
+def _strip_josa(text: str) -> str:
+    for suffix in _JOSA_SUFFIXES:
+        if text.endswith(suffix) and len(text) > len(suffix):
+            return text[: -len(suffix)]
+    return text
 
 
 def _build_checkup_terms() -> set[str]:
     terms = set(reference_dict.REFERENCE)
     terms.update(SYNONYMS)
     terms.update(_CHECKUP_SHORT_ALIASES)
+    terms.update(_CHECKUP_CATEGORY_TERMS)
     compact_terms = {_compact_key(term) for term in terms}
     return {term for term in compact_terms if len(term) >= 2}
 
@@ -178,14 +199,22 @@ def _question_windows(question: str, max_tokens: int = 3) -> list[str]:
     return windows
 
 
-def _has_checkup_item_hint(question: str) -> bool:
-    compact_question = _compact_key(question)
-    for term in _CHECKUP_TERMS:
-        if len(term) >= 3 and term in compact_question:
-            return True
+def _normalized_windows(question: str) -> list[str]:
+    normalized: list[str] = []
+    for key in _question_windows(question):
+        for candidate in (key, _strip_josa(key)):
+            if candidate and candidate not in normalized:
+                normalized.append(candidate)
+    return normalized
 
-    windows = _question_windows(question)
+
+def _has_checkup_item_hint(question: str) -> bool:
+    windows = _normalized_windows(question)
+    if any(key in _CHECKUP_TERMS for key in windows):
+        return True
     if any(key in _CHECKUP_SHORT_ALIAS_KEYS for key in windows):
+        return True
+    if any(key in _CHECKUP_CATEGORY_KEYS for key in windows):
         return True
 
     fuzzy_hits: set[str] = set()
@@ -200,6 +229,18 @@ def _has_checkup_item_hint(question: str) -> bool:
                 if len(fuzzy_hits) > 1:
                     return False
     return len(fuzzy_hits) == 1
+
+
+def _shorthand_diagnosis_decision(question: str) -> ScopeDecision | None:
+    if not _SHORTHAND_DIAGNOSIS.search(question):
+        return None
+    return ScopeDecision(
+        scope=Scope.BLOCKED,
+        routed=True,
+        reason="rule",
+        question_type=QuestionType.DIAGNOSIS_REQUEST,
+        route_reason="diagnosis_rule",
+    )
 
 
 def _allowed_checkup_decision(question: str) -> ScopeDecision | None:
@@ -316,6 +357,10 @@ def classify_rule_detail(question: str) -> ScopeDecision | None:
             question_type=QuestionType.SYMPTOM_NON_EMERGENCY,
             route_reason="symptom_rule",
         )
+
+    diagnosis_decision = _shorthand_diagnosis_decision(text)
+    if diagnosis_decision is not None:
+        return diagnosis_decision
 
     return _allowed_checkup_decision(text)
 
