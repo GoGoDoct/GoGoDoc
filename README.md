@@ -152,6 +152,7 @@ python evaluation/gen_eval.py                    # 생성 LLM-judge (Groundednes
 python evaluation/chat_eval.py --no-log          # F-007 질문 라우팅·위험질문 차단율
 python evaluation/chat_answer_eval.py --no-log   # F-007 챗봇 RAG 답변 근거성
 python evaluation/chat_answer_service_eval.py --no-log  # F-007 최신 결과 연결·LLM 호출 정책
+python evaluation/chat_item_match_eval.py --no-log  # F-007 항목명 유사 입력 매칭
 RETRIEVER=hybrid python evaluation/variant_eval.py   # 하이브리드 변형 구제 효과 (DB)
 streamlit run evaluation/dashboard.py            # 지표 추이 대시보드
 ```

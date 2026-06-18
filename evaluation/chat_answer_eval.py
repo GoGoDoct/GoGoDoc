@@ -70,7 +70,7 @@ def main() -> int:
     ground_total = grounded_n = 0
 
     for c in cases:
-        grounding, names, sources = svc._retrieve(c["question"], report, profile)
+        grounding, names, sources, _uncertain = svc._retrieve(c["question"], report, profile)
         has_ground = bool(grounding["items"] or grounding["guides"])
         # 근거 적중 (기대와 일치)
         ground_total += 1

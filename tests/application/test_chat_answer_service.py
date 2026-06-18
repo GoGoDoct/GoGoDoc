@@ -145,6 +145,33 @@ def _rich_latest_analysis() -> dict:
     }
 
 
+def _gamma_latest_analysis() -> dict:
+    return {
+        "tracking_items": ["감마지티피"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "감마지티피",
+                "value": 68,
+                "value_text": "68",
+                "unit": "U/L",
+                "status": "주의",
+                "explain": "간담도계 상태를 함께 보는 효소 지표입니다.",
+                "source": "연세대 의과대학 건강정보 감마글루타밀전이효소",
+            },
+            {
+                "name": "ALT",
+                "value": 28,
+                "value_text": "28",
+                "unit": "U/L",
+                "status": "정상",
+                "explain": "간 건강을 보는 대표 지표입니다.",
+                "source": "질병관리청 국가건강정보포털 간기능검사",
+            },
+        ],
+    }
+
+
 def test_blocked_question_returns_routing_without_rag_llm_call():
     classifier_llm = _CountingLLM("허용")
     answer_llm = _CountingLLM("부르면 안 되는 답변")
@@ -457,3 +484,147 @@ def test_lipid_category_question_uses_report_lipid_items():
         "HDL 콜레스테롤",
         "중성지방",
     ]
+
+
+def test_gamma_gtp_spacing_and_typo_questions_use_report_item():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("감마지티피 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    for question in (
+        "내 감마지티피 어때",
+        "내 감마 지티피 어때",
+        "내 감마지피티 어때",
+        "gamma gtp 수치 어때",
+    ):
+        before_calls = len(answer_llm.calls)
+        msg = service.answer(question, _gamma_latest_analysis())
+
+        assert msg.route_reason == "rag_answer"
+        assert msg.context_item_names == ["감마지티피"]
+        assert len(answer_llm.calls) == before_calls + 1
+        assert "감마지티피" in answer_llm.calls[-1]["user"]
+
+
+def test_short_gamma_alias_is_allowed_only_when_item_exists_in_report():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("감마지티피 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    matched = service.answer("내 감마 어때", _gamma_latest_analysis())
+
+    assert matched.route_reason == "rag_answer"
+    assert matched.context_item_names == ["감마지티피"]
+    assert len(answer_llm.calls) == 1
+
+    missing = service.answer("내 감마 어때", _latest_analysis())
+
+    assert missing.route_reason == "item_match_uncertain"
+    assert missing.context_item_names == []
+    assert missing.sources == []
+    assert len(answer_llm.calls) == 1
+
+
+def test_mixed_question_with_missing_alias_does_not_answer_partial_context():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("내 ALT랑 감마 어때", _latest_analysis())
+
+    assert msg.route_reason == "item_match_uncertain"
+    assert msg.context_item_names == []
+    assert msg.sources == []
+    assert answer_llm.calls == []
+
+
+def test_mixed_question_with_report_gated_alias_answers_all_matched_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("간수치 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("내 ALT랑 감마 어때", _gamma_latest_analysis())
+
+    assert msg.route_reason == "rag_answer"
+    assert msg.context_item_names == ["ALT", "감마지티피"]
+    assert len(answer_llm.calls) == 1
+
+
+def test_long_official_synonym_can_be_reference_only_when_missing_from_report():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("eGFR 설명")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("estimated glomerular filtration rate 수치 어때", _latest_analysis())
+
+    assert msg.route_reason == "reference_only_answer"
+    assert msg.context_item_names == ["eGFR"]
+    assert len(answer_llm.calls) == 1
+
+
+def test_gamma_like_unrelated_terms_do_not_match_or_fallback_to_report_items():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    for question in ("감마선이 뭐야", "지피티가 뭐야"):
+        msg = service.answer(question, _gamma_latest_analysis())
+
+        assert msg.route_reason == "item_match_uncertain"
+        assert msg.context_item_names == []
+        assert msg.sources == []
+
+    symptom_like = service.answer("감기 때문에 힘들어", _gamma_latest_analysis())
+
+    assert symptom_like.route_reason in ("no_grounding", "item_match_uncertain")
+    assert symptom_like.context_item_names == []
+    assert symptom_like.sources == []
+    assert answer_llm.calls == []
+
+
+def test_ambiguous_fuzzy_candidates_do_not_choose_one_item():
+    classifier_llm = _CountingLLM(
+        '{"scope":"allowed","question_type":"checkup_explanation","route_reason":"수치 설명"}'
+    )
+    answer_llm = _CountingLLM("부르면 안 되는 답변")
+    service = ChatAnswerService(
+        router=ChatService(classifier_llm),
+        rag=ChatRagService(answer_llm),
+    )
+
+    msg = service.answer("cholesterol 수치 어때", _rich_latest_analysis())
+
+    assert msg.route_reason == "item_match_uncertain"
+    assert msg.context_item_names == []
+    assert msg.sources == []
+    assert answer_llm.calls == []

@@ -39,6 +39,18 @@ def test_match_items_detects_checkup_terms():
     assert _match_items("오늘 날씨 어때?") == []
 
 
+def test_match_items_accepts_compact_item_variants():
+    assert _match_items("내 감마 지티피 어때") == ["감마지티피"]
+    assert _match_items("gamma gtp 수치 어때") == ["감마지티피"]
+    assert _match_items("LDL 콜레스테롤 수치 어때") == ["LDL 콜레스테롤"]
+
+
+def test_match_items_does_not_match_gamma_like_unrelated_terms():
+    assert _match_items("감마선이 뭐야") == []
+    assert _match_items("지피티가 뭐야") == []
+    assert _match_items("감기 때문에 힘들어") == []
+
+
 def test_match_categories_generic_terms():
     # 특정 항목명 없이도 포괄 키워드로 카테고리 매칭
     assert "지질" in _match_categories("콜레스테롤 낮추려면 뭐 먹어요?", [])
