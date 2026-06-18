@@ -91,6 +91,21 @@ def test_rule_routes_colloquial_diagnosis_and_med_recommendation_before_llm():
     assert prescription.question_type == QuestionType.PRESCRIPTION_REQUEST
 
 
+def test_rule_routes_diagnosis_confirmation_phrases_before_llm():
+    # 질병 여부를 확인·단정하는 구어체 질문은 답변 생성 전에 차단한다.
+    cases = [
+        "PSA 높으면 암이지?",
+        "ALT 높으면 간염 확인해줘",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.DIAGNOSIS_REQUEST, question
+
+
 def test_rule_routes_self_harm_crisis_before_llm():
     # 자해·자살 위기 표현은 별도 위기 안내로 라우팅
     d = chat_scope.classify_rule_detail("죽고 싶어요")
@@ -138,6 +153,7 @@ def test_rule_routes_obvious_checkup_summary_question():
     for question in (
         "검진 결과 확인해야 할 항목 알려줘",
         "검진 결과 요약",
+        "내 결과를 가족에게 설명하듯 말해줘",
     ):
         d = chat_scope.classify_rule_detail(question)
         assert d is not None, question
@@ -257,6 +273,16 @@ def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
     d = chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?")
 
     assert d is None or d.scope == Scope.ALLOWED
+
+
+def test_rule_allows_kidney_function_but_not_height_context():
+    kidney = chat_scope.classify_rule_detail("키 말고 신장기능 수치")
+    height = chat_scope.classify_rule_detail("신장이 몇 cm였지")
+
+    assert kidney is not None
+    assert kidney.scope == Scope.ALLOWED
+    assert kidney.question_type == QuestionType.CHECKUP_EXPLANATION
+    assert height is None or height.scope != Scope.ALLOWED
 
 
 def test_rule_allows_common_real_phrasing_checkup_item_questions_before_llm():
