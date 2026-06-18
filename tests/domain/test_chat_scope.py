@@ -19,20 +19,20 @@ def test_blocks_diagnosis_and_procedure():
 
 
 def test_allowed_questions_not_hard_blocked():
-    # 허용 질문은 규칙에서 차단 안 됨 (None -> LLM 위임)
+    # 허용 질문은 규칙에서 차단하면 안 됨. 명확한 검진 항목 질문은 rule 허용될 수 있다.
     for q in ["ALT가 60인데 무슨 의미예요?", "콜레스테롤 낮추려면 어떤 음식이 좋아요?",
               "혈압 관리에 좋은 운동 알려줘", "어느 진료과를 가야 하나요?"]:
-        assert chat_scope.classify_rule(q) is None, q
+        assert chat_scope.classify_rule(q) in (None, Scope.ALLOWED), q
 
 
 def test_reference_range_comparison_not_hard_blocked():
     # 정상범위와의 비교는 최신 검진 결과 설명 범위라 LLM/RAG 경로로 위임
-    assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") is None
+    assert chat_scope.classify_rule("LDL 수치를 정상범위와 비교해줘") in (None, Scope.ALLOWED)
 
 
 def test_lab_unit_mgdl_question_not_dosage_routed():
     # mg/dL은 검사 단위이므로 약물 용량 질문으로 과차단하면 안 됨
-    assert chat_scope.classify_rule("LDL은 몇 mg/dL부터 높은 거예요?") is None
+    assert chat_scope.classify_rule("LDL은 몇 mg/dL부터 높은 거예요?") in (None, Scope.ALLOWED)
 
 
 def test_medication_context_mg_still_dosage_routed():
@@ -45,15 +45,22 @@ def test_medication_context_mg_still_dosage_routed():
 
 def test_past_result_comparison_still_unsupported():
     # 과거 결과와의 추세 비교는 최신 검진 1건 기준 범위를 벗어나므로 미지원 라우팅
-    d = chat_scope.classify_rule_detail("작년보다 혈당이 오른 건가요?")
-    assert d is not None
-    assert d.scope == Scope.BLOCKED
-    assert d.question_type == QuestionType.UNSUPPORTED
+    cases = [
+        "작년보다 혈당이 오른 건가요?",
+        "저번 검사보다 혈당 높아졌나요?",
+        "지난 검사 대비 콜레스테롤 올랐나요?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.UNSUPPORTED, question
 
 
 def test_waist_circumference_not_symptom_routed():
     # 허리둘레는 지원되는 검진 항목이므로 단독 '허리' 증상 힌트로 차단하면 안 됨
-    assert chat_scope.classify_rule("허리둘레가 95cm인데 무슨 의미예요?") is None
+    assert chat_scope.classify_rule("허리둘레가 95cm인데 무슨 의미예요?") in (None, Scope.ALLOWED)
 
 
 def test_rule_routes_emergency_symptoms_before_llm():
@@ -123,15 +130,19 @@ def test_empty_question_blocked():
 
 def test_pdf_or_result_words_do_not_hide_checkup_question():
     # PDF 표현이 있어도 검진 항목 해석 의도면 앱 도움말로 과차단하지 않음
-    assert chat_scope.classify_rule("PDF에 나온 ALT 수치가 뭐예요?") is None
+    assert chat_scope.classify_rule("PDF에 나온 ALT 수치가 뭐예요?") in (None, Scope.ALLOWED)
 
 
 def test_rule_routes_obvious_checkup_summary_question():
     # 최신 결과에서 확인해야 할 항목을 묻는 질문은 앱 도움말이 아니라 결과 요약으로 고정
-    d = chat_scope.classify_rule_detail("검진 결과 확인해야 할 항목 알려줘")
-    assert d is not None
-    assert d.scope == Scope.ALLOWED
-    assert d.question_type == QuestionType.CHECKUP_SUMMARY
+    for question in (
+        "검진 결과 확인해야 할 항목 알려줘",
+        "검진 결과 요약",
+    ):
+        d = chat_scope.classify_rule_detail(question)
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.question_type == QuestionType.CHECKUP_SUMMARY, question
 
 
 def test_rule_routes_medication_and_dosage_edge_cases():
@@ -140,6 +151,7 @@ def test_rule_routes_medication_and_dosage_edge_cases():
         ("LDL이 높은데 스타틴 먹어야 하나요?", QuestionType.PRESCRIPTION_REQUEST),
         ("메트포민을 몇 mg으로 늘려야 하나요?", QuestionType.DOSAGE_REQUEST),
         ("스타틴 부작용이 걱정돼요. 계속 먹어도 되나요?", QuestionType.PRESCRIPTION_REQUEST),
+        ("혈압 높으면 약?", QuestionType.PRESCRIPTION_REQUEST),
     ]
 
     for question, expected in cases:
@@ -147,6 +159,23 @@ def test_rule_routes_medication_and_dosage_edge_cases():
         assert d is not None, question
         assert d.scope == Scope.BLOCKED
         assert d.question_type == expected
+
+
+def test_rule_routes_medication_info_questions_as_unsupported():
+    # 약물 설명·부작용 질문은 검진 수치가 함께 있어도 F-007 답변 범위를 벗어난다.
+    cases = [
+        "LDL 높으면 스타틴 부작용 뭐야?",
+        "혈당 높으면 메트포민 효과 알려줘",
+        "LDL 높으면 약 부작용 알려줘",
+        "빈혈 수치 낮으면 철분제 부작용 뭐야",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.UNSUPPORTED, question
 
 
 def test_rule_routes_pediatric_red_flags_and_general_symptoms():
@@ -206,6 +235,15 @@ def test_rule_routes_common_procedure_judgment_phrases():
         assert d.question_type == QuestionType.PROCEDURE_REQUEST
 
 
+def test_rule_blocks_summary_wording_when_symptom_context_present():
+    # 결과 요약처럼 보여도 실제로 증상 원인을 묻는 질문이면 증상 라우팅이 우선한다.
+    d = chat_scope.classify_rule_detail("검진 결과에서 제일 신경 쓸 건 피곤함인데 왜죠?")
+
+    assert d is not None
+    assert d.scope == Scope.BLOCKED
+    assert d.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+
+
 def test_unsupported_routing_message_mentions_cost_and_trend_limits():
     message = chat_scope.routing_message(QuestionType.UNSUPPORTED)
 
@@ -215,5 +253,244 @@ def test_unsupported_routing_message_mentions_cost_and_trend_limits():
 
 
 def test_rule_keeps_lifestyle_stress_question_allowed_for_llm():
-    # 스트레스 관리가 검진 생활습관 질문이면 rule에서 증상 차단하지 않음
-    assert chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?") is None
+    # 스트레스 관리가 검진 생활습관 질문이면 증상 차단하지 않음
+    d = chat_scope.classify_rule_detail("스트레스 줄이면 혈압 관리에 도움이 되나요?")
+
+    assert d is None or d.scope == Scope.ALLOWED
+
+
+def test_rule_allows_common_real_phrasing_checkup_item_questions_before_llm():
+    # 실제 말투의 짧은 항목 질문은 LLM 분류기 변동성에 맡기지 않고 rule 단계에서 허용
+    cases = [
+        "AST 수치도 같이 봐줘",
+        "내 감마 지티피 어때",
+        "내 감마지피티 어때",
+        "triglycerides 수치 봐줘",
+        "헤모글로빈 수치 봐줘",
+        "내 허리 어때",
+        "내 복부 어때",
+        "갑상선 수치 봐줘",
+        "전립선 수치 어때",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.routed is False, question
+        assert d.question_type == QuestionType.CHECKUP_EXPLANATION, question
+        assert d.route_reason == "checkup_item_rule", question
+
+
+def test_rule_does_not_allow_alias_when_question_is_symptom_or_nonmedical():
+    # 같은 짧은 단어라도 증상이나 비의료 문맥이면 기존 차단 규칙이 우선한다.
+    symptom = chat_scope.classify_rule_detail("나 지금 허리가 아픈데")
+    nonmedical = chat_scope.classify_rule_detail("지피티가 뭐야")
+    chatgpt = chat_scope.classify_rule_detail("ChatGPT 뭐야?")
+
+    assert symptom is not None
+    assert symptom.scope == Scope.BLOCKED
+    assert symptom.question_type == QuestionType.SYMPTOM_NON_EMERGENCY
+    assert nonmedical is None
+    assert chatgpt is None
+
+
+def test_rule_blocks_shorthand_diagnosis_questions_before_checkup_allow():
+    # 항목명과 해석 의도가 있어도 질병명 단정 질문이면 진단 요청으로 차단한다.
+    cases = [
+        "공복혈당 높으면 당뇨?",
+        "PSA 높으면 암?",
+        "콜레스테롤 높으면 고지혈증?",
+        "혈압 높으면 고혈압?",
+        "간수치 높으면 간경화?",
+        "TSH 높으면 갑상선기능저하증?",
+        "ALT 높으면 지방간?",
+        "ALT 높으면 지방간일까?",
+        "간수치 높으면 간염인가요?",
+        "TSH 높으면 갑상선기능저하증일까요?",
+        "PSA 높으면 전립선암 아닌가요?",
+        "PSA 높으면 암이 아니야?",
+        "ALT 높으면 지방간인지 봐줘",
+        "간수치 높으면 간염인지 확인해줘",
+        "혈당 높은데 당뇨 맞나 봐줘",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.DIAGNOSIS_REQUEST, question
+
+
+def test_rule_blocks_diagnosis_suspicion_phrases_before_checkup_allow():
+    # 질병명 뒤에 의심·소견·가능성이 붙은 질문도 검진 설명이 아니라 진단 요청이다.
+    cases = [
+        "공복혈당 높으면 당뇨 의심인가요?",
+        "PSA 수치 높으면 전립선암 의심돼요?",
+        "간수치 높으면 간경화일 수 있나요?",
+        "콜레스테롤 높으면 고지혈증으로 봐야 하나요?",
+        "CEA 높으면 암 소견인가요?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.DIAGNOSIS_REQUEST, question
+
+
+def test_rule_keeps_non_diagnosis_management_question_allowed():
+    # 같은 항목 표현이라도 관리 질문이면 진단 차단이 아니라 허용 질문으로 유지한다.
+    d = chat_scope.classify_rule_detail("공복혈당이 높으면 어떻게 관리해?")
+
+    assert d is not None
+    assert d.scope == Scope.ALLOWED
+    assert d.question_type == QuestionType.LIFESTYLE_GENERAL
+
+
+def test_rule_blocks_medication_questions_before_checkup_allow():
+    # 항목명과 낮추기 의도가 있어도 약물·주사 질문이면 답변 생성 전에 차단한다.
+    cases = [
+        "LDL 낮추는 약 뭐야",
+        "혈당 낮추는 주사 뭐야",
+        "LDL 높으면 스타틴 필요해?",
+        "혈당 높으면 메트포민 필요해?",
+        "LDL 높은데 스타틴 고려할지 봐줘",
+        "혈압 높으면 약 필요해?",
+        "혈압 높으면 혈압약 필요해?",
+        "공복혈당 높으면 당뇨약?",
+        "혈압 높으면 혈압약?",
+        "LDL 높으면 고지혈증약?",
+        "혈압 높으면 약?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.PRESCRIPTION_REQUEST, question
+
+
+def test_rule_blocks_treatment_need_phrases_before_checkup_allow():
+    # 약 필요·써야·먹어야 같은 치료 필요 여부 판단도 RAG로 내려가지 않는다.
+    cases = [
+        "혈당 높으면 약 써야 하나요?",
+        "LDL 높으면 약 필요할까요?",
+        "빈혈 수치 낮으면 철분제 먹어야 하나요?",
+        "혈당 높으면 인슐린 맞아야 하나요?",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.PRESCRIPTION_REQUEST, question
+
+
+def test_rule_blocks_body_part_symptom_before_short_alias_allow():
+    # 허리·복부가 항목 alias여도 저림 같은 증상 문맥이면 허리둘레 해석으로 허용하지 않는다.
+    cases = [
+        "내 허리가 저린데 어때",
+        "복부가 불편한데 어때",
+        "갑상선이 부었는데 어때",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.SYMPTOM_NON_EMERGENCY, question
+
+
+def test_rule_blocks_diagnostic_test_decisions_before_checkup_allow():
+    # 검사·시술 필요 여부 판단은 검진 수치 설명이 아니라 의료진 상담 라우팅 대상이다.
+    cases = [
+        "ALT 높으면 복부초음파 해야 해?",
+        "CEA 높으면 내시경 받아야 해?",
+        "LDL 높으면 CT 찍어야 해?",
+        "간수치 높으면 MRI 받아야 해?",
+        "간수치 높으면 정밀검사 받아야 하나요?",
+        "LDL 높으면 CT 찍는 게 좋나요?",
+        "간수치 높으면 추가 검사 필요할까요?",
+        "ALT 높으면 복부초음파?",
+        "간수치 높으면 초음파?",
+        "CEA 높으면 내시경?",
+        "간수치 높으면 간염 검사해야 하나요?",
+        "간수치 높으면 초음파 고려할지 봐줘",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type == QuestionType.PROCEDURE_REQUEST, question
+
+
+def test_rule_blocks_uncovered_symptom_phrases_before_checkup_allow():
+    # 항목명·카테고리가 있어도 증상 호소가 섞이면 수치 설명으로 허용하지 않는다.
+    cases = [
+        "혈압 높은데 가슴이 뻐근해요 뭐죠?",
+        "혈당 높은데 자꾸 목말라요 뭐예요?",
+        "간수치 높고 황달이 있어요 뭐죠?",
+        "신장 수치 낮고 소변에 피가 보여요 뭐죠?",
+        "혈압 높은데 두통 있어요",
+    ]
+
+    for question in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.routed is True, question
+        assert d.question_type in (
+            QuestionType.SYMPTOM_NON_EMERGENCY,
+            QuestionType.EMERGENCY_SYMPTOM,
+        ), question
+
+
+def test_rule_does_not_allow_disease_encyclopedia_prompts_as_checkups():
+    # 질병명 단독 백과사전 질문은 최신 검진 결과 해석이 아니므로 rule allowlist에서 바로 허용하지 않는다.
+    for question in [
+        "빈혈이 뭐야",
+        "통풍이 뭐야",
+        "공복혈당장애가 뭐야",
+        "빈혈 설명해줘",
+        "통풍 뜻 알려줘",
+        "갑상선기능저하증 설명해줘",
+    ]:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.BLOCKED, question
+        assert d.question_type == QuestionType.UNSUPPORTED, question
+
+
+def test_rule_keeps_category_management_questions_allowed():
+    # 카테고리 단어만 있어도 관리·수치·검진 문맥이면 최신 결과 해석 범위로 허용한다.
+    cases = [
+        ("혈압 관리에 좋은 운동 알려줘", QuestionType.LIFESTYLE_GENERAL),
+        ("콜레스테롤 수치 봐줘", QuestionType.CHECKUP_EXPLANATION),
+        ("공복혈당장애가 무슨 뜻인지 쉽게 설명해줘", QuestionType.CHECKUP_EXPLANATION),
+        ("LDL이 약간 높으면 관리 필요해?", QuestionType.LIFESTYLE_GENERAL),
+        ("혈당이 약간 높으면 운동해야 하나요?", QuestionType.LIFESTYLE_GENERAL),
+    ]
+
+    for question, expected_type in cases:
+        d = chat_scope.classify_rule_detail(question)
+
+        assert d is not None, question
+        assert d.scope == Scope.ALLOWED, question
+        assert d.question_type == expected_type, question

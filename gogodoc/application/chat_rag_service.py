@@ -33,6 +33,17 @@ _JOSA_SUFFIXES = (
     "에서는", "에서", "으로", "하고", "에게", "까지", "부터", "처럼", "보다",
     "은", "는", "이", "가", "을", "를", "도", "만", "랑", "와", "과", "의", "에", "로",
 )
+_JOINER_PARTICLES = ("랑", "와", "과")
+_HEIGHT_KEYWORD_CONTEXT = re.compile(
+    r"^\s*(이|은|는|도)?\s*(몇|[0-9]+(?:\.[0-9]+)?\s*(cm|센티)|cm|센티|키|몸길이)"
+)
+_BODY_ALIAS_SYMPTOM_CONTEXT = re.compile(
+    r"통증|아프|아픈|아파|저리|저린|저려|불편|붓|부었|부어|멍울|혹|염증|증상|삐끗|다쳤|다친"
+)
+_BODY_ALIAS_EXERCISE_CONTEXT = re.compile(r"운동|스트레칭")
+_BODY_ALIAS_CHECKUP_MANAGEMENT_CONTEXT = re.compile(
+    r"관리|생활습관|비만|체중|둘레|검진|결과|수치|줄이|줄여|낮추"
+)
 
 # 짧은 대화형 표현은 공식 동의어가 아니라, 최신 결과에 대상 항목이 있을 때만 허용한다.
 _SHORT_ALIASES = {
@@ -47,6 +58,7 @@ _SHORT_ALIASES = {
     "갑상선": "TSH",
     "전립선": "PSA",
 }
+_BODY_PART_ALIASES = {"허리", "복부", "갑상선", "전립선"}
 
 # 일반 용어 -> 카테고리 (특정 항목명에 안 걸리는 포괄 질문용)
 _CATEGORY_KEYWORDS = {
@@ -119,6 +131,61 @@ def _strip_josa(text: str) -> str:
         if text.endswith(suffix) and len(text) > len(suffix):
             return text[: -len(suffix)]
     return text
+
+
+def _item_prefix_keys(item_names: list[str]) -> list[str]:
+    """이미 질문에서 매칭된 항목의 공식명·동의어 compact prefix 후보."""
+    prefixes = {
+        _compact_key(term)
+        for term, canon in _TERM_CANONS.items()
+        if canon in item_names and len(_compact_key(term)) >= 2
+    }
+    return sorted(prefixes, key=len, reverse=True)
+
+
+def _category_prefix_keys() -> list[str]:
+    """카테고리 키워드 compact prefix 후보."""
+    prefixes = {_compact_key(keyword) for keyword in _CATEGORY_KEYWORDS if len(_compact_key(keyword)) >= 2}
+    return sorted(prefixes, key=len, reverse=True)
+
+
+def _alias_guard_fragments(
+    key: str,
+    item_prefixes: list[str] | None = None,
+    category_prefixes: list[str] | None = None,
+) -> list[tuple[str, bool]]:
+    """짧은 alias가 접속 조사 뒤에 붙어 있는 fragment까지 검사한다."""
+    fragments = [(key, False)]
+    for joiner in _JOINER_PARTICLES:
+        parts = [part for part in key.split(joiner) if part]
+        for part in parts[1:]:
+            fragments.append((_strip_josa(part), True))
+    for prefix in item_prefixes or []:
+        if key.startswith(prefix) and len(key) > len(prefix):
+            fragments.append((_strip_josa(key[len(prefix):]), True))
+    for prefix in category_prefixes or []:
+        if key.startswith(prefix) and len(key) > len(prefix):
+            fragments.append((_strip_josa(key[len(prefix):]), True))
+    return fragments
+
+
+def _is_body_alias_non_checkup_context(question: str, alias_key: str) -> bool:
+    """신체부위 alias가 운동·증상 문맥이면 검진 항목으로 확정하지 않는다."""
+    if alias_key not in _BODY_PART_ALIASES:
+        return False
+    if _BODY_ALIAS_SYMPTOM_CONTEXT.search(question):
+        return True
+    if _BODY_ALIAS_EXERCISE_CONTEXT.search(question):
+        return not _BODY_ALIAS_CHECKUP_MANAGEMENT_CONTEXT.search(question)
+    return False
+
+
+def _contains_body_alias_non_checkup_context(question: str, key: str) -> bool:
+    """fuzzy 후보 안에 신체부위 alias가 있고 비검진 문맥이면 후보에서 제외한다."""
+    return any(
+        alias in key and _is_body_alias_non_checkup_context(question, alias)
+        for alias in _BODY_PART_ALIASES
+    )
 
 
 def _question_windows(question: str, max_tokens: int = 3) -> list[tuple[int, int, str, str]]:
@@ -274,6 +341,8 @@ def _match_report_gated_items(
         target = _SHORT_ALIASES.get(alias_key)
         if not target:
             continue
+        if _is_body_alias_non_checkup_context(question, alias_key):
+            continue
         if target in report_item_names:
             if target not in matched:
                 matched.append(target)
@@ -283,6 +352,8 @@ def _match_report_gated_items(
 
     report_terms = _report_compact_terms(report_item_names)
     for start, end, _raw, key in exact_windows:
+        if _overlaps((start, end), covered_spans):
+            continue
         canon = report_terms.get(key)
         if canon:
             if canon not in matched:
@@ -293,6 +364,8 @@ def _match_report_gated_items(
     best_score = 0.0
     for start, end, _raw, key in windows:
         if _overlaps((start, end), covered_spans):
+            continue
+        if _contains_body_alias_non_checkup_context(question, key):
             continue
         fuzzy_keys = [key]
         stripped_key = _strip_josa(key)
@@ -325,13 +398,24 @@ def _match_report_gated_items(
     elif best_score >= 50.0:
         uncertain = True
 
-    compact_question = _compact_key(question)
     known_item_names = known_item_names or []
-    for alias, target in _SHORT_ALIASES.items():
-        if target in matched or target in known_item_names:
-            continue
-        if alias in compact_question:
-            uncertain = True
+    category_keys = {_compact_key(keyword) for keyword in _CATEGORY_KEYWORDS}
+    item_prefixes = _item_prefix_keys([*matched, *known_item_names])
+    category_prefixes = _category_prefix_keys()
+    for token in _TOKEN.finditer(question):
+        key = _strip_josa(_compact_key(token.group()))
+        contains_category = any(category_key and category_key in key for category_key in category_keys)
+        fragments = _alias_guard_fragments(key, item_prefixes, category_prefixes)
+        if contains_category:
+            fragments = [(fragment, after_joiner) for fragment, after_joiner in fragments if after_joiner]
+        for fragment, after_joiner in fragments:
+            for alias, target in _SHORT_ALIASES.items():
+                if target in matched or target in known_item_names:
+                    continue
+                if not fragment.startswith(alias):
+                    continue
+                if after_joiner or len(fragment) > len(alias):
+                    uncertain = True
 
     return matched, uncertain
 
@@ -342,19 +426,49 @@ def _overlaps(span: tuple[int, int], blocked_spans: list[tuple[int, int]]) -> bo
     return any(start < blocked_end and end > blocked_start for blocked_start, blocked_end in blocked_spans)
 
 
+def _is_height_context_for_keyword(question: str, end: int) -> bool:
+    """`신장`이 키/몸길이 의미로 쓰인 바로 뒤 문맥만 제외한다."""
+    return bool(_HEIGHT_KEYWORD_CONTEXT.search(question[end:end + 16]))
+
+
 def _match_category_keywords(
     question: str,
     blocked_spans: list[tuple[int, int]] | None = None,
 ) -> list[str]:
     """특정 항목명이 아닌 포괄 카테고리 키워드만 추출."""
+    return [category for _, _, category in _match_category_keyword_spans(question, blocked_spans)]
+
+
+def _match_category_keyword_spans(
+    question: str,
+    blocked_spans: list[tuple[int, int]] | None = None,
+) -> list[tuple[int, int, str]]:
+    """포괄 카테고리 키워드와 span을 함께 추출한다."""
     blocked_spans = blocked_spans or []
+    matches: list[tuple[int, int, str]] = []
     cats: list[str] = []
     for kw, c in _CATEGORY_KEYWORDS.items():
         for match in re.finditer(re.escape(kw), question):
-            if not _overlaps((match.start(), match.end()), blocked_spans) and c not in cats:
+            if kw == "신장" and _is_height_context_for_keyword(question, match.end()):
+                continue
+            token = next(
+                (
+                    token_match.group()
+                    for token_match in _TOKEN.finditer(question)
+                    if token_match.start() <= match.start() and token_match.end() >= match.end()
+                ),
+                "",
+            )
+            token_key = _compact_key(token)
+            if kw == "체중" and token_key.startswith("체중계"):
+                continue
+            if _overlaps((match.start(), match.end()), blocked_spans):
+                continue
+            if c not in cats:
                 cats.append(c)
-                break
-    return cats
+                matches.append((match.start(), match.end(), c))
+            break
+    return matches
 
 
 def _merge_categories(item_names: list[str], direct_categories: list[str]) -> list[str]:
@@ -461,14 +575,16 @@ class ChatRagService:
             *_match_compact_item_spans(question),
         ]
         item_spans = [(start, end) for start, end, _ in matched_spans]
-        direct_categories = _match_category_keywords(question, blocked_spans=item_spans)
+        category_matches = _match_category_keyword_spans(question, blocked_spans=item_spans)
+        category_spans = [(start, end) for start, end, _ in category_matches]
+        direct_categories = [category for _, _, category in category_matches]
 
         # 내 검진결과에서 해당 항목 값·flag 매핑
         report_items = {it.canonical_name: it for it in (report.items if report else [])}
         report_gated_items, uncertain = _match_report_gated_items(
             question,
             set(report_items),
-            known_spans=item_spans,
+            known_spans=[*item_spans, *category_spans],
             known_item_names=item_names,
         )
         for name in report_gated_items:
@@ -488,7 +604,6 @@ class ChatRagService:
             for c in (category_guide.category_of(name) for name in report_items)
             if c
         }
-
         items_grounding = []
         sources: list[str] = []
         for name in item_names:

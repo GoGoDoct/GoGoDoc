@@ -82,7 +82,7 @@ def test_allowed_question_returns_ui_payload_with_grounding_fields():
     assert payload["latest_analysis_checked"] is True
     assert payload["scope_flag"] == Scope.ALLOWED.value
     assert payload["routed"] is False
-    assert payload["question_type"] == QuestionType.UNKNOWN.value
+    assert payload["question_type"] == QuestionType.LIFESTYLE_GENERAL.value
     assert payload["route_reason"]
     assert payload["context_item_names"] == ["BMI"]
     assert any("대한비만학회" in source for source in payload["sources"])
@@ -131,7 +131,7 @@ def test_missing_latest_analysis_returns_guidance_payload():
     assert payload["latest_analysis_checked"] is True
     assert payload["scope_flag"] == Scope.ALLOWED.value
     assert payload["routed"] is True
-    assert payload["question_type"] == QuestionType.UNKNOWN.value
+    assert payload["question_type"] == QuestionType.CHECKUP_EXPLANATION.value
     assert payload["route_reason"] == "missing_latest_analysis"
     assert "최신 검진 결과" in payload["content"]
     assert DISCLAIMER in payload["content"]

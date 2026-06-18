@@ -88,10 +88,166 @@ def _baseline_latest_analysis() -> dict[str, Any]:
     }
 
 
+def _liver_latest_analysis() -> dict[str, Any]:
+    """실제 말투 평가용 간기능 fixture."""
+    return {
+        "tracking_items": ["AST", "ALT", "감마지티피"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "AST",
+                "value": 42,
+                "value_text": "42",
+                "unit": "U/L",
+                "status": "주의",
+                "explain": "간뿐 아니라 근육·심장에도 있는 효소입니다.",
+                "source": "질병관리청 국가건강정보포털 간기능검사",
+            },
+            {
+                "name": "ALT",
+                "value": 60,
+                "value_text": "60",
+                "unit": "U/L",
+                "status": "주의",
+                "explain": "간 건강을 보는 대표 지표입니다.",
+                "source": "질병관리청 국가건강정보포털 간기능검사",
+            },
+            {
+                "name": "감마지티피",
+                "value": 68,
+                "value_text": "68",
+                "unit": "U/L",
+                "status": "주의",
+                "explain": "간담도계 상태를 함께 보는 효소 지표입니다.",
+                "source": "연세대 의과대학 건강정보 감마글루타밀전이효소",
+            },
+        ],
+    }
+
+
+def _rich_latest_analysis() -> dict[str, Any]:
+    """실제 말투 평가용 혈당·지질·혈액 fixture."""
+    return {
+        "tracking_items": ["당화혈색소", "총콜레스테롤", "중성지방"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "당화혈색소",
+                "value": 5.8,
+                "value_text": "5.8",
+                "unit": "%",
+                "status": "주의",
+                "explain": "최근 혈당 흐름을 보는 지표입니다.",
+                "source": "대한당뇨병학회 당뇨병 진료지침",
+            },
+            {
+                "name": "공복혈당",
+                "value": 92,
+                "value_text": "92",
+                "unit": "mg/dL",
+                "status": "정상",
+                "explain": "공복 상태의 혈당을 보는 지표입니다.",
+                "source": "대한당뇨병학회 당뇨병 진료지침",
+            },
+            {
+                "name": "총콜레스테롤",
+                "value": 225,
+                "value_text": "225",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈중 전체 콜레스테롤 양을 보는 지표입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "중성지방",
+                "value": 180,
+                "value_text": "180",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "혈액 속 지방 성분입니다.",
+                "source": "서울대학교병원 의학정보 이상지질혈증",
+            },
+            {
+                "name": "헤모글로빈",
+                "value": 13.8,
+                "value_text": "13.8",
+                "unit": "g/dL",
+                "status": "정상",
+                "explain": "빈혈 여부를 보는 혈액 지표입니다.",
+                "source": "서울아산병원 의료정보 일반혈액검사",
+            },
+        ],
+    }
+
+
+def _waist_latest_analysis() -> dict[str, Any]:
+    """실제 말투 평가용 비만·허리둘레 fixture."""
+    return {
+        "tracking_items": ["BMI", "허리둘레"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "BMI",
+                "value": 27.1,
+                "value_text": "27.1",
+                "unit": "kg/m2",
+                "status": "이상",
+                "explain": "키 대비 체중으로 비만 정도를 보는 체질량지수입니다.",
+                "source": "대한비만학회 비만 진료지침",
+            },
+            {
+                "name": "허리둘레",
+                "value": 92,
+                "value_text": "92",
+                "unit": "cm",
+                "status": "주의",
+                "explain": "복부비만 위험을 보는 지표입니다.",
+                "source": "대한비만학회 비만 진료지침",
+            },
+        ],
+    }
+
+
+def _kidney_latest_analysis() -> dict[str, Any]:
+    """실제 말투 평가용 신장 기능 fixture."""
+    return {
+        "tracking_items": ["크레아티닌", "eGFR"],
+        "emergency_alerts": [],
+        "items_json": [
+            {
+                "name": "크레아티닌",
+                "value": 1.3,
+                "value_text": "1.3",
+                "unit": "mg/dL",
+                "status": "주의",
+                "explain": "신장 여과 기능을 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 크레아티닌",
+            },
+            {
+                "name": "eGFR",
+                "value": 75,
+                "value_text": "75",
+                "unit": "mL/min/1.73m2",
+                "status": "주의",
+                "explain": "신장 여과 기능을 종합적으로 보는 지표입니다.",
+                "source": "서울아산병원 의료정보 신장기능검사",
+            },
+        ],
+    }
+
+
 def _latest_analysis(name: str) -> dict[str, Any] | None:
     """케이스 이름에 맞는 최신 분석 결과 fixture를 반환한다."""
     if name == "baseline":
         return _baseline_latest_analysis()
+    if name == "liver":
+        return _liver_latest_analysis()
+    if name == "rich":
+        return _rich_latest_analysis()
+    if name == "waist":
+        return _waist_latest_analysis()
+    if name == "kidney":
+        return _kidney_latest_analysis()
     if name == "empty":
         return {"tracking_items": [], "emergency_alerts": [], "items_json": []}
     if name == "none":
