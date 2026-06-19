@@ -10,7 +10,7 @@ GoGoDoc 은 디지털 PDF 형식의 종합검진 결과지를 입력받아 검�
 
 ## 팀 구성 및 역할 분담
 
-| <img src="https://github.com/gyujin00.png" width="150" /> | <img src="https://github.com/heejeongJ.png" width="150" /> | <img src="https://github.com/SJvaca30.png" width="150" /> |
+| <img src="https://github.com/gyujin00.png" width="120" /> | <img src="https://github.com/heejeongJ.png" width="120" /> | <img src="https://github.com/SJvaca30.png" width="120" /> |
 |:---:|:---:|:---:|
 | **규진**<br/>[@gyujin00](https://github.com/gyujin00) | **희정**<br/>[@heejeongJ](https://github.com/heejeongJ) | **석준**<br/>[@SJvaca30](https://github.com/SJvaca30) |
 | • 사용자 인증·세션 관리 (F-001)<br/>• PDF 업로드 검증 + LLM 연동 (F-002)<br/>• 분석 결과 DB 저장·대시보드 연동<br/>• 병원 추천 서비스·HIRA 연동 (F-006)<br/>• 인증·대시보드·결과 화면 UI | • 의료 근거 데이터 구축 (해설 dict·임상 밴드·패닉 밸류·동의어)<br/>• 항목 정규화·판정 (성별·나이) (F-003)<br/>• 근거 검색 RAG (Dict·pgvector·하이브리드)<br/>• AI 해석·종합 요약·안전 가드레일 (F-004)<br/>• 평가 하네스·골든셋·대시보드 | • 챗봇 질문 유형 분류·라우팅 (F-007)<br/>• 위험 질문 하드 차단·안전 게이트<br/>• 챗봇 답변 서비스·UI 호출 계약<br/>• 챗봇 항목명 매칭 (최신 결과 내)<br/>• 챗봇 평가·골든셋 임상 채점 |
